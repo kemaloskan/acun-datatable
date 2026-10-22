@@ -44,6 +44,9 @@ will start at `0.1.0` (see SPEC "Planned release approach").
   October in Turkey); `"1e400"` is no longer read as Infinity by `number`.
   `formatLocalDate` moved to the core (still exported by the HTTP package).
 
+- **Search speed:** `createFilterCache` keeps each cell's typed value and folded
+  search text per `Row` wrapper; `createDataTable` uses it. 100k rows: about
+  330–400 ms → 40–50 ms per search once warm (Apple M2, Node 22).
 - **Smaller fixes:** `fromLaravelPaginator` also reads `meta.total` (API resource
   collections); query parameters are inserted before a `#fragment` in the URL;
   the 1000 page-size limit is one exported constant (`MAX_PAGE_SIZE`) used by

@@ -1,7 +1,7 @@
 import { createColumns, type ColumnDef } from './columns';
 import { createEmitter, type ListenerErrorHandler } from './emitter';
 import { copyRuleValue } from './filter-rules';
-import { filterRows, type FilterRule } from './filtering';
+import { createFilterCache, filterRows, type FilterRule } from './filtering';
 import { createTableState, type SortRule } from './state';
 import {
   createLocalRowModel, type LocalRowModelOptions, type NullPlacement, type SortComparator,
@@ -221,6 +221,8 @@ export function createDataTable<TData>(options: DataTableOptions<TData>): DataTa
   let lastChange: Readonly<SelectionChange> | undefined;
   selection.subscribe((_, change) => { lastChange = change; });
 
+  // Cell values and folded search text, kept per Row wrapper across searches.
+  const filterCache = createFilterCache();
   let filtered: { sorted: readonly Row<TData>[]; filters: unknown; search: string; rows: readonly Row<TData>[] } | undefined;
   const getFilteredRows = (): readonly Row<TData>[] => {
     if (server) return coreRows;
@@ -228,7 +230,7 @@ export function createDataTable<TData>(options: DataTableOptions<TData>): DataTa
     if (filtered && filtered.sorted === sorted && filtered.filters === filters && filtered.search === globalSearch) {
       return filtered.rows;
     }
-    const rows = filterRows(sorted, columns, { filters, globalSearch }, { locale });
+    const rows = filterRows(sorted, columns, { filters, globalSearch }, { locale, cache: filterCache });
     filtered = { sorted, filters, search: globalSearch, rows };
     return rows;
   };

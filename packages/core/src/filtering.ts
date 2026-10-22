@@ -31,6 +31,42 @@ export interface FilterOptions {
   readonly locale?: string;
   /** Searchable words for `true` / `false`. Default Evet/Hayır for `tr*`, otherwise Yes/No. */
   readonly booleanLabels?: readonly [string, string];
+  /**
+   * Reuse cell values and folded search text between calls (see
+   * `createFilterCache`). `createDataTable` uses one automatically.
+   */
+  readonly cache?: FilterCache;
+}
+
+interface CellEntry {
+  readonly value: unknown;
+  folded?: readonly string[];
+}
+interface CacheState {
+  definitions: unknown;
+  signature: string;
+  rows: WeakMap<object, Map<string, CellEntry>>;
+}
+/** Opaque cache handle from `createFilterCache`. */
+export interface FilterCache {
+  readonly kind: 'filter-cache';
+}
+const caches = new WeakMap<FilterCache, CacheState>();
+
+/**
+ * Create a cache for `filterRows`. It remembers, per `Row` wrapper and column,
+ * the value read for the column type and its folded search text, so repeated
+ * searches over the same rows skip number/date formatting and text folding.
+ *
+ * Entries belong to the `Row` objects (held weakly), so replacing the rows with
+ * `createRows` naturally starts fresh. Like the sorting cache, it assumes
+ * records are not mutated in place; the cache resets itself when it is used
+ * with other column definitions, another locale or other boolean labels.
+ */
+export function createFilterCache(): FilterCache {
+  const handle: FilterCache = Object.freeze({ kind: 'filter-cache' });
+  caches.set(handle, { definitions: undefined, signature: '', rows: new WeakMap() });
+  return handle;
 }
 
 const UNSET: unique symbol = Symbol('unset');
@@ -79,6 +115,17 @@ export function filterRows<TData>(
   const labels = options.booleanLabels ?? (locale.toLowerCase().startsWith('tr') ? ['Evet', 'Hayır'] : ['Yes', 'No']);
   if (!Array.isArray(labels) || labels.length !== 2 || labels.some(label => typeof label !== 'string')) {
     throw new TypeError('booleanLabels must be two strings');
+  }
+  let store: CacheState | undefined;
+  if (options.cache !== undefined) {
+    store = caches.get(options.cache);
+    if (!store) throw new TypeError('cache must come from createFilterCache');
+    const signature = JSON.stringify([locale, labels]);
+    if (store.definitions !== definitions || store.signature !== signature) {
+      store.definitions = definitions;
+      store.signature = signature;
+      store.rows = new WeakMap();
+    }
   }
 
   const compare = (cell: unknown, target: unknown, type: ColumnType | undefined): number | undefined => {
@@ -157,10 +204,7 @@ export function filterRows<TData>(
     if (typeof value === 'boolean') return [String(value), value ? labels[0]! : labels[1]!];
     return [];
   };
-  const containsText = (value: unknown, needle: string): boolean =>
-    texts(value).some(text => foldText(text).includes(needle));
-  const startsWithText = (value: unknown, needle: string): boolean =>
-    texts(value).some(text => foldText(text).startsWith(needle));
+  const folded = (value: unknown): readonly string[] => texts(value).map(foldText);
   const isEmpty = (value: unknown): boolean =>
     value === undefined || isMissing(value) || (typeof value === 'string' && value.trim() === '');
   // A datetime cell against a span: before (-1), inside (0) or after (1).
@@ -173,15 +217,18 @@ export function filterRows<TData>(
     if (type === undefined) return cell instanceof Date && target instanceof Date ? cell.getTime() === target.getTime() : cell === target;
     return type === 'text' ? cell === target : compare(cell, target, type) === 0;
   };
-  const matches = (operator: FilterOperator, cell: unknown, targets: unknown[], needle: string, type: ColumnType | undefined): boolean => {
+  const matches = (
+    field: string, operator: FilterOperator, cell: unknown, targets: unknown[], needle: string,
+    type: ColumnType | undefined, textOf: (field: string) => readonly string[],
+  ): boolean => {
     switch (operator) {
       case 'empty': return isEmpty(cell);
       case 'notEmpty': return !isEmpty(cell);
       default: if (cell === undefined || isMissing(cell)) return false;
     }
     switch (operator) {
-      case 'contains': return containsText(cell, needle);
-      case 'startsWith': return startsWithText(cell, needle);
+      case 'contains': return textOf(field).some(text => text.includes(needle));
+      case 'startsWith': return textOf(field).some(text => text.startsWith(needle));
       case 'eq': return equals(cell, targets[0], type);
       case 'in': return targets.some(target => equals(cell, target, type));
       case 'gt': {
@@ -208,25 +255,40 @@ export function filterRows<TData>(
   const fields = [...new Set([...rules.map(rule => rule.field), ...searchable])];
   const slot = new Map(fields.map((field, index) => [field, index]));
   const result = rows.filter(row => {
-    // Read each needed column at most once per row, and only if reached.
-    const cache: unknown[] = new Array(fields.length).fill(UNSET);
-    const read = (field: string): unknown => {
+    // Read each needed column at most once per row (and once per row across
+    // calls with a cache), and only if reached.
+    const local: (CellEntry | typeof UNSET)[] = new Array(fields.length).fill(UNSET);
+    let cached = store?.rows.get(row);
+    const entry = (field: string): CellEntry => {
       const index = slot.get(field)!;
-      if (cache[index] === UNSET) {
+      const known = local[index];
+      if (known !== UNSET) return known!;
+      let found = cached?.get(field);
+      if (!found) {
         const column = columns.get(field)!;
         const raw = column.accessorFn ? column.accessorFn(row.original) : row.original[column.accessorKey!];
-        cache[index] = normalizeValue(raw, column.type);
+        found = { value: normalizeValue(raw, column.type) };
+        if (store) {
+          if (!cached) { cached = new Map(); store.rows.set(row, cached); }
+          cached.set(field, found);
+        }
       }
-      return cache[index];
+      local[index] = found;
+      return found;
+    };
+    const read = (field: string): unknown => entry(field).value;
+    const textOf = (field: string): readonly string[] => {
+      const cell = entry(field);
+      return (cell.folded ??= folded(cell.value));
     };
 
     for (const { field, operator, type, targets, needle } of rules) {
-      if (!matches(operator, read(field), targets, needle, type)) return false;
+      if (!matches(field, operator, read(field), targets, needle, type, textOf)) return false;
     }
     // Smart search: every term must match in at least one searchable column.
     return terms.every(term => searchable.some(field => {
       const cell = read(field);
-      return cell !== undefined && !isMissing(cell) && containsText(cell, term);
+      return cell !== undefined && !isMissing(cell) && textOf(field).some(text => text.includes(term));
     }));
   });
   return Object.freeze(result);

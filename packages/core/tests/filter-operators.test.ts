@@ -111,3 +111,46 @@ describe('remote queries and table state with the new operators', () => {
     expect(listener).toHaveBeenCalledTimes(1);
   });
 });
+
+describe('filter cache (second review: search speed)', () => {
+  it('returns exactly the same rows as without a cache', async () => {
+    const { createFilterCache } = await import('../src/index');
+    const cache = createFilterCache();
+    for (const query of [
+      { globalSearch: 'istanbul 34' }, { globalSearch: 'ankara' }, { globalSearch: '120,5' },
+      { filters: [{ field: 'name', operator: 'startsWith', value: 'is' } as FilterRule] },
+      { filters: [{ field: 'note', operator: 'empty' } as FilterRule], globalSearch: 'i' },
+    ]) {
+      const plain = filterRows(cities, columns, query, { locale: 'tr' }).map(r => r.id);
+      expect(filterRows(cities, columns, query, { locale: 'tr', cache }).map(r => r.id)).toEqual(plain);
+      expect(filterRows(cities, columns, query, { locale: 'tr', cache }).map(r => r.id)).toEqual(plain); // warm
+    }
+  });
+
+  it('reads each cell once across searches and resets for other columns or locales', async () => {
+    const { createFilterCache } = await import('../src/index');
+    const accessor = vi.fn((city: Readonly<City>) => city.name);
+    const cols: ColumnDef<City>[] = [{ id: 'name', header: '', accessorFn: accessor, enableFiltering: true }];
+    const cache = createFilterCache();
+    filterRows(cities, cols, { globalSearch: 'a' }, { cache });
+    filterRows(cities, cols, { globalSearch: 'i' }, { cache });
+    filterRows(cities, cols, { globalSearch: 'ank' }, { cache });
+    expect(accessor).toHaveBeenCalledTimes(5); // once per row
+    filterRows(cities, cols, { globalSearch: 'a' }, { cache, locale: 'tr' }); // other locale: rebuilt
+    expect(accessor).toHaveBeenCalledTimes(10);
+    filterRows(cities, [...cols], { globalSearch: 'a' }, { cache, locale: 'tr' }); // other definitions: rebuilt
+    expect(accessor).toHaveBeenCalledTimes(15);
+    expect(() => filterRows(cities, cols, {}, { cache: { kind: 'filter-cache' } })).toThrow('cache must come from createFilterCache');
+  });
+
+  it('createDataTable reuses its cache until the data changes', () => {
+    const accessor = vi.fn((city: Readonly<City>) => city.name);
+    const table = createDataTable<City>({ data: cities.map(r => r.original), columns: [{ id: 'name', header: '', accessorFn: accessor, enableFiltering: true }] });
+    table.setGlobalSearch('a'); table.getFilteredRows();
+    table.setGlobalSearch('an'); table.getFilteredRows();
+    expect(accessor).toHaveBeenCalledTimes(5);
+    table.setData(cities.map(r => r.original));
+    table.setGlobalSearch('ank'); table.getFilteredRows();
+    expect(accessor).toHaveBeenCalledTimes(10);
+  });
+});

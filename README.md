@@ -335,6 +335,13 @@ IDs, blank fields, unknown operators and invalid values throw explicit errors.
 - **Order and immutability:** input order is preserved and the same `Row` wrappers
   are returned in a frozen array; the input is never mutated. With no active rule
   a frozen input is returned as is. Each needed accessor runs at most once per row.
+- **Cache:** pass `cache: createFilterCache()` to reuse cell values and folded
+  search text between calls (`createDataTable` does this itself). Measured on
+  100,000 rows × 5 columns (Apple M2, Node 22): about 330–400 ms per search
+  without it, 40–50 ms per search once the cache is warm; the first search
+  builds the cache and costs about the same as an uncached one. Entries belong
+  to the `Row` wrappers, so new rows from `createRows` start fresh; records must
+  not be mutated in place.
 
 Because the order is preserved, filtering the output of `getSortedRows` gives the
 same rows as sorting the filtered rows, so the sorting cache stays useful:
