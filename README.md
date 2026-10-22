@@ -54,7 +54,12 @@ The existing `createPagination(page, pageSize)` helper remains available. Local
 multi-column sorting (`createLocalRowModel`), column filtering and global search
 (`filterRows`), pagination (`paginateRows`), row selection
 (`createRowSelection`) and the composed `createDataTable` are available (below).
-No renderer or HTTP DataSource has been implemented yet. See `SPEC.md` for
+For large datasets, `@acunsoft/datatable-http` (in `packages/datasource-http`)
+runs queries against your server with abort and latest-request-wins handling;
+see its [README](packages/datasource-http/README.md) for the wire format,
+Laravel and Node backend examples and a security checklist. The core exposes the
+contract: `TableQuery`, `PageResult`, `DataSource`, `createTableQuery` and
+`validatePageResult`. No renderer has been implemented yet. See `SPEC.md` for
 milestones.
 
 ## Composed table (M1)

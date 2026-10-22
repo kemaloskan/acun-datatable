@@ -37,11 +37,18 @@ Consumer (HTML / Laravel / Livewire / React / Vue / Next.js)
 - Does not own business state. Subscribes to core and invokes core actions.
 - HTML/DOM text must be escaped or assigned via `textContent` by default; never directly inject untrusted cell HTML.
 
-### DataSource implementations (`packages/datasource-http`, future)
-- `local`: in-memory records suitable for small/medium datasets.
+### DataSource implementations (`packages/datasource-http`, M2 in progress)
+- `local`: in-memory records suitable for small/medium datasets (`createDataTable`).
 - `remote`: sends validated filter/sort/page parameters; server does heavy work.
 - Uses `AbortController` and request sequence protection to avoid stale responses.
 - No assumption that an HTTP backend uses Laravel.
+- Published as `@acunsoft/datatable-http`. The contract types and the
+  synchronous helpers (`createTableQuery`, `validatePageResult`) live in core;
+  core stays free of DOM types by typing the request signal as a structural
+  `AbortSignalLike`. Abort handling and the latest-request-wins runner
+  (`createQueryRunner`) live in this package because they need `AbortController`.
+- Default wire format: `page`, `pageSize`, `sort=field:dir,...`,
+  `filters[i][field|op|value]`, `search`. Responses: `{ rows, totalRows? }`.
 
 ### Framework adapters (future)
 - `adapter-react`: hooks/component; React peer dependency.
