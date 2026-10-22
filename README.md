@@ -182,6 +182,26 @@ the semantic sort key and reused until `setRows(...)` or `invalidate()` is calle
 because the engine does not own caller records, call `invalidate()` after mutating
 shared `original` objects. `getSortedRows([])` returns the unsorted core rows.
 
+## Paginating a row view (M1)
+
+```ts
+import { paginateRows } from '@acunsoft/datatable-core';
+
+const view = paginateRows(sortedRows, { page: 2, pageSize: 10 });
+// view.rows     -> frozen slice of Row wrappers visible on the page
+// view.page     -> 2 (clamped into [1, pageCount])
+// view.pageCount, view.totalRows, view.pageSize
+```
+
+`paginateRows(rows, { page, pageSize })` returns the visible slice of any row view
+(for example the output of `getSortedRows`) plus derived metadata. `page` and
+`pageSize` use the same validation as `createTableState` (1-based page, `pageSize`
+in `[1, 1000]`). A `page` past the last page is **clamped** to the final page
+rather than throwing, so shrinking data never errors; the clamped value is
+reported as `view.page`. Empty input yields `pageCount` 1 and an empty slice. The
+input array is not mutated and the same `Row` wrappers are reused in a frozen
+result.
+
 `npm run check` checks source, runtime tests, and compile-only type assertions
 in `packages/core/tests/schema.types.ts` and
 `packages/core/tests/local-row-model.types.ts`; build declarations remain
