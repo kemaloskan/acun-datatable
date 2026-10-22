@@ -1,0 +1,19 @@
+node_modules/
+dist/
+coverage/
+.env
+.env.*
+!.env.example
+.DS_Store
+
+# Temporary files, caches, logs and editor backups
+tmp/
+temp/
+.cache/
+*.tmp
+*.temp
+*.log
+*.tsbuildinfo
+*.swp
+*.swo
+*~
