@@ -47,9 +47,10 @@ precedence follows array order; fields must be unique and directions must be
 subscribers. Equivalent setter calls do not notify. After `destroy`, setters and
 new subscriptions are no-ops while the final snapshot remains readable.
 
-The existing `createPagination(page, pageSize)` helper remains available. No
-renderer, HTTP DataSource, local row processing or full table API has been
-implemented yet. See `SPEC.md` for milestones.
+The existing `createPagination(page, pageSize)` helper remains available. Local
+multi-column sorting is available via `createLocalRowModel` (below). No renderer,
+HTTP DataSource, local filtering/global search, selection or a composed full
+table API has been implemented yet. See `SPEC.md` for milestones.
 
 ## Column schema and stable row IDs (M1)
 
@@ -122,6 +123,64 @@ nor freezes caller-owned records or nested objects. Caller mutations to original
 remain visible; callers should replace records on reload and keep identity fields
 stable. Creating rows performs one pass with a Set for duplicate detection and
 does not retain a global identity registry. No runtime dependency was added.
+
+## Local multi-column sorting (M1)
+
+```ts
+import {
+  createColumns, createRows, createLocalRowModel,
+} from '@acunsoft/datatable-core';
+
+type Order = { readonly id: number; readonly customer: string; readonly total: number };
+
+const columns = createColumns<Order>([
+  { id: 'customer', header: 'Customer', accessorKey: 'customer', enableSorting: true },
+  { id: 'total', header: 'Total', accessorKey: 'total', enableSorting: true },
+]);
+
+const rows = createRows<Order>([
+  { id: 1, customer: 'Ayşe', total: 90 },
+  { id: 2, customer: 'Ali', total: 90 },
+]);
+
+const model = createLocalRowModel(rows, columns, { locale: 'tr', nulls: 'last' });
+
+// Array order is precedence; each rule names a column ID.
+const sorted = model.getSortedRows([
+  { field: 'total', direction: 'desc' },
+  { field: 'customer', direction: 'asc' },
+]);
+// sorted: frozen array of Row<Order>, ties preserve input order (stable)
+```
+
+`createLocalRowModel(rows, columns, options?)` transforms core rows into a sorted
+view. Pass `Row<TData>` wrappers from `createRows` and column definitions (raw or
+from `createColumns`); the model re-validates and copies the definitions.
+
+- **Sorting is opt-in per column:** only columns with `enableSorting: true` may be
+  sorted; unknown or disabled column IDs, duplicate fields, blank fields and
+  invalid directions throw explicit errors.
+- **Precedence** follows the `sorting` array order; `direction` is per column.
+- **Stable:** equal rows keep their input order; row ID order is never used as a
+  tie-breaker.
+- **Default ordering without coercion:** values are grouped by type in the order
+  boolean &lt; number &lt; string &lt; `Date`, then compared within a type. Strings use
+  an `Intl.Collator` for the configured `locale` (default `'en'`; e.g. `'tr'` for
+  Turkish). Numbers compare relationally so `Infinity`/`-0` are safe. Unsupported
+  types (objects, `bigint`, `symbol`, functions) throw unless a custom comparator
+  is supplied for that column.
+- **Missing values** (`null`, `undefined`, `NaN`, invalid `Date`) are placed by the
+  `nulls` option (`'last'` default, or `'first'`), independently of direction, and
+  fall through to the next criterion when tied.
+- **Custom comparators** via `options.comparators` (keyed by column ID) bypass the
+  default type ordering, never receive missing values, and must return a finite
+  number.
+
+Sorting does not mutate caller data: the result is a new frozen array of the same
+`Row` wrappers, and `getCoreRows()` keeps the original order. Results are cached by
+the semantic sort key and reused until `setRows(...)` or `invalidate()` is called;
+because the engine does not own caller records, call `invalidate()` after mutating
+shared `original` objects. `getSortedRows([])` returns the unsorted core rows.
 
 `npm run check` checks source, runtime tests, and compile-only type assertions
 in `packages/core/tests/schema.types.ts` and
