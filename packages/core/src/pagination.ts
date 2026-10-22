@@ -1,9 +1,5 @@
-import type { Pagination } from './index';
+import { validatePage, validatePageSize, type Pagination } from './state';
 import type { Row } from './rows';
-
-/** Same bounds as createTableState; kept in sync intentionally. */
-const MIN_PAGE_SIZE = 1;
-const MAX_PAGE_SIZE = 1000;
 
 /** The visible slice of a row view plus derived, clamped page metadata. */
 export interface PageView<TData> {
@@ -15,22 +11,6 @@ export interface PageView<TData> {
   readonly totalRows: number;
   /** Number of pages; at least 1 even when there are no rows. */
   readonly pageCount: number;
-}
-
-function validatePage(page: number): void {
-  if (!Number.isSafeInteger(page) || page < 1) {
-    throw new RangeError('page must be a positive safe integer');
-  }
-}
-
-function validatePageSize(pageSize: number): void {
-  if (
-    !Number.isSafeInteger(pageSize) ||
-    pageSize < MIN_PAGE_SIZE ||
-    pageSize > MAX_PAGE_SIZE
-  ) {
-    throw new RangeError('pageSize must be an integer from 1 to 1000');
-  }
 }
 
 /**

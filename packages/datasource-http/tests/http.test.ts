@@ -182,3 +182,20 @@ describe('serializeTableQuery — list and valueless operators', () => {
     });
   });
 });
+
+describe('first-review leftovers', () => {
+  it('reads meta.total from Laravel API resource collections', () => {
+    expect(fromLaravelPaginator({ data: [{ id: 1 }], meta: { total: 42 } })).toEqual({ rows: [{ id: 1 }], totalRows: 42 });
+    expect(fromLaravelPaginator({ data: [], total: 7, meta: { total: 99 } })).toEqual({ rows: [], totalRows: 7 });
+  });
+
+  it('puts query parameters before a #fragment', async () => {
+    const fetch = okFetch();
+    await createHttpDataSource({ url: '/api/orders#top', fetch }).getPage(query);
+    await createHttpDataSource({ url: '/api/orders?t=1#top', fetch }).getPage(query);
+    expect(fetch.mock.calls.map(([target]) => target)).toEqual([
+      '/api/orders?page=2&pageSize=25#top',
+      '/api/orders?t=1&page=2&pageSize=25#top',
+    ]);
+  });
+});

@@ -1,6 +1,6 @@
 import { createColumns, type ColumnDef } from './columns';
 import { compareNormalized, isMissing, normalizeValue } from './values';
-import type { SortRule } from './index';
+import type { SortRule } from './state';
 import type { Row } from './rows';
 
 /** Compare non-missing values in ascending order; return a finite number. Must be pure. */

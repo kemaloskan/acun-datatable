@@ -2,7 +2,7 @@ import { createColumns, type ColumnDef } from './columns';
 import { createEmitter, type ListenerErrorHandler } from './emitter';
 import { copyRuleValue } from './filter-rules';
 import { filterRows, type FilterRule } from './filtering';
-import { createTableState, type SortRule } from './index';
+import { createTableState, type SortRule } from './state';
 import {
   createLocalRowModel, type LocalRowModelOptions, type NullPlacement, type SortComparator,
 } from './local-row-model';

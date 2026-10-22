@@ -1,5 +1,5 @@
 import { checkFilterRule, copyRuleValue, isNoOpRule, type FilterRule } from './filter-rules';
-import { createPagination, createTableState, type SortRule } from './index';
+import { createPagination, createTableState, type SortRule } from './state';
 
 /** Query a remote data source answers. Pages are 1-based. */
 export interface TableQuery {

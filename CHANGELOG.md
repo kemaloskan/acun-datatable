@@ -44,6 +44,12 @@ will start at `0.1.0` (see SPEC "Planned release approach").
   October in Turkey); `"1e400"` is no longer read as Infinity by `number`.
   `formatLocalDate` moved to the core (still exported by the HTTP package).
 
+- **Smaller fixes:** `fromLaravelPaginator` also reads `meta.total` (API resource
+  collections); query parameters are inserted before a `#fragment` in the URL;
+  the 1000 page-size limit is one exported constant (`MAX_PAGE_SIZE`) used by
+  state, pagination and the HTTP client; state code moved to its own module, so
+  the core has no circular imports.
+
 ### Changed behaviour
 
 - A `date` column now ignores the time of day (use `datetime` for instants).

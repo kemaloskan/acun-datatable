@@ -14,7 +14,8 @@ Deliverables:
 - Root workspace configured for independent packages.
 - `@acunsoft/datatable-core` TypeScript build with type declarations.
 - Unit test runner and automated GitHub Actions CI.
-- Three authoritative project docs: `ARCHITECTURE.md`, `SPEC.md`, `AGENTS.md`.
+- Authoritative project docs: `ARCHITECTURE.md` and `SPEC.md` (the original `AGENTS.md`
+  was removed when development moved to a single maintainer).
 - One small executable function that demonstrates stable, immutable table query normalization.
 
 Acceptance:

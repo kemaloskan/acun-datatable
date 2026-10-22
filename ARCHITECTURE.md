@@ -32,13 +32,13 @@ Consumer (HTML / Laravel / Livewire / React / Vue / Next.js)
 - Immutable state snapshots; controlled state update operations; stable row IDs.
 - Initial release: local data, sorting, filtering, pagination and selection. Remote capability uses an explicit query/result contract.
 
-### DOM renderer (`packages/renderer-dom`, M3 in progress)
+### DOM renderer (`packages/renderer-dom`, M3 done)
 - Renders semantic `<table>` by default; keyboard and screen reader support.
 - Does not own business state. Subscribes to core and invokes core actions.
 - HTML/DOM text must be escaped or assigned via `textContent` by default; never directly inject untrusted cell HTML.
 - Published as `@acunsoft/datatable-dom`: `renderTable`, `renderPagination`, `renderSearch`. It uses no HTML-parsing DOM API at all (enforced by a test); formatters must return strings. Unit tests run in jsdom (dev dependency); Playwright tests run the renderer in Chromium, Firefox and WebKit.
 
-### DataSource implementations (`packages/datasource-http`, M2 in progress)
+### DataSource implementations (`packages/datasource-http`, M2 done)
 - `local`: in-memory records suitable for small/medium datasets (`createDataTable`).
 - `remote`: sends validated filter/sort/page parameters; server does heavy work.
 - Uses `AbortController` and request sequence protection to avoid stale responses.
@@ -119,7 +119,7 @@ acun-datatable/
   .github/workflows/
 ```
 
-Directories are named by role (`renderer-dom`, `datasource-http`); published names use the `datatable-` prefix. Planned entries are reservations for roadmap planning, not a claim that those packages exist. Nothing is published yet. Blade/Livewire components use the `acun:datatable-*` prefix (e.g. `<x-acun-datatable::table>`). Acun Pro will build its tables on Acun DataTable; its earlier DataTables-based `acun:data-table` component is being removed.
+Directories are named by role (`renderer-dom`, `datasource-http`); published names use the `datatable-` prefix. Planned entries are reservations for roadmap planning, not a claim that those packages exist. Nothing is published yet. Blade components use the `x-acun-datatable::` namespace (e.g. `<x-acun-datatable::table>`). Acun Pro will build its tables on Acun DataTable; its earlier DataTables-based `acun:data-table` component is being removed.
 
 ## 5. Toolchain and packaging
 

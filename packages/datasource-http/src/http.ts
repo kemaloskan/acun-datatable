@@ -1,5 +1,5 @@
 import {
-  createTableQuery, formatLocalDate, validatePageResult,
+  createTableQuery, formatLocalDate, MAX_PAGE_SIZE, validatePageResult,
   type DataSource, type PageResult, type TableQuery,
 } from '@acunsoft/datatable-core';
 
@@ -26,7 +26,7 @@ export interface HttpDataSourceOptions {
   readonly serializeQuery?: (query: TableQuery) => URLSearchParams;
   /** Map the server's JSON to `{ rows, totalRows?, nextCursor? }`, e.g. `fromLaravelPaginator`. */
   readonly parseResponse?: (body: unknown, query: TableQuery) => unknown;
-  /** Largest page size this client will request. Default 100, at most 1000. */
+  /** Largest page size this client will request. Default 100, at most `MAX_PAGE_SIZE` (1000). */
   readonly maxPageSize?: number;
   readonly credentials?: RequestCredentials;
 }
@@ -70,11 +70,16 @@ export function serializeTableQuery(query: TableQuery): URLSearchParams {
   return params;
 }
 
-/** Parser for Laravel's `paginate()` JSON (`{ data, total, ... }`). */
+/**
+ * Parser for Laravel pagination JSON: `paginate()` (`{ data, total }`) and API
+ * resource collections (`{ data, meta: { total } }`). `simplePaginate()` has no
+ * total, so `totalRows` is left out.
+ */
 export function fromLaravelPaginator(body: unknown): unknown {
   if (!body || typeof body !== 'object') return body;
-  const { data, total } = body as { data?: unknown; total?: unknown };
-  return total === undefined ? { rows: data } : { rows: data, totalRows: total };
+  const { data, total, meta } = body as { data?: unknown; total?: unknown; meta?: { total?: unknown } };
+  const count = total ?? (meta && typeof meta === 'object' ? meta.total : undefined);
+  return count === undefined ? { rows: data } : { rows: data, totalRows: count };
 }
 
 /**
@@ -91,8 +96,8 @@ export function createHttpDataSource<TData = Record<string, unknown>>(options: H
   const fetchImpl = options.fetch ?? globalThis.fetch;
   if (typeof fetchImpl !== 'function') throw new TypeError('fetch is not available; pass options.fetch');
   const maxPageSize = options.maxPageSize ?? 100;
-  if (!Number.isSafeInteger(maxPageSize) || maxPageSize < 1 || maxPageSize > 1000) {
-    throw new RangeError('maxPageSize must be an integer from 1 to 1000');
+  if (!Number.isSafeInteger(maxPageSize) || maxPageSize < 1 || maxPageSize > MAX_PAGE_SIZE) {
+    throw new RangeError(`maxPageSize must be an integer from 1 to ${MAX_PAGE_SIZE}`);
   }
   const serialize = options.serializeQuery ?? serializeTableQuery;
 
@@ -103,7 +108,11 @@ export function createHttpDataSource<TData = Record<string, unknown>>(options: H
         throw new RangeError(`pageSize ${query.pageSize} exceeds maxPageSize ${maxPageSize}`);
       }
       const params = serialize(query).toString();
-      const target = params ? `${url}${url.includes('?') ? '&' : '?'}${params}` : url;
+      // Query parameters go before any #fragment: '/a?x=1#top' -> '/a?x=1&page=..#top'.
+      const hash = url.indexOf('#');
+      const base = hash === -1 ? url : url.slice(0, hash);
+      const fragment = hash === -1 ? '' : url.slice(hash);
+      const target = params ? `${base}${base.includes('?') ? '&' : '?'}${params}${fragment}` : url;
 
       const headers = new Headers({ Accept: 'application/json' });
       const extra = typeof options.headers === 'function' ? await options.headers(query) : options.headers;
