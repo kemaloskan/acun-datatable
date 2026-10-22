@@ -78,6 +78,14 @@ will start at `0.1.0` (see SPEC "Planned release approach").
 
 ### Added
 
+- **acunsoft/datatable-laravel (query layer):** a Composer package for Laravel
+  and Livewire. `Column` (allowlist with types and folded search columns),
+  `TableQuery` (validated wire format), `QueryApplier` (all operators, smart
+  search, whole-day dates, multi-column sorting with a key tie-breaker, bound
+  values, `LIKE … ESCAPE '!'`), `TableResponse` (JSON `{ rows, totalRows }`,
+  422 on invalid input, only declared fields) and `Text::fold` /
+  `Text::searchTerms`, identical to the browser. 43 PHPUnit tests; CI job on
+  PHP 8.2 and 8.5.
 - **DataTables-style smart search:** global search splits the text into words
   (quoted phrases stay together); every word must match in some filterable
   column. `splitSearchTerms` exposes the splitting for servers.

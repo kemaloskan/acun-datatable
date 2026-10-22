@@ -60,7 +60,9 @@ runs queries against your server with abort and latest-request-wins handling;
 see its [README](packages/datasource-http/README.md) for the wire format,
 Laravel and Node backend examples and a security checklist. The core exposes the
 contract: `TableQuery`, `PageResult`, `DataSource`, `createTableQuery` and
-`validatePageResult`. `@acunsoft/datatable-dom` (in `packages/renderer-dom`) renders
+`validatePageResult`. On the server, `acunsoft/datatable-laravel` (in
+`packages/adapter-laravel`, Composer) applies the same query rules to Eloquent;
+see its [README](packages/adapter-laravel/README.md). `@acunsoft/datatable-dom` (in `packages/renderer-dom`) renders
 an accessible table, pagination and search; see its
 [README](packages/renderer-dom/README.md). See `SPEC.md` for milestones.
 

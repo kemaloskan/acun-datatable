@@ -55,3 +55,26 @@ jobs:
           name: playwright-traces
           path: test-results/
           retention-days: 7
+
+  php:
+    # acunsoft/datatable-laravel: oldest and newest supported PHP.
+    runs-on: ubuntu-latest
+    name: php ${{ matrix.php }} (datatable-laravel)
+    strategy:
+      fail-fast: false
+      matrix:
+        php: ['8.2', '8.5']
+    defaults:
+      run:
+        working-directory: packages/adapter-laravel
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          extensions: intl, mbstring, pdo_sqlite
+          coverage: none
+      # A library: no committed lock file; resolve the newest versions allowed
+      # by composer.json for this PHP version.
+      - run: composer update --no-interaction --no-progress --prefer-dist
+      - run: composer test
