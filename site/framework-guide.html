@@ -6,126 +6,209 @@
 <title>Kurulum — Acun DataTable</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
 <style>
-  :root {
-    --bg:#ffffff; --fg:#1b1f24; --muted:#656d76; --border:#e4e7ec;
-    --panel:#f7f8fa; --accent:#6d4aff; --accent-weak:#efeafe;
-    --code-bg:#1b1f2b; --topbar:#ffffff; --sel:#f3effe;
+  :root{
+    --page:#eceef1; --bg:#ffffff; --fg:#161a20; --muted:#6b7280; --border:#e6e8ec;
+    --rail:#111318; --rail-fg:#8b90a0; --rail-active:#ffffff; --rail-active-bg:#262a33;
+    --side:#ffffff; --side-active:#f1f2f4; --accent:#4f46e5; --accent-weak:#eef0ff;
+    --code-bg:#1b1f2b; --chip:#eef0f3;
   }
-  :root[data-theme="dark"] {
-    --bg:#0d1117; --fg:#e6edf3; --muted:#9198a1; --border:#262c36;
-    --panel:#12171f; --accent:#9d86ff; --accent-weak:#1d1733;
-    --code-bg:#0b0e14; --topbar:#0d1117; --sel:#1b1533;
+  :root[data-theme="dark"]{
+    --page:#07090d; --bg:#0d1117; --fg:#e6edf3; --muted:#9198a1; --border:#20262f;
+    --rail:#05070a; --rail-fg:#6b7280; --rail-active:#ffffff; --rail-active-bg:#1b2029;
+    --side:#0d1117; --side-active:#1a2029; --accent:#8b83ff; --accent-weak:#1a1733;
+    --code-bg:#0b0e14; --chip:#161b22;
   }
-  * { box-sizing:border-box; }
-  html,body { margin:0; }
-  body { font:15px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;
-         color:var(--fg); background:var(--bg); }
-  a { color:var(--accent); text-decoration:none; }
-  code,pre,kbd { font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%}
+  body{font:15px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;color:var(--fg);background:var(--page)}
+  a{color:inherit;text-decoration:none}
+  code,pre{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+  .app{display:grid;grid-template-columns:64px 288px 1fr;height:100vh}
 
-  /* Top bar */
-  .top { position:sticky; top:0; z-index:20; display:flex; align-items:center; gap:18px;
-         padding:0 24px; height:60px; background:var(--topbar); border-bottom:1px solid var(--border); }
-  .brand { display:flex; align-items:center; gap:10px; font-weight:700; font-size:17px; }
-  .brand .mark { width:28px; height:28px; border-radius:8px;
-     background:linear-gradient(135deg,var(--accent),#b69bff); display:grid; place-items:center; color:#fff; font-weight:800; }
-  .top .spacer { flex:1; }
-  .ctl { display:inline-flex; align-items:center; gap:6px; border:1px solid var(--border); background:var(--bg);
-         color:var(--fg); border-radius:8px; padding:7px 10px; font-size:13px; cursor:pointer; }
-  .ctl:hover { border-color:var(--accent); }
-  .seg { display:inline-flex; border:1px solid var(--border); border-radius:8px; overflow:hidden; }
-  .seg button { border:0; background:var(--bg); color:var(--muted); padding:7px 11px; font-size:13px; cursor:pointer; }
-  .seg button.active { background:var(--accent); color:#fff; }
+  /* far-left icon rail */
+  .rail{background:var(--rail);display:flex;flex-direction:column;align-items:center;padding:14px 0;gap:6px}
+  .rail .logo{width:38px;height:38px;border-radius:11px;background:#262a33;display:grid;place-items:center;margin-bottom:10px}
+  .rail .logo svg{width:20px;height:20px;color:#fff}
+  .rail button{width:40px;height:40px;border:0;background:none;color:var(--rail-fg);border-radius:11px;display:grid;place-items:center;cursor:pointer}
+  .rail button svg{width:20px;height:20px}
+  .rail button:hover{color:#fff;background:#ffffff14}
+  .rail button.active{color:var(--rail-active);background:var(--rail-active-bg)}
+  .rail .grow{flex:1}
+  .rail .ava{width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,#f0b43a,#e07b39);margin-top:6px}
 
-  /* Layout: left frameworks | right guide */
-  .wrap { display:grid; grid-template-columns:260px 1fr; max-width:1140px; margin:0 auto; }
-  aside { border-right:1px solid var(--border); padding:26px 16px; position:sticky; top:60px;
-          height:calc(100vh - 60px); overflow:auto; }
-  aside .label { font-size:11px; text-transform:uppercase; letter-spacing:.08em; color:var(--muted); margin:0 10px 12px; }
-  .fw { display:flex; align-items:center; gap:12px; width:100%; text-align:left; border:0; background:none;
-        color:var(--fg); padding:11px 12px; border-radius:10px; cursor:pointer; font-size:15px; }
-  .fw:hover { background:var(--panel); }
-  .fw.active { background:var(--sel); color:var(--accent); font-weight:600; }
-  .fw .ico { width:30px; height:30px; border-radius:8px; display:grid; place-items:center; flex:none;
-             background:var(--panel); border:1px solid var(--border); font-weight:700; font-size:13px; }
-  .fw.active .ico { border-color:var(--accent); }
-  .fw small { display:block; color:var(--muted); font-weight:400; font-size:12px; }
+  /* sidebar */
+  .side{background:var(--side);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:auto}
+  .side .head{padding:22px 20px 10px}
+  .side h1{font-size:23px;margin:0 0 14px}
+  .search{display:flex;align-items:center;gap:8px;border:1px solid var(--border);background:var(--bg);border-radius:10px;padding:9px 12px;color:var(--muted);font-size:14px}
+  .search svg{width:16px;height:16px}
+  .side .nav{padding:8px 12px 20px}
+  .quick{display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:10px;font-weight:600;cursor:pointer}
+  .quick:hover{background:var(--side-active)}
+  .quick svg{width:19px;height:19px;color:var(--muted)}
+  .quick .badge{margin-left:auto;background:var(--chip);color:var(--muted);border-radius:7px;font-size:12px;font-weight:700;padding:2px 8px}
+  .sec{display:flex;align-items:center;justify-content:space-between;color:var(--muted);font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;padding:16px 12px 6px}
+  .fw{display:flex;align-items:center;gap:12px;width:100%;text-align:left;border:0;background:none;color:var(--fg);padding:10px 12px;border-radius:10px;cursor:pointer;font-size:15px;font-weight:600}
+  .fw:hover{background:var(--side-active)}
+  .fw.active{background:var(--side-active)}
+  .fw.active .name{color:var(--accent)}
+  .fw .ic{width:30px;height:30px;border-radius:8px;background:var(--chip);display:grid;place-items:center;flex:none}
+  .fw .ic svg{display:block}
+  .fw small{display:block;color:var(--muted);font-weight:400;font-size:12px;margin-top:1px}
 
-  main { padding:36px 44px 120px; min-width:0; }
-  .crumb { color:var(--muted); font-size:13px; margin-bottom:6px; }
-  h1 { font-size:28px; margin:.2em 0 .1em; display:flex; align-items:center; gap:12px; }
-  h1 .badge { font-size:11px; font-weight:600; color:var(--accent); background:var(--accent-weak);
-              border:1px solid var(--accent); border-radius:999px; padding:3px 9px; }
-  .lead { color:var(--muted); font-size:16px; margin:.3em 0 1.6em; }
-  h2 { font-size:19px; margin:2em 0 .6em; padding-top:.2em; }
-  .step { display:inline-flex; width:24px; height:24px; border-radius:50%; background:var(--accent); color:#fff;
-          font-size:13px; font-weight:700; align-items:center; justify-content:center; margin-right:8px; }
-  .codewrap { position:relative; margin:12px 0; }
-  pre { background:var(--code-bg); color:#e6edf3; border-radius:10px; padding:16px 18px; overflow:auto; margin:0;
-        font-size:13.5px; line-height:1.55; }
-  .copy { position:absolute; top:8px; right:8px; border:1px solid #ffffff22; background:#ffffff14; color:#cfd6e4;
-          border-radius:7px; padding:5px 9px; font-size:12px; cursor:pointer; }
-  .copy:hover { background:#ffffff26; }
-  .note { border:1px solid var(--border); background:var(--panel); border-left:3px solid var(--accent);
-          border-radius:8px; padding:12px 14px; margin:14px 0; font-size:14px; color:var(--muted); }
-  .next { display:flex; flex-wrap:wrap; gap:10px; margin-top:10px; }
-  .next a { border:1px solid var(--border); border-radius:8px; padding:9px 13px; font-size:14px; color:var(--fg); }
-  .next a:hover { border-color:var(--accent); color:var(--accent); }
-  @media (max-width:820px){ .wrap{ grid-template-columns:1fr; } aside{ position:static; height:auto; border-right:0; border-bottom:1px solid var(--border);} main{ padding:24px 18px 80px; } }
+  /* content */
+  .main{background:var(--bg);overflow:auto}
+  .topbar{position:sticky;top:0;z-index:5;display:flex;align-items:center;gap:12px;padding:14px 32px;background:var(--bg);border-bottom:1px solid var(--border)}
+  .crumb{color:var(--muted);font-size:13px}
+  .topbar .grow{flex:1}
+  .seg{display:inline-flex;border:1px solid var(--border);border-radius:9px;overflow:hidden}
+  .seg button{border:0;background:var(--bg);color:var(--muted);padding:7px 11px;font-size:13px;cursor:pointer}
+  .seg button.active{background:var(--accent);color:#fff}
+  .ctl{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--border);background:var(--bg);color:var(--fg);border-radius:9px;padding:7px 10px;font-size:13px;cursor:pointer}
+  .ctl:hover{border-color:var(--accent)}
+  .doc{max-width:760px;padding:34px 32px 120px}
+  .doc h1{font-size:28px;margin:.1em 0 .1em;display:flex;align-items:center;gap:14px}
+  .doc h1 .big{width:44px;height:44px;border-radius:11px;background:var(--chip);display:grid;place-items:center;flex:none}
+  .badge2{font-size:11px;font-weight:600;color:var(--accent);background:var(--accent-weak);border:1px solid var(--accent);border-radius:999px;padding:3px 9px}
+  .lead{color:var(--muted);font-size:16px;margin:.5em 0 1.4em}
+  h2.step{font-size:18px;margin:1.9em 0 .5em;display:flex;align-items:center;gap:10px}
+  .num{display:inline-grid;place-items:center;width:24px;height:24px;border-radius:50%;background:var(--accent);color:#fff;font-size:13px;font-weight:700}
+  .codewrap{position:relative;margin:12px 0}
+  pre{background:var(--code-bg);color:#e6edf3;border-radius:11px;padding:16px 18px;overflow:auto;margin:0;font-size:13.5px;line-height:1.55}
+  .copy{position:absolute;top:8px;right:8px;border:1px solid #ffffff22;background:#ffffff14;color:#cfd6e4;border-radius:7px;padding:5px 9px;font-size:12px;cursor:pointer}
+  .copy:hover{background:#ffffff26}
+  .note{border:1px solid var(--border);background:var(--chip);border-left:3px solid var(--accent);border-radius:9px;padding:12px 14px;margin:14px 0;font-size:14px;color:var(--muted)}
+  .next{display:flex;flex-wrap:wrap;gap:10px;margin-top:10px}
+  .next a{border:1px solid var(--border);border-radius:9px;padding:9px 13px;font-size:14px}
+  .next a:hover{border-color:var(--accent);color:var(--accent)}
+
+  /* mobile framework selector (horizontal, scrollable) */
+  .fwbar{display:none}
+  .fwbar button{flex:none;display:inline-flex;align-items:center;gap:8px;border:1px solid var(--border);background:var(--bg);color:var(--fg);border-radius:999px;padding:7px 13px;font-size:14px;font-weight:600;cursor:pointer;white-space:nowrap}
+  .fwbar button.active{border-color:var(--accent);color:var(--accent);background:var(--accent-weak)}
+  .fwbar button .ic{width:20px;height:20px;display:grid;place-items:center}
+
+  /* ≤980px: drop the sidebar, switch to the horizontal selector */
+  @media(max-width:980px){
+    .app{grid-template-columns:64px 1fr}
+    .side{display:none}
+    .topbar{position:static;flex-wrap:wrap}
+    .fwbar{display:flex;gap:8px;overflow-x:auto;padding:12px 24px;border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--bg);z-index:4;-webkit-overflow-scrolling:touch}
+    .doc{padding:26px 24px 90px}
+  }
+  /* ≤640px: drop the icon rail too, full-width content */
+  @media(max-width:640px){
+    .app{grid-template-columns:1fr;height:auto;min-height:100vh}
+    .rail{flex-direction:row;height:auto;padding:8px 10px;gap:4px;overflow-x:auto}
+    .rail .logo{margin-bottom:0}
+    .rail .grow{display:none}
+    .rail{display:none}
+    .fwbar{padding:12px 16px}
+    .topbar{padding:12px 16px}
+    .doc{padding:22px 16px 80px}
+    .doc h1{font-size:23px}
+    .doc h1 .big{width:38px;height:38px}
+    pre{font-size:12.5px}
+  }
 </style>
 </head>
 <body>
-<div class="top">
-  <a class="brand" href="index.html" style="color:inherit"><span class="mark">A</span> Acun DataTable</a>
-  <div class="spacer"></div>
-  <div class="seg" id="lang">
-    <button data-lang="tr" class="active">TR</button>
-    <button data-lang="en">EN</button>
+<div class="app">
+  <!-- icon rail -->
+  <div class="rail">
+    <a class="logo" href="index.html" title="Acun DataTable">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6c0-1.7 4-3 9-3s9 1.3 9 3-4 3-9 3-9-1.3-9-3Z"/><path d="M3 6v12c0 1.7 4 3 9 3s9-1.3 9-3V6"/><path d="M3 12c0 1.7 4 3 9 3s9-1.3 9-3"/></svg>
+    </a>
+    <button class="active" title="Dokümanlar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 5a2 2 0 0 1 2-2h9l5 5v11a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2Z"/><path d="M14 3v6h6"/></svg></button>
+    <button title="Kod"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m8 8-4 4 4 4M16 8l4 4-4 4"/></svg></button>
+    <button title="Temalar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><circle cx="8.5" cy="10" r="1.2" fill="currentColor" stroke="none"/><circle cx="15.5" cy="10" r="1.2" fill="currentColor" stroke="none"/><circle cx="12" cy="15" r="1.2" fill="currentColor" stroke="none"/></svg></button>
+    <button title="Örnekler"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z"/></svg></button>
+    <div class="grow"></div>
+    <button title="Ayarlar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19 12a7 7 0 0 0-.1-1l2-1.5-2-3.4-2.3 1a7 7 0 0 0-1.7-1l-.3-2.5h-4l-.3 2.5a7 7 0 0 0-1.7 1l-2.3-1-2 3.4L4.1 11a7 7 0 0 0 0 2l-2 1.5 2 3.4 2.3-1a7 7 0 0 0 1.7 1l.3 2.5h4l.3-2.5a7 7 0 0 0 1.7-1l2.3 1 2-3.4-2-1.5a7 7 0 0 0 .1-1Z"/></svg></button>
+    <div class="ava" title="Hesap"></div>
   </div>
-  <button class="ctl" id="theme">🌙 <span data-i="theme">Koyu</span></button>
-</div>
 
-<div class="wrap">
-  <aside>
-    <p class="label" data-i="frameworks">Framework</p>
-    <div id="fwlist"></div>
+  <!-- sidebar -->
+  <aside class="side">
+    <div class="head">
+      <h1 data-i="side_title">Kurulum</h1>
+      <div class="search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3-3"/></svg><span data-i="search">Ara</span></div>
+    </div>
+    <div class="nav">
+      <a class="quick" href="index.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/></svg><span data-i="q_home">Giriş</span></a>
+      <a class="quick" href="index.html#features"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19V5M4 19h16M8 16v-5M12 16V8M16 16v-8"/></svg><span data-i="q_feat">Özellikler</span><span class="badge" data-i="q_badge">6</span></a>
+      <div class="sec"><span data-i="sec_fw">Framework</span><span>—</span></div>
+      <div id="fwlist"></div>
+    </div>
   </aside>
-  <main>
-    <div class="crumb"><span data-i="crumb">Başlangıç · Kurulum</span></div>
-    <h1><span id="fw-title"></span> <span class="badge" id="fw-badge"></span></h1>
-    <p class="lead" id="fw-lead"></p>
 
-    <h2><span class="step">1</span><span data-i="install">Kurulum</span></h2>
-    <div class="codewrap"><pre><code class="language-bash" id="c-install"></code></pre><button class="copy" data-copy="c-install">kopyala</button></div>
-    <div class="note" id="install-note"></div>
+  <!-- content -->
+  <div class="main">
+    <div class="topbar">
+      <span class="crumb"><span data-i="crumb">Başlangıç · Kurulum</span> · <span id="crumb-fw"></span></span>
+      <div class="grow"></div>
+      <div class="seg" id="lang"><button data-lang="tr" class="active">TR</button><button data-lang="en">EN</button></div>
+      <button class="ctl" id="theme">🌙 <span data-i="theme">Koyu</span></button>
+    </div>
+    <div class="fwbar" id="fwbar"></div>
+    <div class="doc">
+      <h1><span class="big" id="fw-big"></span><span id="fw-title"></span> <span class="badge2" id="fw-badge"></span></h1>
+      <p class="lead" id="fw-lead"></p>
 
-    <h2><span class="step">2</span><span data-i="usage">Kullanım</span></h2>
-    <div class="codewrap"><pre><code id="c-usage"></code></pre><button class="copy" data-copy="c-usage">kopyala</button></div>
+      <h2 class="step"><span class="num">1</span><span data-i="install">Kurulum</span></h2>
+      <div class="codewrap"><pre><code class="language-bash" id="c-install"></code></pre><button class="copy" data-copy="c-install">kopyala</button></div>
+      <div class="note" id="install-note"></div>
 
-    <h2><span data-i="next">Sonraki adımlar</span></h2>
-    <div class="next" id="next"></div>
-  </main>
+      <h2 class="step"><span class="num">2</span><span data-i="usage">Kullanım</span></h2>
+      <div class="codewrap"><pre><code id="c-usage"></code></pre><button class="copy" data-copy="c-usage">kopyala</button></div>
+
+      <h2 class="step"><span data-i="next">Sonraki adımlar</span></h2>
+      <div class="next" id="next"></div>
+    </div>
+  </div>
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
 <script>
-const UI = {
-  tr:{ frameworks:"Framework", theme:"Koyu", crumb:"Başlangıç · Kurulum", install:"Kurulum",
-       usage:"Kullanım", next:"Sonraki adımlar", copy:"kopyala", copied:"kopyalandı ✓",
-       badge:"çekirdek", preview:"önizleme" },
-  en:{ frameworks:"Framework", theme:"Dark", crumb:"Getting started · Installation", install:"Installation",
-       usage:"Usage", next:"Next steps", copy:"copy", copied:"copied ✓",
-       badge:"core", preview:"preview" }
+const ICON = {
+  vue:`<svg width="19" height="19" viewBox="0 0 196 170"><path d="M120 0 98 38 76 0H0l98 170L196 0z" fill="#41B883"/><path d="M120 0 98 38 76 0H38l60 104L158 0z" fill="#35495E"/></svg>`,
+  react:`<svg width="22" height="22" viewBox="-11.5 -10.23 23 20.46" fill="none"><circle r="2.05" fill="#61DAFB"/><g stroke="#61DAFB" stroke-width="1"><ellipse rx="11" ry="4.2"/><ellipse rx="11" ry="4.2" transform="rotate(60)"/><ellipse rx="11" ry="4.2" transform="rotate(120)"/></g></svg>`,
+  html:`<svg width="18" height="18" viewBox="0 0 512 512"><path fill="#E34F26" d="M71 460 30 0h452l-41 460-185 52z"/><path fill="#EF652A" d="M256 472l149-41 35-394H256z"/><path fill="#fff" d="M256 208h-75l-5-53h80v-52H119l15 157h122zm0 134-63-17-4-45h-52l7 89 112 31z"/><path fill="#EBEBEB" d="M256 208v52h70l-7 73-63 17v54l112-31 15-165zm0-105v52h132l4-52z"/></svg>`,
+  livewire:`<svg width="18" height="18" viewBox="0 0 24 24" fill="#FB70A9"><path d="M13 2 4.5 13H11l-1 9 9-12h-6z"/></svg>`,
+  laravel:`<svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#FF2D20" stroke-width="1.7" stroke-linejoin="round" stroke-linecap="round"><path d="M3 7l4.5-2.5L12 7 7.5 9.5z"/><path d="M3 7v5l4.5 2.5V9.5"/><path d="M12 7v5l-4.5 2.5"/><path d="M12 7l4.5-2.5L21 7l-4.5 2.5z"/><path d="M16.5 9.5V15L12 17.5"/></svg>`
 };
 const FW = [
-  {
-    id:"react", name:"React", ico:"⚛", tag:{tr:"Hooks & bileşen",en:"Hooks & component"}, preview:true,
-    lead:{tr:"React için <code>@acunsoft/datatable-react</code> adapter'ı: headless çekirdeği bir hook ve hazır bileşenle sarar.",
-          en:"The <code>@acunsoft/datatable-react</code> adapter wraps the headless core with a hook and a ready component."},
+  { id:"vue", name:"Vue", ico:ICON.vue, pkg:"@acunsoft/datatable-vue", preview:true,
+    tag:{tr:"Composable & bileşen",en:"Composable & component"},
+    lead:{tr:"Vue 3 için <code>@acunsoft/datatable-vue</code>: çekirdeği bir composable ve <code>&lt;DataTable&gt;</code> bileşeniyle sunar.",
+          en:"For Vue 3, <code>@acunsoft/datatable-vue</code> exposes the core as a composable and a <code>&lt;DataTable&gt;</code> component."},
+    install:"npm install @acunsoft/datatable-core @acunsoft/datatable-vue",
+    note:{tr:"Vue 3.4+ peer dependency. State reaktiftir; çekirdeğin immutable snapshot'larıyla uyumludur.",
+          en:"Vue 3.4+ peer dependency. State is reactive and tracks the core's immutable snapshots."},
+    lang:"xml", code:
+`<script setup lang="ts">
+import { useDataTable, DataTable } from '@acunsoft/datatable-vue';
+import { createColumns } from '@acunsoft/datatable-core';
+
+const columns = createColumns([
+  { id: 'customer', header: 'Müşteri', accessorKey: 'customer', enableSorting: true },
+  { id: 'total', header: 'Tutar', accessorKey: 'total', enableSorting: true },
+]);
+const table = useDataTable({ rows, columns, getRowId: r => r.id });
+<\/script>
+
+<template>
+  <DataTable :table="table" />
+</template>` },
+
+  { id:"react", name:"React", ico:ICON.react, pkg:"@acunsoft/datatable-react", preview:true,
+    tag:{tr:"Hooks & bileşen",en:"Hooks & component"},
+    lead:{tr:"React için <code>@acunsoft/datatable-react</code>: headless çekirdeği bir hook ve hazır bileşenle sarar.",
+          en:"For React, <code>@acunsoft/datatable-react</code> wraps the headless core with a hook and a ready component."},
     install:"npm install @acunsoft/datatable-core @acunsoft/datatable-react",
-    note:{tr:"React 18+ peer dependency olarak gerekir. Next.js'te bileşeni bir <code>\"use client\"</code> sınırında kullanın.",
-          en:"React 18+ is required as a peer dependency. In Next.js, use the component inside a <code>\"use client\"</code> boundary."},
-    usage:{lang:"tsx", code:
+    note:{tr:"React 18+ peer dependency. Next.js'te bileşeni bir <code>\"use client\"</code> sınırında kullanın.",
+          en:"React 18+ peer dependency. In Next.js, use the component inside a <code>\"use client\"</code> boundary."},
+    lang:"typescript", code:
 `import { useDataTable, DataTable } from '@acunsoft/datatable-react';
 import { createColumns } from '@acunsoft/datatable-core';
 
@@ -138,40 +221,38 @@ export function Orders({ rows }: { rows: Order[] }) {
   const table = useDataTable({ rows, columns, getRowId: r => r.id,
     initialState: { page: 1, pageSize: 25 } });
   return <DataTable table={table} />;
-}`}
-  },
-  {
-    id:"vue", name:"Vue", ico:"V", tag:{tr:"Composable & bileşen",en:"Composable & component"}, preview:true,
-    lead:{tr:"Vue 3 için <code>@acunsoft/datatable-vue</code> adapter'ı: çekirdeği bir composable ve <code>&lt;DataTable&gt;</code> bileşeniyle sunar.",
-          en:"The <code>@acunsoft/datatable-vue</code> adapter exposes the core as a composable and a <code>&lt;DataTable&gt;</code> component."},
-    install:"npm install @acunsoft/datatable-core @acunsoft/datatable-vue",
-    note:{tr:"Vue 3.4+ peer dependency olarak gerekir. State reaktiftir; çekirdeğin immutable snapshot'larıyla uyumludur.",
-          en:"Vue 3.4+ is required as a peer dependency. State is reactive and tracks the core's immutable snapshots."},
-    usage:{lang:"vue", code:
-`<script setup lang="ts">
-import { useDataTable, DataTable } from '@acunsoft/datatable-vue';
-import { createColumns } from '@acunsoft/datatable-core';
+}` },
+
+  { id:"html", name:"HTML", ico:ICON.html, pkg:"@acunsoft/datatable-dom", preview:false,
+    tag:{tr:"Framework yok",en:"No framework"},
+    lead:{tr:"Framework olmadan: headless çekirdek + <code>@acunsoft/datatable-dom</code> ile erişilebilir bir <code>&lt;table&gt;</code> render edin.",
+          en:"Without a framework: render an accessible <code>&lt;table&gt;</code> with the headless core + <code>@acunsoft/datatable-dom</code>."},
+    install:"npm install @acunsoft/datatable-core @acunsoft/datatable-dom",
+    note:{tr:"Hücre içeriği varsayılan olarak <code>textContent</code> ile güvenli metin basılır; güvenilmeyen HTML enjekte edilmez.",
+          en:"Cell content is rendered as safe text via <code>textContent</code> by default; untrusted HTML is never injected."},
+    lang:"typescript", code:
+`import { createColumns, createRows, createLocalRowModel, paginateRows } from '@acunsoft/datatable-core';
+import { renderTable } from '@acunsoft/datatable-dom';
 
 const columns = createColumns([
   { id: 'customer', header: 'Müşteri', accessorKey: 'customer', enableSorting: true },
   { id: 'total', header: 'Tutar', accessorKey: 'total', enableSorting: true },
 ]);
+const model = createLocalRowModel(createRows(data), columns, { locale: 'tr' });
+const page = paginateRows(
+  model.getSortedRows([{ field: 'total', direction: 'desc' }]),
+  { page: 1, pageSize: 25 });
 
-const table = useDataTable({ rows, columns, getRowId: r => r.id });
-<\/script>
+renderTable(document.querySelector('#grid'), { columns, rows: page.rows });` },
 
-<template>
-  <DataTable :table="table" />
-</template>`}
-  },
-  {
-    id:"livewire", name:"Livewire", ico:"L", tag:{tr:"Laravel entegrasyonu",en:"Laravel integration"}, preview:true,
+  { id:"livewire", name:"Livewire", ico:ICON.livewire, pkg:"acunsoft/datatable-livewire", preview:true,
+    tag:{tr:"Sunucu taraflı",en:"Server-driven"},
     lead:{tr:"Laravel Livewire için <code>acunsoft/datatable-livewire</code>: sunucu taraflı sayfalama, sıralama ve filtreleme çekirdeğin kontratıyla.",
           en:"For Laravel Livewire, <code>acunsoft/datatable-livewire</code>: server-side paging, sorting and filtering via the core contract."},
     install:"composer require acunsoft/datatable-livewire\nnpm install @acunsoft/datatable-core",
     note:{tr:"Sıralanabilir kolonları sunucuda <strong>allowlist</strong> edin; istemci kolon adlarını asla ham SQL'e koymayın.",
           en:"<strong>Allowlist</strong> sortable columns on the server; never interpolate client column names into raw SQL."},
-    usage:{lang:"php", code:
+    lang:"php", code:
 `<?php
 use Acunsoft\\DataTable\\Livewire\\WithDataTable;
 
@@ -191,93 +272,110 @@ class OrdersTable extends \\Livewire\\Component
     {
         return \\App\\Models\\Order::query(); // page/sort/filter çekirdekten uygulanır
     }
-}`}
-  },
-  {
-    id:"vanilla", name:"Vanilla JS", ico:"JS", tag:{tr:"Framework yok",en:"No framework"}, preview:false,
-    lead:{tr:"Framework olmadan: headless çekirdek + <code>@acunsoft/datatable-dom</code> ile erişilebilir bir <code>&lt;table&gt;</code> render edin.",
-          en:"Without a framework: render an accessible <code>&lt;table&gt;</code> with the headless core + <code>@acunsoft/datatable-dom</code>."},
-    install:"npm install @acunsoft/datatable-core @acunsoft/datatable-dom",
-    note:{tr:"Hücre içeriği varsayılan olarak <code>textContent</code> ile güvenli metin basılır; güvenilmeyen HTML enjekte edilmez.",
-          en:"Cell content is rendered as safe text via <code>textContent</code> by default; untrusted HTML is never injected."},
-    usage:{lang:"ts", code:
-`import { createColumns, createRows, createLocalRowModel, paginateRows } from '@acunsoft/datatable-core';
-import { renderTable } from '@acunsoft/datatable-dom';
+}` },
 
-const columns = createColumns([
-  { id: 'customer', header: 'Müşteri', accessorKey: 'customer', enableSorting: true },
-  { id: 'total', header: 'Tutar', accessorKey: 'total', enableSorting: true },
-]);
-const model = createLocalRowModel(createRows(data), columns, { locale: 'tr' });
-const page = paginateRows(model.getSortedRows([{ field: 'total', direction: 'desc' }]),
-  { page: 1, pageSize: 25 });
+  { id:"laravel", name:"Laravel", ico:ICON.laravel, pkg:"acunsoft/datatable-laravel", preview:true,
+    tag:{tr:"Blade + JSON uç nokta",en:"Blade + JSON endpoint"},
+    lead:{tr:"Livewire olmadan Laravel: bir Blade bileşeni + JSON uç noktası ile uzak (remote) DataSource. Ağır işi sunucu yapar.",
+          en:"Laravel without Livewire: a Blade component + JSON endpoint backing a remote DataSource. The server does the heavy work."},
+    install:"composer require acunsoft/datatable-laravel\nphp artisan vendor:publish --tag=datatable",
+    note:{tr:"Uç nokta her sorguyu bağımsız yetkilendirmeli ve sayfa boyutu sınırını uygulamalı; sıralanabilir kolonlar allowlist'tir.",
+          en:"The endpoint must authorize every query independently and enforce a page-size limit; sortable columns are allowlisted."},
+    lang:"php", code:
+`// routes/web.php — uzak DataSource için JSON uç noktası
+use Acunsoft\\DataTable\\Laravel\\TableResponse;
 
-renderTable(document.querySelector('#grid')!, { columns, rows: page.rows });`}
-  }
+Route::get('/orders/data', function () {
+    return TableResponse::for(\\App\\Models\\Order::query())
+        ->sortable(['customer', 'total'])      // allowlist
+        ->searchable(['customer'])
+        ->maxPageSize(100);
+});
+
+// resources/views/orders.blade.php
+<x-datatable
+    :source="route('orders.data')"
+    :columns="[
+        ['id' => 'customer', 'header' => 'Müşteri', 'sortable' => true],
+        ['id' => 'total', 'header' => 'Tutar', 'sortable' => true],
+    ]" />` }
 ];
 
-let lang = "tr", current = "react";
-try { lang = localStorage.getItem('adt-lang') || lang; current = localStorage.getItem('adt-fw') || current; } catch(e){}
-const $ = s => document.querySelector(s);
+const UI = {
+  tr:{ side_title:"Kurulum", search:"Ara", q_home:"Giriş", q_feat:"Özellikler", q_badge:"6",
+       sec_fw:"Framework", crumb:"Başlangıç · Kurulum", install:"Kurulum", usage:"Kullanım",
+       next:"Sonraki adımlar", theme:"Koyu", copy:"kopyala", copied:"kopyalandı ✓",
+       core:"çekirdek", preview:"önizleme",
+       nexts:[["Sıralama","index.html#features"],["Filtreleme","#"],["Uzak veri (HTTP)","#"],["API","#"]] },
+  en:{ side_title:"Installation", search:"Search", q_home:"Home", q_feat:"Features", q_badge:"6",
+       sec_fw:"Framework", crumb:"Getting started · Installation", install:"Installation", usage:"Usage",
+       next:"Next steps", theme:"Dark", copy:"copy", copied:"copied ✓",
+       core:"core", preview:"preview",
+       nexts:[["Sorting","index.html#features"],["Filtering","#"],["Remote data (HTTP)","#"],["API","#"]] }
+};
+
+let lang="tr", current="vue";
+try{ lang=localStorage.getItem('adt-lang')||lang; current=localStorage.getItem('adt-fw2')||current; }catch(e){}
+const $=s=>document.querySelector(s);
 
 function renderList(){
-  const el = $('#fwlist'); el.innerHTML = '';
-  FW.forEach(f => {
-    const b = document.createElement('button');
-    b.className = 'fw' + (f.id===current?' active':'');
-    b.innerHTML = `<span class="ico">${f.ico}</span><span>${f.name}<small>${f.tag[lang]}</small></span>`;
-    b.onclick = () => { current = f.id; persist(); renderList(); renderGuide(); };
+  const el=$('#fwlist'); el.innerHTML='';
+  const bar=$('#fwbar'); bar.innerHTML='';
+  FW.forEach(f=>{
+    const b=document.createElement('button');
+    b.className='fw'+(f.id===current?' active':'');
+    b.innerHTML=`<span class="ic">${f.ico}</span><span class="name">${f.name}<small>${f.tag[lang]}</small></span>`;
+    b.onclick=()=>{ current=f.id; persist(); renderList(); renderGuide(); };
     el.appendChild(b);
+    // compact chip for the mobile selector
+    const m=document.createElement('button');
+    m.className=(f.id===current?'active':'');
+    m.innerHTML=`<span class="ic">${f.ico}</span>${f.name}`;
+    m.onclick=()=>{ current=f.id; persist(); renderList(); renderGuide();
+      m.scrollIntoView({inline:'center',block:'nearest',behavior:'smooth'}); };
+    bar.appendChild(m);
   });
 }
-function esc(s){ return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 function renderGuide(){
-  const f = FW.find(x=>x.id===current), t = UI[lang];
-  $('#fw-title').textContent = f.name;
-  const badge = $('#fw-badge'); badge.textContent = f.preview ? t.preview : t.badge;
-  badge.style.display = 'inline-block';
-  $('#fw-lead').innerHTML = f.lead[lang];
-  const ci = $('#c-install'); ci.textContent = f.install; ci.className='language-bash';
-  $('#install-note').innerHTML = f.note[lang];
-  const cu = $('#c-usage'); cu.textContent = f.usage.code; cu.className = 'language-'+({tsx:'typescript',ts:'typescript',vue:'xml',php:'php'}[f.usage.lang]||'plaintext');
-  // next steps
-  const links = { tr:[['Sıralama','#'],['Filtreleme','#'],['Uzak veri (HTTP)','#'],['API referansı','#']],
-                  en:[['Sorting','#'],['Filtering','#'],['Remote data (HTTP)','#'],['API reference','#']] };
-  $('#next').innerHTML = links[lang].map(([n,h])=>`<a href="${h}">${n} →</a>`).join('');
-  document.querySelectorAll('pre code').forEach(b=>{ try{ hljs.highlightElement(b);}catch(e){} });
+  const f=FW.find(x=>x.id===current), t=UI[lang];
+  $('#fw-big').innerHTML=f.ico; $('#crumb-fw').textContent=f.name;
+  $('#fw-title').textContent=f.name;
+  const badge=$('#fw-badge'); badge.textContent=f.preview?t.preview:t.core;
+  $('#fw-lead').innerHTML=f.lead[lang];
+  $('#c-install').textContent=f.install; $('#c-install').className='language-bash';
+  $('#install-note').innerHTML=f.note[lang];
+  const cu=$('#c-usage'); cu.textContent=f.code; cu.className='language-'+f.lang;
+  $('#next').innerHTML=t.nexts.map(([n,h])=>`<a href="${h}">${n} →</a>`).join('');
+  document.querySelectorAll('pre code').forEach(b=>{try{delete b.dataset.highlighted;hljs.highlightElement(b);}catch(e){}});
   applyI18n();
 }
 function applyI18n(){
-  const t = UI[lang];
-  document.querySelectorAll('[data-i]').forEach(el=>{ const k=el.getAttribute('data-i'); if(t[k]) el.textContent=t[k]; });
+  const t=UI[lang];
+  document.querySelectorAll('[data-i]').forEach(el=>{const k=el.getAttribute('data-i');if(typeof t[k]==='string')el.textContent=t[k];});
   document.querySelectorAll('.copy').forEach(c=>c.textContent=t.copy);
-  document.documentElement.lang = lang;
+  document.documentElement.lang=lang;
 }
-function persist(){ try{ localStorage.setItem('adt-lang',lang); localStorage.setItem('adt-fw',current);}catch(e){} }
+function persist(){try{localStorage.setItem('adt-lang',lang);localStorage.setItem('adt-fw2',current);}catch(e){}}
 
-// language
 document.querySelectorAll('#lang button').forEach(btn=>{
-  btn.classList.toggle('active', btn.dataset.lang===lang);
-  btn.onclick = () => { lang=btn.dataset.lang; persist();
+  btn.classList.toggle('active',btn.dataset.lang===lang);
+  btn.onclick=()=>{lang=btn.dataset.lang;persist();
     document.querySelectorAll('#lang button').forEach(b=>b.classList.toggle('active',b===btn));
-    renderList(); renderGuide(); };
+    renderList();renderGuide();applyTheme();};
 });
-// theme
-let theme = 'light';
-try { theme = localStorage.getItem('adt-theme') || (matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light'); }catch(e){}
-function applyTheme(){ document.documentElement.setAttribute('data-theme',theme);
-  $('#theme').firstChild.textContent = theme==='dark'?'☀ ':'🌙 ';
-  $('#theme').querySelector('[data-i=theme]').textContent = UI[lang][theme==='dark'?'light':'theme'] || (lang==='tr'?(theme==='dark'?'Açık':'Koyu'):(theme==='dark'?'Light':'Dark')); }
-$('#theme').onclick = () => { theme = theme==='dark'?'light':'dark'; try{localStorage.setItem('adt-theme',theme);}catch(e){} applyTheme(); };
-// copy
-document.addEventListener('click', e=>{
-  const btn = e.target.closest('.copy'); if(!btn) return;
-  const code = document.getElementById(btn.dataset.copy).textContent;
-  navigator.clipboard?.writeText(code).then(()=>{ const old=btn.textContent; btn.textContent=UI[lang].copied; setTimeout(()=>btn.textContent=UI[lang].copy,1200); }).catch(()=>{});
+let theme='light';
+try{theme=localStorage.getItem('adt-theme')||(matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light');}catch(e){}
+function applyTheme(){document.documentElement.setAttribute('data-theme',theme);
+  const th=$('#theme');th.firstChild.textContent=theme==='dark'?'☀ ':'🌙 ';
+  th.querySelector('[data-i=theme]').textContent=lang==='tr'?(theme==='dark'?'Açık':'Koyu'):(theme==='dark'?'Light':'Dark');}
+$('#theme').onclick=()=>{theme=theme==='dark'?'light':'dark';try{localStorage.setItem('adt-theme',theme);}catch(e){}applyTheme();};
+document.addEventListener('click',e=>{
+  const btn=e.target.closest('.copy');if(!btn)return;
+  const code=document.getElementById(btn.dataset.copy).textContent;
+  navigator.clipboard?.writeText(code).then(()=>{btn.textContent=UI[lang].copied;setTimeout(()=>btn.textContent=UI[lang].copy,1200);}).catch(()=>{});
 });
-
 document.documentElement.setAttribute('data-theme',theme);
-renderList(); renderGuide(); applyTheme();
+renderList();renderGuide();applyTheme();
 </script>
 </body>
 </html>
