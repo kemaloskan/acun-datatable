@@ -1,0 +1,283 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kurulum — Acun DataTable</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+<style>
+  :root {
+    --bg:#ffffff; --fg:#1b1f24; --muted:#656d76; --border:#e4e7ec;
+    --panel:#f7f8fa; --accent:#6d4aff; --accent-weak:#efeafe;
+    --code-bg:#1b1f2b; --topbar:#ffffff; --sel:#f3effe;
+  }
+  :root[data-theme="dark"] {
+    --bg:#0d1117; --fg:#e6edf3; --muted:#9198a1; --border:#262c36;
+    --panel:#12171f; --accent:#9d86ff; --accent-weak:#1d1733;
+    --code-bg:#0b0e14; --topbar:#0d1117; --sel:#1b1533;
+  }
+  * { box-sizing:border-box; }
+  html,body { margin:0; }
+  body { font:15px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;
+         color:var(--fg); background:var(--bg); }
+  a { color:var(--accent); text-decoration:none; }
+  code,pre,kbd { font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; }
+
+  /* Top bar */
+  .top { position:sticky; top:0; z-index:20; display:flex; align-items:center; gap:18px;
+         padding:0 24px; height:60px; background:var(--topbar); border-bottom:1px solid var(--border); }
+  .brand { display:flex; align-items:center; gap:10px; font-weight:700; font-size:17px; }
+  .brand .mark { width:28px; height:28px; border-radius:8px;
+     background:linear-gradient(135deg,var(--accent),#b69bff); display:grid; place-items:center; color:#fff; font-weight:800; }
+  .top .spacer { flex:1; }
+  .ctl { display:inline-flex; align-items:center; gap:6px; border:1px solid var(--border); background:var(--bg);
+         color:var(--fg); border-radius:8px; padding:7px 10px; font-size:13px; cursor:pointer; }
+  .ctl:hover { border-color:var(--accent); }
+  .seg { display:inline-flex; border:1px solid var(--border); border-radius:8px; overflow:hidden; }
+  .seg button { border:0; background:var(--bg); color:var(--muted); padding:7px 11px; font-size:13px; cursor:pointer; }
+  .seg button.active { background:var(--accent); color:#fff; }
+
+  /* Layout: left frameworks | right guide */
+  .wrap { display:grid; grid-template-columns:260px 1fr; max-width:1140px; margin:0 auto; }
+  aside { border-right:1px solid var(--border); padding:26px 16px; position:sticky; top:60px;
+          height:calc(100vh - 60px); overflow:auto; }
+  aside .label { font-size:11px; text-transform:uppercase; letter-spacing:.08em; color:var(--muted); margin:0 10px 12px; }
+  .fw { display:flex; align-items:center; gap:12px; width:100%; text-align:left; border:0; background:none;
+        color:var(--fg); padding:11px 12px; border-radius:10px; cursor:pointer; font-size:15px; }
+  .fw:hover { background:var(--panel); }
+  .fw.active { background:var(--sel); color:var(--accent); font-weight:600; }
+  .fw .ico { width:30px; height:30px; border-radius:8px; display:grid; place-items:center; flex:none;
+             background:var(--panel); border:1px solid var(--border); font-weight:700; font-size:13px; }
+  .fw.active .ico { border-color:var(--accent); }
+  .fw small { display:block; color:var(--muted); font-weight:400; font-size:12px; }
+
+  main { padding:36px 44px 120px; min-width:0; }
+  .crumb { color:var(--muted); font-size:13px; margin-bottom:6px; }
+  h1 { font-size:28px; margin:.2em 0 .1em; display:flex; align-items:center; gap:12px; }
+  h1 .badge { font-size:11px; font-weight:600; color:var(--accent); background:var(--accent-weak);
+              border:1px solid var(--accent); border-radius:999px; padding:3px 9px; }
+  .lead { color:var(--muted); font-size:16px; margin:.3em 0 1.6em; }
+  h2 { font-size:19px; margin:2em 0 .6em; padding-top:.2em; }
+  .step { display:inline-flex; width:24px; height:24px; border-radius:50%; background:var(--accent); color:#fff;
+          font-size:13px; font-weight:700; align-items:center; justify-content:center; margin-right:8px; }
+  .codewrap { position:relative; margin:12px 0; }
+  pre { background:var(--code-bg); color:#e6edf3; border-radius:10px; padding:16px 18px; overflow:auto; margin:0;
+        font-size:13.5px; line-height:1.55; }
+  .copy { position:absolute; top:8px; right:8px; border:1px solid #ffffff22; background:#ffffff14; color:#cfd6e4;
+          border-radius:7px; padding:5px 9px; font-size:12px; cursor:pointer; }
+  .copy:hover { background:#ffffff26; }
+  .note { border:1px solid var(--border); background:var(--panel); border-left:3px solid var(--accent);
+          border-radius:8px; padding:12px 14px; margin:14px 0; font-size:14px; color:var(--muted); }
+  .next { display:flex; flex-wrap:wrap; gap:10px; margin-top:10px; }
+  .next a { border:1px solid var(--border); border-radius:8px; padding:9px 13px; font-size:14px; color:var(--fg); }
+  .next a:hover { border-color:var(--accent); color:var(--accent); }
+  @media (max-width:820px){ .wrap{ grid-template-columns:1fr; } aside{ position:static; height:auto; border-right:0; border-bottom:1px solid var(--border);} main{ padding:24px 18px 80px; } }
+</style>
+</head>
+<body>
+<div class="top">
+  <a class="brand" href="index.html" style="color:inherit"><span class="mark">A</span> Acun DataTable</a>
+  <div class="spacer"></div>
+  <div class="seg" id="lang">
+    <button data-lang="tr" class="active">TR</button>
+    <button data-lang="en">EN</button>
+  </div>
+  <button class="ctl" id="theme">🌙 <span data-i="theme">Koyu</span></button>
+</div>
+
+<div class="wrap">
+  <aside>
+    <p class="label" data-i="frameworks">Framework</p>
+    <div id="fwlist"></div>
+  </aside>
+  <main>
+    <div class="crumb"><span data-i="crumb">Başlangıç · Kurulum</span></div>
+    <h1><span id="fw-title"></span> <span class="badge" id="fw-badge"></span></h1>
+    <p class="lead" id="fw-lead"></p>
+
+    <h2><span class="step">1</span><span data-i="install">Kurulum</span></h2>
+    <div class="codewrap"><pre><code class="language-bash" id="c-install"></code></pre><button class="copy" data-copy="c-install">kopyala</button></div>
+    <div class="note" id="install-note"></div>
+
+    <h2><span class="step">2</span><span data-i="usage">Kullanım</span></h2>
+    <div class="codewrap"><pre><code id="c-usage"></code></pre><button class="copy" data-copy="c-usage">kopyala</button></div>
+
+    <h2><span data-i="next">Sonraki adımlar</span></h2>
+    <div class="next" id="next"></div>
+  </main>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<script>
+const UI = {
+  tr:{ frameworks:"Framework", theme:"Koyu", crumb:"Başlangıç · Kurulum", install:"Kurulum",
+       usage:"Kullanım", next:"Sonraki adımlar", copy:"kopyala", copied:"kopyalandı ✓",
+       badge:"çekirdek", preview:"önizleme" },
+  en:{ frameworks:"Framework", theme:"Dark", crumb:"Getting started · Installation", install:"Installation",
+       usage:"Usage", next:"Next steps", copy:"copy", copied:"copied ✓",
+       badge:"core", preview:"preview" }
+};
+const FW = [
+  {
+    id:"react", name:"React", ico:"⚛", tag:{tr:"Hooks & bileşen",en:"Hooks & component"}, preview:true,
+    lead:{tr:"React için <code>@acunsoft/datatable-react</code> adapter'ı: headless çekirdeği bir hook ve hazır bileşenle sarar.",
+          en:"The <code>@acunsoft/datatable-react</code> adapter wraps the headless core with a hook and a ready component."},
+    install:"npm install @acunsoft/datatable-core @acunsoft/datatable-react",
+    note:{tr:"React 18+ peer dependency olarak gerekir. Next.js'te bileşeni bir <code>\"use client\"</code> sınırında kullanın.",
+          en:"React 18+ is required as a peer dependency. In Next.js, use the component inside a <code>\"use client\"</code> boundary."},
+    usage:{lang:"tsx", code:
+`import { useDataTable, DataTable } from '@acunsoft/datatable-react';
+import { createColumns } from '@acunsoft/datatable-core';
+
+const columns = createColumns<Order>([
+  { id: 'customer', header: 'Müşteri', accessorKey: 'customer', enableSorting: true },
+  { id: 'total', header: 'Tutar', accessorKey: 'total', enableSorting: true },
+]);
+
+export function Orders({ rows }: { rows: Order[] }) {
+  const table = useDataTable({ rows, columns, getRowId: r => r.id,
+    initialState: { page: 1, pageSize: 25 } });
+  return <DataTable table={table} />;
+}`}
+  },
+  {
+    id:"vue", name:"Vue", ico:"V", tag:{tr:"Composable & bileşen",en:"Composable & component"}, preview:true,
+    lead:{tr:"Vue 3 için <code>@acunsoft/datatable-vue</code> adapter'ı: çekirdeği bir composable ve <code>&lt;DataTable&gt;</code> bileşeniyle sunar.",
+          en:"The <code>@acunsoft/datatable-vue</code> adapter exposes the core as a composable and a <code>&lt;DataTable&gt;</code> component."},
+    install:"npm install @acunsoft/datatable-core @acunsoft/datatable-vue",
+    note:{tr:"Vue 3.4+ peer dependency olarak gerekir. State reaktiftir; çekirdeğin immutable snapshot'larıyla uyumludur.",
+          en:"Vue 3.4+ is required as a peer dependency. State is reactive and tracks the core's immutable snapshots."},
+    usage:{lang:"vue", code:
+`<script setup lang="ts">
+import { useDataTable, DataTable } from '@acunsoft/datatable-vue';
+import { createColumns } from '@acunsoft/datatable-core';
+
+const columns = createColumns([
+  { id: 'customer', header: 'Müşteri', accessorKey: 'customer', enableSorting: true },
+  { id: 'total', header: 'Tutar', accessorKey: 'total', enableSorting: true },
+]);
+
+const table = useDataTable({ rows, columns, getRowId: r => r.id });
+<\/script>
+
+<template>
+  <DataTable :table="table" />
+</template>`}
+  },
+  {
+    id:"livewire", name:"Livewire", ico:"L", tag:{tr:"Laravel entegrasyonu",en:"Laravel integration"}, preview:true,
+    lead:{tr:"Laravel Livewire için <code>acunsoft/datatable-livewire</code>: sunucu taraflı sayfalama, sıralama ve filtreleme çekirdeğin kontratıyla.",
+          en:"For Laravel Livewire, <code>acunsoft/datatable-livewire</code>: server-side paging, sorting and filtering via the core contract."},
+    install:"composer require acunsoft/datatable-livewire\nnpm install @acunsoft/datatable-core",
+    note:{tr:"Sıralanabilir kolonları sunucuda <strong>allowlist</strong> edin; istemci kolon adlarını asla ham SQL'e koymayın.",
+          en:"<strong>Allowlist</strong> sortable columns on the server; never interpolate client column names into raw SQL."},
+    usage:{lang:"php", code:
+`<?php
+use Acunsoft\\DataTable\\Livewire\\WithDataTable;
+
+class OrdersTable extends \\Livewire\\Component
+{
+    use WithDataTable;
+
+    public function columns(): array
+    {
+        return [
+            ['id' => 'customer', 'header' => 'Müşteri', 'sortable' => true],
+            ['id' => 'total', 'header' => 'Tutar', 'sortable' => true],
+        ];
+    }
+
+    public function query()
+    {
+        return \\App\\Models\\Order::query(); // page/sort/filter çekirdekten uygulanır
+    }
+}`}
+  },
+  {
+    id:"vanilla", name:"Vanilla JS", ico:"JS", tag:{tr:"Framework yok",en:"No framework"}, preview:false,
+    lead:{tr:"Framework olmadan: headless çekirdek + <code>@acunsoft/datatable-dom</code> ile erişilebilir bir <code>&lt;table&gt;</code> render edin.",
+          en:"Without a framework: render an accessible <code>&lt;table&gt;</code> with the headless core + <code>@acunsoft/datatable-dom</code>."},
+    install:"npm install @acunsoft/datatable-core @acunsoft/datatable-dom",
+    note:{tr:"Hücre içeriği varsayılan olarak <code>textContent</code> ile güvenli metin basılır; güvenilmeyen HTML enjekte edilmez.",
+          en:"Cell content is rendered as safe text via <code>textContent</code> by default; untrusted HTML is never injected."},
+    usage:{lang:"ts", code:
+`import { createColumns, createRows, createLocalRowModel, paginateRows } from '@acunsoft/datatable-core';
+import { renderTable } from '@acunsoft/datatable-dom';
+
+const columns = createColumns([
+  { id: 'customer', header: 'Müşteri', accessorKey: 'customer', enableSorting: true },
+  { id: 'total', header: 'Tutar', accessorKey: 'total', enableSorting: true },
+]);
+const model = createLocalRowModel(createRows(data), columns, { locale: 'tr' });
+const page = paginateRows(model.getSortedRows([{ field: 'total', direction: 'desc' }]),
+  { page: 1, pageSize: 25 });
+
+renderTable(document.querySelector('#grid')!, { columns, rows: page.rows });`}
+  }
+];
+
+let lang = "tr", current = "react";
+try { lang = localStorage.getItem('adt-lang') || lang; current = localStorage.getItem('adt-fw') || current; } catch(e){}
+const $ = s => document.querySelector(s);
+
+function renderList(){
+  const el = $('#fwlist'); el.innerHTML = '';
+  FW.forEach(f => {
+    const b = document.createElement('button');
+    b.className = 'fw' + (f.id===current?' active':'');
+    b.innerHTML = `<span class="ico">${f.ico}</span><span>${f.name}<small>${f.tag[lang]}</small></span>`;
+    b.onclick = () => { current = f.id; persist(); renderList(); renderGuide(); };
+    el.appendChild(b);
+  });
+}
+function esc(s){ return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function renderGuide(){
+  const f = FW.find(x=>x.id===current), t = UI[lang];
+  $('#fw-title').textContent = f.name;
+  const badge = $('#fw-badge'); badge.textContent = f.preview ? t.preview : t.badge;
+  badge.style.display = 'inline-block';
+  $('#fw-lead').innerHTML = f.lead[lang];
+  const ci = $('#c-install'); ci.textContent = f.install; ci.className='language-bash';
+  $('#install-note').innerHTML = f.note[lang];
+  const cu = $('#c-usage'); cu.textContent = f.usage.code; cu.className = 'language-'+({tsx:'typescript',ts:'typescript',vue:'xml',php:'php'}[f.usage.lang]||'plaintext');
+  // next steps
+  const links = { tr:[['Sıralama','#'],['Filtreleme','#'],['Uzak veri (HTTP)','#'],['API referansı','#']],
+                  en:[['Sorting','#'],['Filtering','#'],['Remote data (HTTP)','#'],['API reference','#']] };
+  $('#next').innerHTML = links[lang].map(([n,h])=>`<a href="${h}">${n} →</a>`).join('');
+  document.querySelectorAll('pre code').forEach(b=>{ try{ hljs.highlightElement(b);}catch(e){} });
+  applyI18n();
+}
+function applyI18n(){
+  const t = UI[lang];
+  document.querySelectorAll('[data-i]').forEach(el=>{ const k=el.getAttribute('data-i'); if(t[k]) el.textContent=t[k]; });
+  document.querySelectorAll('.copy').forEach(c=>c.textContent=t.copy);
+  document.documentElement.lang = lang;
+}
+function persist(){ try{ localStorage.setItem('adt-lang',lang); localStorage.setItem('adt-fw',current);}catch(e){} }
+
+// language
+document.querySelectorAll('#lang button').forEach(btn=>{
+  btn.classList.toggle('active', btn.dataset.lang===lang);
+  btn.onclick = () => { lang=btn.dataset.lang; persist();
+    document.querySelectorAll('#lang button').forEach(b=>b.classList.toggle('active',b===btn));
+    renderList(); renderGuide(); };
+});
+// theme
+let theme = 'light';
+try { theme = localStorage.getItem('adt-theme') || (matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light'); }catch(e){}
+function applyTheme(){ document.documentElement.setAttribute('data-theme',theme);
+  $('#theme').firstChild.textContent = theme==='dark'?'☀ ':'🌙 ';
+  $('#theme').querySelector('[data-i=theme]').textContent = UI[lang][theme==='dark'?'light':'theme'] || (lang==='tr'?(theme==='dark'?'Açık':'Koyu'):(theme==='dark'?'Light':'Dark')); }
+$('#theme').onclick = () => { theme = theme==='dark'?'light':'dark'; try{localStorage.setItem('adt-theme',theme);}catch(e){} applyTheme(); };
+// copy
+document.addEventListener('click', e=>{
+  const btn = e.target.closest('.copy'); if(!btn) return;
+  const code = document.getElementById(btn.dataset.copy).textContent;
+  navigator.clipboard?.writeText(code).then(()=>{ const old=btn.textContent; btn.textContent=UI[lang].copied; setTimeout(()=>btn.textContent=UI[lang].copy,1200); }).catch(()=>{});
+});
+
+document.documentElement.setAttribute('data-theme',theme);
+renderList(); renderGuide(); applyTheme();
+</script>
+</body>
+</html>

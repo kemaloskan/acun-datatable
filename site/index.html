@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Acun DataTable — Dokümantasyon</title>
+<style>
+  :root {
+    --bg:#ffffff; --fg:#1b1f24; --muted:#656d76; --border:#e4e7ec;
+    --panel:#f7f8fa; --accent:#6d4aff; --accent-weak:#efeafe; --topbar:#ffffff; --code-bg:#1b1f2b;
+  }
+  :root[data-theme="dark"] {
+    --bg:#0d1117; --fg:#e6edf3; --muted:#9198a1; --border:#262c36;
+    --panel:#12171f; --accent:#9d86ff; --accent-weak:#1d1733; --topbar:#0d1117; --code-bg:#0b0e14;
+  }
+  * { box-sizing:border-box; }
+  html,body { margin:0; }
+  body { font:16px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif; color:var(--fg); background:var(--bg); }
+  a { color:var(--accent); text-decoration:none; }
+  code { font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; }
+  .top { position:sticky; top:0; z-index:20; display:flex; align-items:center; gap:18px; padding:0 24px; height:60px; background:var(--topbar); border-bottom:1px solid var(--border); }
+  .brand { display:flex; align-items:center; gap:10px; font-weight:700; font-size:17px; color:var(--fg); }
+  .brand .mark { width:28px; height:28px; border-radius:8px; background:linear-gradient(135deg,var(--accent),#b69bff); display:grid; place-items:center; color:#fff; font-weight:800; }
+  .top nav { display:flex; gap:18px; } .top nav a { color:var(--muted); font-size:14px; } .top nav a:hover{ color:var(--fg); }
+  .top .spacer { flex:1; }
+  .ctl { display:inline-flex; align-items:center; gap:6px; border:1px solid var(--border); background:var(--bg); color:var(--fg); border-radius:8px; padding:7px 10px; font-size:13px; cursor:pointer; }
+  .ctl:hover { border-color:var(--accent); }
+  .seg { display:inline-flex; border:1px solid var(--border); border-radius:8px; overflow:hidden; }
+  .seg button { border:0; background:var(--bg); color:var(--muted); padding:7px 11px; font-size:13px; cursor:pointer; }
+  .seg button.active { background:var(--accent); color:#fff; }
+  .wrap { max-width:920px; margin:0 auto; padding:0 24px; }
+  .hero { padding:72px 0 40px; text-align:center; }
+  .hero .pill { display:inline-block; font-size:12px; font-weight:600; color:var(--accent); background:var(--accent-weak); border:1px solid var(--accent); border-radius:999px; padding:4px 12px; margin-bottom:18px; }
+  .hero h1 { font-size:44px; line-height:1.12; margin:.1em 0 .25em; letter-spacing:-.02em; }
+  .hero p { font-size:19px; color:var(--muted); max-width:620px; margin:0 auto 28px; }
+  .btns { display:flex; gap:12px; justify-content:center; flex-wrap:wrap; }
+  .btn { padding:12px 20px; border-radius:10px; font-size:15px; font-weight:600; border:1px solid var(--border); }
+  .btn.primary { background:var(--accent); color:#fff; border-color:var(--accent); }
+  .btn.ghost { background:var(--bg); color:var(--fg); }
+  .btn:hover { opacity:.92; }
+  .install { max-width:560px; margin:26px auto 0; text-align:left; }
+  .install pre { background:var(--code-bg); color:#e6edf3; border-radius:10px; padding:14px 16px; overflow:auto; font-size:14px; margin:0; }
+  .install .cap { color:var(--muted); font-size:13px; margin:0 0 8px 2px; }
+  .grid { display:grid; grid-template-columns:repeat(3,1fr); gap:16px; padding:36px 0 80px; }
+  .card { border:1px solid var(--border); border-radius:12px; padding:20px; background:var(--panel); }
+  .card h3 { margin:.2em 0 .4em; font-size:16px; }
+  .card p { margin:0; color:var(--muted); font-size:14px; }
+  .card .i { width:34px; height:34px; border-radius:9px; background:var(--accent-weak); color:var(--accent); display:grid; place-items:center; font-size:18px; margin-bottom:10px; }
+  footer { border-top:1px solid var(--border); padding:24px; text-align:center; color:var(--muted); font-size:13px; }
+  @media (max-width:760px){ .grid{ grid-template-columns:1fr; } .hero h1{ font-size:34px; } .top nav{ display:none; } }
+</style>
+</head>
+<body>
+<div class="top">
+  <a class="brand" href="index.html"><span class="mark">A</span> Acun DataTable</a>
+  <nav>
+    <a href="framework-guide.html" data-i="nav_install">Kurulum</a>
+    <a href="#features" data-i="nav_features">Özellikler</a>
+  </nav>
+  <div class="spacer"></div>
+  <div class="seg" id="lang"><button data-lang="tr" class="active">TR</button><button data-lang="en">EN</button></div>
+  <button class="ctl" id="theme">🌙 <span data-i="theme">Koyu</span></button>
+</div>
+
+<div class="wrap">
+  <section class="hero">
+    <span class="pill" data-i="pill">Erken geliştirme · v0.1</span>
+    <h1 data-i="title">Framework'ten bağımsız veri tablosu motoru</h1>
+    <p data-i="lead">Erişilebilir, genişletilebilir, tip-güvenli bir TypeScript çekirdeği. Laravel, Livewire, React veya Vue'ya bağlı değil — DOM renderer ve framework adapter'larıyla kullanılır.</p>
+    <div class="btns">
+      <a class="btn primary" href="framework-guide.html" data-i="cta1">Kuruluma başla →</a>
+      <a class="btn ghost" href="#features" data-i="cta2">Özellikleri gör</a>
+    </div>
+    <div class="install">
+      <p class="cap" data-i="inst_cap">Çekirdeği kur:</p>
+      <pre><code>npm install @acunsoft/datatable-core</code></pre>
+    </div>
+  </section>
+
+  <section class="grid" id="features"></section>
+</div>
+
+<footer><span data-i="foot">Acun DataTable · framework-bağımsız TypeScript veri tablosu motoru</span> · <a href="framework-guide.html" data-i="nav_install">Kurulum</a></footer>
+
+<script>
+const UI = {
+  tr:{ theme:"Koyu", nav_install:"Kurulum", nav_features:"Özellikler", pill:"Erken geliştirme · v0.1",
+    title:"Framework'ten bağımsız veri tablosu motoru",
+    lead:"Erişilebilir, genişletilebilir, tip-güvenli bir TypeScript çekirdeği. Laravel, Livewire, React veya Vue'ya bağlı değil — DOM renderer ve framework adapter'larıyla kullanılır.",
+    cta1:"Kuruluma başla →", cta2:"Özellikleri gör", inst_cap:"Çekirdeği kur:",
+    foot:"Acun DataTable · framework-bağımsız TypeScript veri tablosu motoru",
+    features:[
+      ["🧩","Headless çekirdek","DOM ve framework'ten bağımsız saf TypeScript. İstediğin renderer veya adapter ile kullan."],
+      ["🔒","Değişmez state","Her değişim donmuş (immutable) bir snapshot üretir; çağıranın verisi asla mutasyona uğramaz."],
+      ["↕","Kararlı sıralama","Çok kolonlu, locale-duyarlı, kararlı (stable) sıralama; eşitlikte giriş sırası korunur."],
+      ["📄","Sayfalama","1-tabanlı sayfa dilimleme; sınır-dışı sayfa hata yerine son sayfaya clamp edilir."],
+      ["🛡","Güvenli varsayılan","Hücre içeriği varsayılan olarak metin basılır; güvenilmeyen HTML enjekte edilmez."],
+      ["⚡","Ölçekli","Milyon satır vaadi yok; ölçek uzak (remote) işleme ve ölçülmüş render ile sağlanır."]
+    ]},
+  en:{ theme:"Dark", nav_install:"Install", nav_features:"Features", pill:"Early development · v0.1",
+    title:"A framework-independent data table engine",
+    lead:"An accessible, extensible, type-safe TypeScript core. Not coupled to Laravel, Livewire, React or Vue — used via a DOM renderer and framework adapters.",
+    cta1:"Get started →", cta2:"See features", inst_cap:"Install the core:",
+    foot:"Acun DataTable · framework-independent TypeScript data table engine",
+    features:[
+      ["🧩","Headless core","Pure TypeScript, free of DOM and frameworks. Use it with any renderer or adapter."],
+      ["🔒","Immutable state","Every change yields a frozen snapshot; caller-owned data is never mutated."],
+      ["↕","Stable sorting","Multi-column, locale-aware, stable sorting; equal rows keep their input order."],
+      ["📄","Pagination","1-based page slicing; an out-of-range page is clamped to the last page, not thrown."],
+      ["🛡","Secure by default","Cell content is rendered as text by default; untrusted HTML is never injected."],
+      ["⚡","Scales honestly","No million-row promise; scale comes from remote processing and measured rendering."]
+    ]}
+};
+let lang = "tr";
+try { lang = localStorage.getItem('adt-lang') || lang; } catch(e){}
+function render(){
+  const t = UI[lang];
+  document.querySelectorAll('[data-i]').forEach(el=>{ const k=el.getAttribute('data-i'); if(typeof t[k]==='string') el.textContent=t[k]; });
+  document.getElementById('features').innerHTML = t.features.map(([i,h,p])=>
+    `<div class="card"><div class="i">${i}</div><h3>${h}</h3><p>${p}</p></div>`).join('');
+  document.documentElement.lang = lang;
+  document.querySelectorAll('#lang button').forEach(b=>b.classList.toggle('active',b.dataset.lang===lang));
+}
+document.querySelectorAll('#lang button').forEach(btn=>{
+  btn.onclick=()=>{ lang=btn.dataset.lang; try{localStorage.setItem('adt-lang',lang);}catch(e){} render(); applyTheme(); };
+});
+let theme='light';
+try{ theme=localStorage.getItem('adt-theme')||(matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light'); }catch(e){}
+function applyTheme(){ document.documentElement.setAttribute('data-theme',theme);
+  const th=document.getElementById('theme'); th.firstChild.textContent=theme==='dark'?'☀ ':'🌙 ';
+  th.querySelector('[data-i=theme]').textContent = lang==='tr'?(theme==='dark'?'Açık':'Koyu'):(theme==='dark'?'Light':'Dark'); }
+document.getElementById('theme').onclick=()=>{ theme=theme==='dark'?'light':'dark'; try{localStorage.setItem('adt-theme',theme);}catch(e){} applyTheme(); };
+document.documentElement.setAttribute('data-theme',theme);
+render(); applyTheme();
+</script>
+</body>
+</html>
