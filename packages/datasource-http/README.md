@@ -241,3 +241,7 @@ text; every user value is a bound parameter.
   pages get slow; cursor pagination is planned for that case.
 - **Return only intended fields** (API resources / explicit `SELECT`).
 - **Treat row values as untrusted** in the browser: render them as text.
+
+## License
+
+[MIT](LICENSE). Provided “as is”, without warranty of any kind; the authors and Acunsoft accept no liability for any damage or data loss arising from its use (see LICENSE).

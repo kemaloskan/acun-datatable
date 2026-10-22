@@ -103,3 +103,7 @@ never turns dark on its own). Or skip it and style the stable class names: `adt-
 - All controls are native elements, so they are reachable and operable with the
   keyboard (Tab, Enter, Space). Browser-level keyboard tests with Playwright are
   planned (SPEC M3).
+
+## License
+
+[MIT](LICENSE). Provided “as is”, without warranty of any kind; the authors and Acunsoft accept no liability for any damage or data loss arising from its use (see LICENSE).

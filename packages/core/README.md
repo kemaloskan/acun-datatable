@@ -43,4 +43,8 @@ table.setFilters([{ field: 'total', operator: 'between', value: ['100', '500'] }
 - **Events in order:** a throwing listener never stops the others
   (`onListenerError`).
 
-Requires Node 22+ for tooling; runs in every current browser. MIT licensed.
+Requires Node 22+ for tooling; runs in every current browser.
+
+## License
+
+[MIT](LICENSE). Provided “as is”, without warranty of any kind; the authors and Acunsoft accept no liability for any damage or data loss arising from its use (see LICENSE).

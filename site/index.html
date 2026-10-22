@@ -173,6 +173,9 @@
     .codewrap pre{font-size:12px}
     .meta{gap:12px}
   }
+.legal{margin-top:56px;padding-top:18px;border-top:1px solid var(--line, #e3e6eb);font-size:12.5px;line-height:1.6;color:var(--muted, #6b7280)}
+.legal strong{display:block;margin-bottom:4px;font-size:12.5px}
+.legal p{margin:0;max-width:72ch}
 </style>
 </head>
 <body>
@@ -468,6 +471,7 @@ const T = {
        h_title:"Tablonun ortak çekirdeği.",
        h_lead:"Acun DataTable; Laravel ve Livewire, Vue, React ve düz HTML projelerinde kullanılabilen, framework'ten bağımsız bir TypeScript veri tablosu motorudur. Sol menüden framework'ünü seç; kurulum, kullanım ve örnekler aynı sayfada.",
        h_meta:"TypeScript · headless · framework-bağımsız",
+       legal_title:"MIT lisansı · Sorumluluk reddi", legal:"Yazılım “olduğu gibi” sunulur; açık ya da örtük hiçbir garanti verilmez. Yazarlar ve Acunsoft, yazılımın kullanımından veya kullanılamamasından doğan hiçbir zarar, veri kaybı ya da talepten sorumlu değildir. Projende kullanmadan önce test etmek, güvenliğini ve yetkilendirmesini sağlamak kullanıcının sorumluluğundadır. Bağlayıcı metin <a href=\"https://github.com/kemaloskan/acun-datatable/blob/main/LICENSE\">LICENSE</a> dosyasıdır.",
        h_s1:"Nereden başlamalı?", h_s1d:"Framework'ünü seç; adımlar o sayfada.",
        h_s2:"Neler var?", h_s2d:"Her ortamda aynı çekirdek yetenekler.",
        h_s3:"Kod örneği", h_s3d:"Çekirdek bugün kullanılabilir.",
@@ -491,6 +495,7 @@ const T = {
        h_title:"The common core for tables.",
        h_lead:"Acun DataTable is a framework-independent TypeScript data table engine for Laravel and Livewire, Vue, React and plain HTML projects. Pick your framework in the left menu; installation, usage and examples are on the same page.",
        h_meta:"TypeScript · headless · framework-independent",
+       legal_title:"MIT License · Disclaimer", legal:"The software is provided “as is”, without warranty of any kind, express or implied. The authors and Acunsoft are not liable for any damage, data loss or claim arising from the use of, or inability to use, the software. Testing it, securing it and authorizing access in your project are your responsibility. The binding text is the <a href=\"https://github.com/kemaloskan/acun-datatable/blob/main/LICENSE\">LICENSE</a> file.",
        h_s1:"Where to start?", h_s1d:"Pick your framework; the steps are on its page.",
        h_s2:"What's inside?", h_s2d:"The same core capabilities everywhere.",
        h_s3:"Code example", h_s3d:"The core is available today.",
@@ -577,7 +582,7 @@ function renderPage(r) {
   const t = T[lang], p = page(r);
   tocIds = p.toc.map(x => x[0]);
   const chips = `<nav class="chips" id="chips" aria-label="${esc(t.toc)}">${p.toc.map(([id,l]) => `<a href="#/${r}/${id}" data-to="${id}">${esc(l)}</a>`).join('')}</nav>`;
-  $('#content').innerHTML = chips + p.html;
+  $('#content').innerHTML = chips + p.html + `<footer class="legal"><strong>${T[lang].legal_title}</strong><p>${T[lang].legal}</p></footer>`;
   $('#toc').innerHTML = `<h4>${t.toc}</h4><ul>${p.toc.map(([id,l]) => `<li><a href="#/${r}/${id}" data-to="${id}">${esc(l)}</a></li>`).join('')}</ul>`;
   document.querySelectorAll('#content pre code').forEach(b => { try { hljs.highlightElement(b); } catch (e) {} });
   document.title = r === 'home' ? 'Acun DataTable' : (FW[r] ? FW[r].name : t.api) + ' — Acun DataTable';

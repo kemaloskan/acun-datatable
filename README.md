@@ -1,5 +1,11 @@
 # Acun DataTable
 
+[![CI](https://github.com/kemaloskan/acun-datatable/actions/workflows/ci.yml/badge.svg)](https://github.com/kemaloskan/acun-datatable/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+
+Documentation: **https://kemaloskan.github.io/acun-datatable/**
+
+
 Framework-independent TypeScript data table engine (early development scaffold).
 
 ## Setup
@@ -420,6 +426,13 @@ in `packages/core/tests/schema.types.ts`,
 `packages/core/tests/local-row-model.types.ts`; build declarations remain
 source-only.
 
-## License
+## License and disclaimer
 
-[MIT](LICENSE) © 2026 Acunsoft.
+[MIT](LICENSE) © 2026 Acunsoft. Free to use, change and distribute, also in
+commercial projects, as long as the copyright and license notice are kept.
+
+**No warranty, no liability.** The software is provided “as is”, without warranty of any kind, express or implied. The authors and Acunsoft are not liable for any damage, data loss or claim arising from the use of, or inability to use, the software. Testing it, securing it and authorizing access in your project are your responsibility. The binding text is the
+[LICENSE](LICENSE) file.
+
+**Sorumluluk reddi.** Yazılım “olduğu gibi” sunulur; açık ya da örtük hiçbir garanti verilmez. Yazarlar ve Acunsoft, yazılımın kullanımından veya kullanılamamasından doğan hiçbir zarar, veri kaybı ya da talepten sorumlu değildir. Projende kullanmadan önce test etmek, güvenliğini ve yetkilendirmesini sağlamak kullanıcının sorumluluğundadır. Bağlayıcı metin
+[LICENSE](LICENSE) dosyasıdır.
