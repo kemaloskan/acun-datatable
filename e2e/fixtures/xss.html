@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>E2E · XSS fixture</title>
+<script type="importmap">
+{ "imports": {
+  "@acunsoft/datatable-core": "/packages/core/dist/index.js",
+  "@acunsoft/datatable-dom": "/packages/renderer-dom/dist/index.js"
+} }
+</script>
+</head>
+<body>
+<div id="search"></div>
+<div id="orders"></div>
+<div id="pages"></div>
+<script type="module">
+import { createDataTable } from '@acunsoft/datatable-core';
+import { renderPagination, renderSearch, renderTable } from '@acunsoft/datatable-dom';
+
+// Every payload flips window.__xss if it ever executes.
+const payloads = [
+  '<img src=x onerror="window.__xss=1;alert(1)">',
+  '<script>window.__xss=1<\/script>',
+  '"><svg onload="window.__xss=1">',
+  '<iframe src="javascript:window.parent.__xss=1"></iframe>',
+  '<a href="javascript:window.__xss=1">click</a>',
+];
+window.__payloads = payloads;
+const table = createDataTable({
+  data: payloads.map((value, index) => ({ id: index + 1, value })),
+  columns: [{ id: 'value', header: payloads[0], accessorKey: 'value', enableSorting: true, enableFiltering: true }],
+});
+renderSearch(document.getElementById('search'), table, { placeholder: payloads[1], labels: { search: payloads[2] } });
+renderTable(document.getElementById('orders'), table, { caption: payloads[3], selectable: true });
+renderPagination(document.getElementById('pages'), table, { labels: { previous: payloads[4] } });
+document.body.dataset.ready = 'true';
+</script>
+</body>
+</html>

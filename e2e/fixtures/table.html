@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>E2E · table</title>
+<!-- Loads the real build output (run `npm run build` first). -->
+<script type="importmap">
+{ "imports": {
+  "@acunsoft/datatable-core": "/packages/core/dist/index.js",
+  "@acunsoft/datatable-dom": "/packages/renderer-dom/dist/index.js"
+} }
+</script>
+</head>
+<body>
+<div id="search"></div>
+<div id="orders"></div>
+<div id="pages"></div>
+<script type="module">
+import { createDataTable } from '@acunsoft/datatable-core';
+import { renderPagination, renderSearch, renderTable } from '@acunsoft/datatable-dom';
+
+const names = ['Ayşe', 'Ali', 'Can', 'Deniz', 'Ece', 'Fatma', 'Gül', 'Hakan', 'İrem', 'Kaan', 'Lale', 'Mert'];
+const table = createDataTable({
+  data: names.map((customer, index) => ({ id: index + 1, customer, total: ((index * 37) % 100) + 10 })),
+  columns: [
+    { id: 'customer', header: 'Customer', accessorKey: 'customer', enableSorting: true, enableFiltering: true },
+    { id: 'total', header: 'Total', accessorKey: 'total', enableSorting: true },
+  ],
+  locale: 'tr',
+  initialState: { pageSize: 5 },
+});
+renderSearch(document.getElementById('search'), table, { debounceMs: 0 });
+renderTable(document.getElementById('orders'), table, { caption: 'Orders', selectable: true, locale: 'tr' });
+renderPagination(document.getElementById('pages'), table, { pageSizes: [5, 10] });
+window.__table = table;
+document.body.dataset.ready = 'true';
+</script>
+</body>
+</html>

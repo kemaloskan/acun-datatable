@@ -17,3 +17,6 @@ temp/
 *.swp
 *.swo
 *~
+test-results/
+playwright-report/
+blob-report/
