@@ -19,7 +19,7 @@ export {
   type SelectionChange, type SelectionListener, type SelectionMode, type SelectionState, type SelectionStatus,
 } from './selection';
 export {
-  COLUMN_TYPES, foldText, isDecimal, normalizeValue, type ColumnType, type DecimalValue,
+  COLUMN_TYPES, foldText, formatLocalDate, isDecimal, normalizeValue, type ColumnType, type DecimalValue,
 } from './values';
 
 /** One-based page numbering. */

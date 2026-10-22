@@ -45,6 +45,7 @@ export function renderTable<TData>(
   const locale = options.locale ?? 'en';
   const numbers = new Intl.NumberFormat(locale);
   const dates = new Intl.DateTimeFormat(locale, { dateStyle: 'medium' });
+  const dateTimes = new Intl.DateTimeFormat(locale, { dateStyle: 'medium', timeStyle: 'short' });
   const columns = table.getColumns();
   const ids = new Set(columns.map(column => column.id));
   for (const [id, formatter] of Object.entries(options.format ?? {})) {
@@ -77,7 +78,10 @@ export function renderTable<TData>(
     if (value == null) return '';
     if (typeof value === 'number') return Number.isNaN(value) ? '' : numbers.format(value);
     if (isDecimal(value)) return decimalFormat(value.scale).format(Number(value.text));
-    if (value instanceof Date) return Number.isNaN(value.getTime()) ? '' : dates.format(value);
+    if (value instanceof Date) {
+      if (Number.isNaN(value.getTime())) return '';
+      return (column.type === 'datetime' ? dateTimes : dates).format(value);
+    }
     if (typeof value === 'boolean') return value ? labels.yes : labels.no;
     return String(value);
   };

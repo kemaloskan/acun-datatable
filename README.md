@@ -244,12 +244,15 @@ from `createColumns`); the model re-validates and copies the definitions.
 - **Precedence** follows the `sorting` array order; `direction` is per column.
 - **Stable:** equal rows keep their input order; row ID order is never used as a
   tie-breaker.
-- **Column types:** give a column `type: 'number' | 'decimal' | 'date' | 'boolean' |
-  'text'` when its values arrive as text. Laravel sends decimals as `"1250.50"`:
-  with `type: 'decimal'` they sort and filter as exact numbers (compared digit by
-  digit, never through floating point); `'date'` reads ISO text (a bare
-  `2026-10-23` is local midnight); `'boolean'` reads `true/false/1/0`. Values a
-  typed column cannot read are treated as missing.
+- **Column types:** give a column `type: 'number' | 'decimal' | 'date' |
+  'datetime' | 'boolean' | 'text'` when its values arrive as text. Laravel sends
+  decimals as `"1250.50"`: with `type: 'decimal'` they sort and filter as exact
+  numbers (compared digit by digit, never through floating point). `'date'` is a
+  calendar day: the time is dropped, so `2026-10-23T14:05` is 23 October.
+  `'datetime'` is an instant (a bare `2026-10-23` is local midnight). `'number'`
+  text must be finite (`"1e400"` is unreadable); `'boolean'` reads
+  `true/false/1/0`; `'text'` writes dates in local time. Values a typed column
+  cannot read are treated as missing.
 - **Untyped columns, no coercion:** values are grouped by type in the order
   boolean &lt; number &lt; string &lt; `Date`, then compared within a type. Numbers
   compare relationally so `Infinity`/`-0` are safe. Unsupported types (objects,
@@ -315,6 +318,11 @@ IDs, blank fields, unknown operators and invalid values throw explicit errors.
   `gt 50` matches `"100.00"` in a `decimal` column. A filter value the type cannot
   read throws; `gt`/`lt`/`between` on a boolean column throws, as does
   `between` with `min > max`.
+- **Days:** a `date` column compares calendar days. In a `datetime` column (e.g.
+  `created_at`) a date-only value (`"2026-10-23"` or a local-midnight `Date`)
+  means the whole day: `eq` matches any time that day, `gt` starts the next day,
+  `lt` ends before it and `between` covers both end days. Values with a time
+  compare as exact instants.
 - **Untyped columns, no coercion:** `28` never equals `'28'`, and values of
   different types never compare. Missing values (`null`, `undefined`, `NaN`,
   invalid `Date`, unreadable typed values) never match.

@@ -155,6 +155,12 @@ public function index(Request $request)
 return `$query->paginate(...)` directly with `fromLaravelPaginator`, or pass a
 `parseResponse` that reads `meta.total`.
 
+**Days:** a date-only filter value (`2026-10-23`, which is also how a date
+picker's local midnight is sent) means the whole day. On a `datetime` column
+apply it with `whereDate($field, $text)` for `eq` (and `whereDate(... '>' ...)`
+/ `'<'` for `gt` / `lt`), not with a plain comparison, so `created_at` values
+later that day still match, exactly as the client does.
+
 For the same case- and accent-insensitive matching as the client (`ayse` finds
 `Ayşe`, `istanbul` finds `İSTANBUL`), match against a folded copy of the text:
 for example a generated search column that stores the lower-cased text without

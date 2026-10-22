@@ -2,9 +2,21 @@ import { createColumns, type ColumnDef } from './columns';
 import { checkFilterRule, isNoOpRule, splitSearchTerms, type FilterOperator, type FilterRule } from './filter-rules';
 import type { Row } from './rows';
 import {
-  compareNormalized, foldText, isDecimal, isMissing, normalizeValue,
+  compareNormalized, foldText, formatLocalDate, isDateOnlyText, isDecimal, isLocalMidnight, isMissing, normalizeValue,
   type ColumnType, type DecimalValue,
 } from './values';
+
+/** Half-open time range `[start, end)` in milliseconds. */
+interface Span { readonly start: number; readonly end: number }
+const DAY_SPAN = Symbol('day span');
+/** A datetime filter value: one instant, or a whole local day for date-only input. */
+const toSpan = (input: unknown, date: Date): Span & { readonly [DAY_SPAN]: true } => {
+  const day = isDateOnlyText(input) || (input instanceof Date && isLocalMidnight(date));
+  const start = date.getTime();
+  const end = day ? new Date(date.getFullYear(), date.getMonth(), date.getDate() + 1).getTime() : start + 1;
+  return { start, end, [DAY_SPAN]: true };
+};
+const isSpan = (value: unknown): value is Span => typeof value === 'object' && value !== null && DAY_SPAN in value;
 
 export { FILTER_OPERATORS, MAX_IN_VALUES, splitSearchTerms, type FilterOperator, type FilterRule } from './filter-rules';
 
@@ -39,6 +51,10 @@ const isoDate = (date: Date): string => `${date.getFullYear()}-${pad(date.getMon
  * - `eq`, `gt`, `lt`, `between`, `in` compare values of the same type. With a
  *   column `type`, text such as `"100.00"` or `"2026-10-23"` is read as that type
  *   first; without one, values are compared as they are and never coerced.
+ * - Days: a `date` column compares calendar days. In a `datetime` column a
+ *   date-only value (`"2026-10-23"` or a local midnight) means that whole day:
+ *   `eq` matches any time on it, `gt` starts the next day, `lt` ends before it,
+ *   `between` covers both end days.
  * - `empty` matches missing values (`null`, `undefined`, `NaN`, invalid `Date`,
  *   unreadable typed values) and blank text; `notEmpty` the rest. Every other
  *   operator never matches a missing value. Only `enableFiltering` columns can
@@ -90,13 +106,15 @@ export function filterRows<TData>(
       if (type === undefined) return input;
       const normalized = normalizeValue(input, type);
       if (normalized === undefined) throw new TypeError(`filter "${field}" value is not a valid ${type}`);
-      return normalized;
+      return type === 'datetime' ? toSpan(input, normalized as Date) : normalized;
     };
     const textual = operator === 'contains' || operator === 'startsWith';
     const valueless = operator === 'empty' || operator === 'notEmpty';
     const targets = textual || valueless ? [] : (Array.isArray(value) ? value : [value]).map(read);
     if (operator === 'between') {
-      const order = compare(targets[0], targets[1], type);
+      const order = isSpan(targets[0]) && isSpan(targets[1])
+        ? Math.sign(targets[0].start - targets[1].start)
+        : compare(targets[0], targets[1], type);
       if (order === undefined) throw new TypeError(`filter "${field}" between needs two values of the same type`);
       if (order > 0) throw new RangeError(`filter "${field}" between needs min <= max`);
     }
@@ -116,6 +134,7 @@ export function filterRows<TData>(
   const ungrouped = new Intl.NumberFormat(locale, { maximumFractionDigits: 20, useGrouping: false });
   const shortDate = new Intl.DateTimeFormat(locale, { dateStyle: 'short' });
   const mediumDate = new Intl.DateTimeFormat(locale, { dateStyle: 'medium' });
+  const shortDateTime = new Intl.DateTimeFormat(locale, { dateStyle: 'short', timeStyle: 'short' });
   const scaled = new Map<number, [Intl.NumberFormat, Intl.NumberFormat]>();
   const decimalTexts = (value: DecimalValue): string[] => {
     let formats = scaled.get(value.scale);
@@ -131,7 +150,10 @@ export function filterRows<TData>(
     if (typeof value === 'string') return [value];
     if (typeof value === 'number') return Number.isFinite(value) ? [String(value), grouped.format(value), ungrouped.format(value)] : [];
     if (isDecimal(value)) return decimalTexts(value);
-    if (value instanceof Date) return [isoDate(value), shortDate.format(value), mediumDate.format(value)];
+    if (value instanceof Date) {
+      const days = [isoDate(value), shortDate.format(value), mediumDate.format(value)];
+      return isLocalMidnight(value) ? days : [...days, formatLocalDate(value).slice(0, 16).replace('T', ' '), shortDateTime.format(value)];
+    }
     if (typeof value === 'boolean') return [String(value), value ? labels[0]! : labels[1]!];
     return [];
   };
@@ -141,7 +163,13 @@ export function filterRows<TData>(
     texts(value).some(text => foldText(text).startsWith(needle));
   const isEmpty = (value: unknown): boolean =>
     value === undefined || isMissing(value) || (typeof value === 'string' && value.trim() === '');
+  // A datetime cell against a span: before (-1), inside (0) or after (1).
+  const place = (cell: Date, span: Span): number => {
+    const time = cell.getTime();
+    return time < span.start ? -1 : time >= span.end ? 1 : 0;
+  };
   const equals = (cell: unknown, target: unknown, type: ColumnType | undefined): boolean => {
+    if (isSpan(target)) return place(cell as Date, target) === 0;
     if (type === undefined) return cell instanceof Date && target instanceof Date ? cell.getTime() === target.getTime() : cell === target;
     return type === 'text' ? cell === target : compare(cell, target, type) === 0;
   };
@@ -156,9 +184,18 @@ export function filterRows<TData>(
       case 'startsWith': return startsWithText(cell, needle);
       case 'eq': return equals(cell, targets[0], type);
       case 'in': return targets.some(target => equals(cell, target, type));
-      case 'gt': { const order = compare(cell, targets[0], type); return order !== undefined && order > 0; }
-      case 'lt': { const order = compare(cell, targets[0], type); return order !== undefined && order < 0; }
+      case 'gt': {
+        const order = isSpan(targets[0]) ? place(cell as Date, targets[0]) : compare(cell, targets[0], type);
+        return order !== undefined && order > 0;
+      }
+      case 'lt': {
+        const order = isSpan(targets[0]) ? place(cell as Date, targets[0]) : compare(cell, targets[0], type);
+        return order !== undefined && order < 0;
+      }
       case 'between': {
+        if (isSpan(targets[0]) && isSpan(targets[1])) {
+          return place(cell as Date, targets[0]) >= 0 && place(cell as Date, targets[1]) <= 0;
+        }
         const low = compare(cell, targets[0], type);
         const high = compare(cell, targets[1], type);
         return low !== undefined && high !== undefined && low >= 0 && high <= 0;

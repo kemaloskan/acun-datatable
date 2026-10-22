@@ -198,3 +198,18 @@ describe('renderTable typed columns', () => {
     expect(cells(1)).toEqual(['n/a', 'soon', 'Hayır']); // unreadable values are shown as written
   });
 });
+
+describe('renderTable date and datetime columns', () => {
+  it('shows a date column as a day and a datetime column with its time', () => {
+    type Row = { id: number; at: string };
+    const table = createDataTable<Row>({
+      data: [{ id: 1, at: '2026-10-23T14:05:00' }],
+      columns: [
+        { id: 'day', header: 'Day', accessorKey: 'at', type: 'date' },
+        { id: 'at', header: 'At', accessorKey: 'at', type: 'datetime' },
+      ],
+    });
+    renderTable(host, table, { locale: 'tr' });
+    expect(cells(0)).toEqual(['23 Eki 2026', '23 Eki 2026 14:05']);
+  });
+});

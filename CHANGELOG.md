@@ -36,8 +36,17 @@ will start at `0.1.0` (see SPEC "Planned release approach").
   listener throws, and the HTTP runner keeps a successful response successful.
   Errors go to `onListenerError` (default `reportListenerError`).
 
+- **Days:** new column type `datetime` (an instant) next to `date` (a calendar
+  day, time dropped). In a `datetime` column a date-only filter value covers
+  the whole day, so `eq '2026-10-23'` on `created_at` finds every record of that
+  day, not just midnight.
+- **Small value fixes:** `text` writes dates in local time (23 October stays 23
+  October in Turkey); `"1e400"` is no longer read as Infinity by `number`.
+  `formatLocalDate` moved to the core (still exported by the HTTP package).
+
 ### Changed behaviour
 
+- A `date` column now ignores the time of day (use `datetime` for instants).
 - A throwing listener is reported through `onListenerError` instead of being
   rethrown from the action (previously an error or `AggregateError`).
 - Global search with several words now requires each word, in any column,

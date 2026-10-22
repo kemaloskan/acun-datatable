@@ -1,5 +1,5 @@
 import {
-  createTableQuery, validatePageResult,
+  createTableQuery, formatLocalDate, validatePageResult,
   type DataSource, type PageResult, type TableQuery,
 } from '@acunsoft/datatable-core';
 
@@ -29,22 +29,6 @@ export interface HttpDataSourceOptions {
   /** Largest page size this client will request. Default 100, at most 1000. */
   readonly maxPageSize?: number;
   readonly credentials?: RequestCredentials;
-}
-
-const pad = (value: number, size = 2): string => String(Math.abs(value)).padStart(size, '0');
-
-/**
- * Dates are sent in the user's local time so the calendar day never shifts:
- * a local midnight (a date picker's value) becomes `2026-10-23`, any other time
- * `2026-10-23T14:05:00.000+03:00`. `toISOString()` would turn a Turkish
- * 23 October midnight into `2026-10-22T21:00:00Z`.
- */
-export function formatLocalDate(date: Date): string {
-  const day = `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
-  if (date.getHours() === 0 && date.getMinutes() === 0 && date.getSeconds() === 0 && date.getMilliseconds() === 0) return day;
-  const offset = -date.getTimezoneOffset();
-  const zone = `${offset >= 0 ? '+' : '-'}${pad(Math.trunc(offset / 60))}:${pad(offset % 60)}`;
-  return `${day}T${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}.${pad(date.getMilliseconds(), 3)}${zone}`;
 }
 
 function encodeValue(value: unknown, field: string): string {
@@ -98,6 +82,8 @@ export function fromLaravelPaginator(body: unknown): unknown {
  * query, honours the abort signal, rejects non-2xx responses with `HttpError`
  * and validates the body against the `PageResult` contract.
  */
+export { formatLocalDate };
+
 export function createHttpDataSource<TData = Record<string, unknown>>(options: HttpDataSourceOptions): DataSource<TData> {
   if (!options || typeof options !== 'object') throw new TypeError('options must be an object');
   const url = String(options.url ?? '');

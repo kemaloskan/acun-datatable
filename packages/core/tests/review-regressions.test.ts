@@ -177,3 +177,64 @@ describe('column types: validation', () => {
     expect(normalizeValue(null, 'text')).toBeUndefined();
   });
 });
+
+describe('second review · days in date and datetime columns', () => {
+  type Log = { id: number; at: unknown };
+  const logs = createRows<Log>([
+    { id: 1, at: '2026-10-22T23:59:59' },
+    { id: 2, at: '2026-10-23T00:00:00' },
+    { id: 3, at: '2026-10-23T14:05:00' },
+    { id: 4, at: '2026-10-23T23:59:59.999' },
+    { id: 5, at: '2026-10-24T00:00:00' },
+  ]);
+  const cols = (type: ColumnType): ColumnDef<Log>[] => [{ id: 'at', header: '', accessorKey: 'at', enableFiltering: true, enableSorting: true, type }];
+  const where = (type: ColumnType, operator: 'eq' | 'gt' | 'lt' | 'between' | 'in', value: unknown) =>
+    filterRows(logs, cols(type), { filters: [{ field: 'at', operator, value }] }).map(r => r.id);
+
+  it('a date column compares calendar days and ignores the time', () => {
+    expect(where('date', 'eq', '2026-10-23')).toEqual(['2', '3', '4']);
+    expect(where('date', 'eq', new Date(2026, 9, 23, 18, 30))).toEqual(['2', '3', '4']);
+    expect(where('date', 'gt', '2026-10-23')).toEqual(['5']);
+    expect(where('date', 'lt', '2026-10-23')).toEqual(['1']);
+    expect(normalizeValue('2026-10-23T14:05:00', 'date')).toEqual(new Date(2026, 9, 23));
+  });
+
+  it('a datetime column treats a date-only value as the whole day', () => {
+    expect(where('datetime', 'eq', '2026-10-23')).toEqual(['2', '3', '4']);
+    expect(where('datetime', 'eq', new Date(2026, 9, 23))).toEqual(['2', '3', '4']); // local midnight = a day
+    expect(where('datetime', 'gt', '2026-10-23')).toEqual(['5']);
+    expect(where('datetime', 'lt', '2026-10-23')).toEqual(['1']);
+    expect(where('datetime', 'between', ['2026-10-22', '2026-10-23'])).toEqual(['1', '2', '3', '4']);
+    expect(where('datetime', 'in', ['2026-10-22', '2026-10-24'])).toEqual(['1', '5']);
+  });
+
+  it('a datetime column compares exact instants for values with a time', () => {
+    expect(where('datetime', 'eq', '2026-10-23T14:05:00')).toEqual(['3']);
+    expect(where('datetime', 'gt', new Date(2026, 9, 23, 14, 5))).toEqual(['4', '5']);
+    expect(where('datetime', 'between', ['2026-10-23T00:00:00.001', '2026-10-23T14:05:00'])).toEqual(['3']);
+  });
+
+  it('searches datetimes by date and by date with time', () => {
+    const found = (text: string) => filterRows(logs, cols('datetime'), { globalSearch: text }, { locale: 'tr' }).map(r => r.id);
+    expect(found('2026-10-23 14:05')).toEqual(['3']);
+    expect(found('23.10.2026')).toEqual(['2', '3', '4']);
+  });
+
+  it('sorts a date column by day, keeping input order within a day', () => {
+    const model = createLocalRowModel(logs, cols('date'));
+    expect(model.getSortedRows([{ field: 'at', direction: 'desc' }]).map(r => r.id)).toEqual(['5', '2', '3', '4', '1']);
+  });
+});
+
+describe('second review · small value fixes', () => {
+  it('writes dates as text in local time', () => {
+    expect(normalizeValue(new Date(2026, 9, 23), 'text')).toBe('2026-10-23');
+    expect(normalizeValue(new Date(2026, 9, 23, 9, 30), 'text')).toMatch(/^2026-10-23T09:30:00\.000[+-]\d\d:\d\d$/);
+  });
+
+  it('does not read overflowing numbers', () => {
+    expect(normalizeValue('1e400', 'number')).toBeUndefined();
+    expect(normalizeValue('-1e400', 'number')).toBeUndefined();
+    expect(normalizeValue('1e300', 'number')).toBe(1e300);
+  });
+});
