@@ -113,7 +113,8 @@ The package names are reservations for roadmap planning, not a claim that those 
 
 ## 5. Toolchain and packaging
 
-- Node.js: Node.js 24 LTS, pinned in `.nvmrc` and consumed by CI via `node-version-file`; `package.json` `engines` requires `>=24`.
+- Node.js: development standard is Node.js 24 LTS (pinned in `.nvmrc`); `package.json` `engines` allows `>=20`. CI runs the suite on Node 20, 22 and 24 so support is not limited to one version.
+- Dependency updates are controlled: the committed lockfile is authoritative (`npm ci`), and upgrades land only via a PR that passes the full CI matrix — no automatic or unattended updates.
 - Package manager: npm workspaces for low setup friction; lockfile committed.
 - TypeScript strict mode, ESM first; generate declarations and `exports` map.
 - Vitest unit tests; Playwright browser/accessibility smoke tests after a DOM renderer exists.

@@ -5,13 +5,21 @@ on:
 jobs:
   verify:
     runs-on: ubuntu-latest
+    name: verify (Node ${{ matrix.node-version }})
+    strategy:
+      # Report every supported version; one failure must not hide the others.
+      fail-fast: false
+      matrix:
+        # Node 24 is the development standard (see .nvmrc). The other active
+        # LTS lines are tested for consumer compatibility, not just Node 24.
+        node-version: ['20', '22', '24']
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          # Single source of truth for the Node version: .nvmrc (Node.js 24 LTS).
-          node-version-file: '.nvmrc'
+          node-version: ${{ matrix.node-version }}
           cache: 'npm'
+      # npm ci keeps the committed lockfile authoritative and reproducible.
       - run: npm ci
       - run: npm run check
       - run: npm run test

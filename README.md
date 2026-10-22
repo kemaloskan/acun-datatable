@@ -4,8 +4,11 @@ Framework-independent TypeScript data table engine (early development scaffold).
 
 ## Setup
 
-This project targets **Node.js 24 LTS**, pinned in [`.nvmrc`](.nvmrc) and used by
-CI as its single source of truth. With [nvm](https://github.com/nvm-sh/nvm):
+The development standard is **Node.js 24 LTS**, pinned in [`.nvmrc`](.nvmrc).
+The package supports **Node.js 20+** (`engines`), and CI runs the full suite on
+Node **20, 22 and 24** so consumers are not limited to a single version.
+Dependencies are pinned by the committed lockfile; updates land only through a PR
+that passes the CI matrix, never unattended. With [nvm](https://github.com/nvm-sh/nvm):
 
 ```bash
 nvm use        # select the Node version from .nvmrc
