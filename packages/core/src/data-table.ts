@@ -76,6 +76,7 @@ export type DataTableListener = (state: Readonly<DataTableState>, event: Readonl
 export interface DataTable<TData> {
   getState(): Readonly<DataTableState>;
   getMode(): DataTableMode;
+  getSelectionMode(): SelectionMode;
   /** The query a server should answer for the current state. */
   getQuery(): TableQuery;
   /** Matching rows: local count, or the server's `totalRows` (undefined when unknown). */
@@ -261,6 +262,7 @@ export function createDataTable<TData>(options: DataTableOptions<TData>): DataTa
     getCoreRows: () => coreRows,
     getFilteredRows,
     getMode: () => mode,
+    getSelectionMode: () => selection.getState().mode,
     getQuery: () => createTableQuery(state),
     getTotalRows: () => (server ? serverTotal : getFilteredRows().length),
     getPage: () => {

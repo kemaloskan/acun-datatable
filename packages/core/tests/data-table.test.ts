@@ -188,6 +188,8 @@ describe('createDataTable — selection', () => {
 
   it('supports single mode', () => {
     const t = table({ selectionMode: 'single' });
+    expect(t.getSelectionMode()).toBe('single');
+    expect(table().getSelectionMode()).toBe('multiple');
     t.selectRow('1');
     t.selectRow('2');
     expect(t.getState().selectedIds).toEqual(['2']);
