@@ -54,7 +54,7 @@ Consumer (HTML / Laravel / Livewire / React / Vue / Next.js)
 ### Framework adapters (future)
 - `adapter-react`: hooks/component; React peer dependency.
 - `adapter-vue`: composables/component; Vue peer dependency.
-- `adapter-laravel` (`acunsoft/datatable-laravel`): one Composer package for Laravel and Livewire. A shared server-side query layer (allowlisted columns, Eloquent operators, Turkish-aware smart search, page-size limit) serves both the JSON endpoint used by `@acunsoft/datatable-http` and the Livewire integration, which only activates when Livewire is installed (decided 2026-10-23).
+- `adapter-laravel` (`acunsoft/datatable-laravel`): one Composer package for Laravel and Livewire. A shared server-side query layer (allowlisted columns, Eloquent operators, Turkish-aware smart search, page-size limit) serves both the JSON endpoint used by `@acunsoft/datatable-http` and the Livewire integration (`WithDataTable`), which only needs Livewire when it is used (decided 2026-10-23). The Livewire view is neutral Blade with the `adt-*` class names of the DOM renderer, so one optional stylesheet serves both; it does not depend on any UI kit (general-purpose, decided 2026-10-23).
 - Next.js uses the React adapter with client boundaries; it is not a separate engine.
 - Alpine.js integration is optional and must not duplicate Livewire-managed Alpine runtime.
 
@@ -108,7 +108,7 @@ acun-datatable/
     renderer-dom/         # implemented        → @acunsoft/datatable-dom
     adapter-react/        # planned            → @acunsoft/datatable-react
     adapter-vue/          # planned            → @acunsoft/datatable-vue
-    adapter-laravel/      # in progress (PHP)  → acunsoft/datatable-laravel (Composer): query layer,
+    adapter-laravel/      # PHP                → acunsoft/datatable-laravel (Composer): query layer,
                           #                      JSON endpoint and Livewire support in one package
     plugin-virtual/       # later
     plugin-export-csv/    # later

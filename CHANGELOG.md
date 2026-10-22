@@ -5,6 +5,17 @@ will start at `0.1.0` (see SPEC "Planned release approach").
 
 ## Unreleased
 
+### Added (Livewire)
+
+- **`acunsoft/datatable-laravel` Livewire table:** `WithDataTable` trait with
+  search, multi-column sorting, filters and page size kept in the URL (the HTTP
+  wire-format names), row/page/"all matching" selection with `selectedQuery()`
+  for bulk actions, and a neutral Blade view using the `adt-*` class names of
+  `@acunsoft/datatable-dom`. TR/EN texts, `Column::format()` for cell text.
+  Tampered URL state is dropped instead of failing; selection stays inside
+  `query()`. Livewire is a suggestion, not a requirement.
+- `styles.css` styles the selection bar (`adt-selection`).
+
 ### Fixed (review of October 2026)
 
 - **Turkish search:** `contains` and global search fold text case-, accent- and

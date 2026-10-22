@@ -248,6 +248,14 @@ const API = [
     ["renderPagination(container, table, options?)", {tr:"Önceki/sonraki, canlı durum metni, sayfa boyutu seçimi.", en:"Previous/next, live status, page-size select."}],
     ["renderSearch(container, table, options?)", {tr:"Gecikmeli arama kutusu; Enter hemen uygular.", en:"Debounced search box; Enter applies at once."}],
   ]],
+  ['acunsoft/datatable-laravel', [
+    ["Column::make($id)->column()->type()->sortable()->filterable()", {tr:"İzin listesi: yalnızca tanımlı kolonlar SQL'e ulaşır. searchUsing() katlanmış kolonla Türkçe duyarlı arama, format() hücre metni.", en:"The allowlist: only declared columns reach SQL. searchUsing() for Turkish-aware search on a folded column, format() for cell text."}],
+    ["use WithDataTable  (Livewire)", {tr:"columns() ve query() tanımla; arama, sıralama, filtre ve sayfa boyutu URL'de; seçim ve selectedQuery() toplu işlemler için.", en:"Declare columns() and query(); search, sorting, filters and page size in the URL; selection and selectedQuery() for bulk actions."}],
+    ["setFilter($field, $op, $value) · removeFilter($i) · clearFilters()", {tr:"Livewire eylemleri; geçersiz kurallar eklenmez.", en:"Livewire actions; invalid rules are not added."}],
+    ["sortBy($field, $additive) · toggleRow($key) · togglePage() · selectAllMatching()", {tr:"Başlık tıklaması ve seçim eylemleri (Shift+tık çok kolonlu sıralama).", en:"Header-click and selection actions (Shift+click for multi-column sorting)."}],
+    ["TableResponse::for($query)->columns([...])->maxPageSize(100)", {tr:"@acunsoft/datatable-http için JSON uç nokta: {rows, totalRows}; hatalı sorguda 422.", en:"JSON endpoint for @acunsoft/datatable-http: {rows, totalRows}; 422 on an invalid query."}],
+    ["TableQuery::fromRequest($request) · QueryApplier::paginate($builder, $query, $columns)", {tr:"Parçaları doğrudan kullanmak için: doğrulanmış sorgu ve Eloquent uygulayıcı.", en:"The parts on their own: a validated query and the Eloquent applier."}],
+  ]],
 ];
 
 const EX_SORT =
@@ -310,14 +318,16 @@ unsubscribe();
 state.destroy();`;
 
 const FW = {
-  laravel:{ name:"Laravel", pkg:"acunsoft/datatable-laravel", status:"planned",
-    lead:{tr:"Laravel ve Livewire için tek Composer paketi. Ortak sorgu katmanı (izin verilen kolonlar, Eloquent operatörleri, Türkçe duyarlı akıllı arama, sayfa boyutu sınırı) hem Livewire tablolarına hem de tarayıcıdaki HTTP paketine JSON veren uç noktaya hizmet eder. Livewire desteği yalnızca Livewire kuruluysa devreye girer; npm gerekmez.",
-          en:"One Composer package for Laravel and Livewire. A shared query layer (allowlisted columns, Eloquent operators, Turkish-aware smart search, page-size limit) serves Livewire tables and the JSON endpoint used by the browser HTTP package. Livewire support only activates when Livewire is installed; no npm needed."},
-    note:{tr:"Sıralanabilir ve filtrelenebilir kolonlar sunucuda <strong>izin listesiyle</strong> sınırlanır; istemciden gelen kolon adları asla ham SQL'e girmez. Uç nokta her sorguyu ayrıca yetkilendirmelidir. <code>query()</code> ve <code>columns()</code> korumalı (protected) metotlardır; tarayıcıdan çağrılamazlar. Blade bileşenleri <code>x-acun-datatable::</code> ad alanını kullanır.",
-          en:"Sortable and filterable columns are <strong>allowlisted</strong> on the server; client column names never reach raw SQL. Endpoints must authorize every query. <code>query()</code> and <code>columns()</code> are protected, so the browser cannot call them. Blade components use the <code>x-acun-datatable::</code> namespace."},
+  laravel:{ name:"Laravel", pkg:"acunsoft/datatable-laravel", status:"ready",
+    install:"composer require acunsoft/datatable-laravel",
+    unpub:{tr:"Paket henüz Packagist'te yayınlanmadı. Yayından sonra:", en:"The package is not on Packagist yet. After release:"},
+    api:'acunsoft/datatable-laravel',
+    lead:{tr:"Laravel ve Livewire için tek Composer paketi. Ortak sorgu katmanı (izin verilen kolonlar, Eloquent operatörleri, Türkçe duyarlı akıllı arama, sayfa boyutu sınırı) hem Livewire tablolarına hem de tarayıcıdaki HTTP paketine JSON veren uç noktaya hizmet eder. Livewire yalnızca Livewire tablosu için gerekir; npm veya bir UI kiti gerekmez.",
+          en:"One Composer package for Laravel and Livewire. A shared query layer (allowlisted columns, Eloquent operators, Turkish-aware smart search, page-size limit) serves Livewire tables and the JSON endpoint used by the browser HTTP package. Livewire is only needed for the Livewire table; no npm or UI kit required."},
+    note:{tr:"Sıralanabilir ve filtrelenebilir kolonlar sunucuda <strong>izin listesiyle</strong> sınırlanır; istemciden gelen kolon adları asla ham SQL'e girmez. Uç nokta her sorguyu ayrıca yetkilendirmelidir. <code>query()</code> ve <code>columns()</code> korumalı (protected) metotlardır; tarayıcıdan çağrılamazlar. URL'den gelen geçersiz durum sayfayı bozmak yerine atılır; seçilen anahtarlar yalnızca <code>query()</code> içinde aranır. Görünüm düz Blade'dir ve DOM renderer'ın <code>adt-*</code> sınıflarını kullanır; aynı isteğe bağlı <code>styles.css</code> ikisini de biçimlendirir.",
+          en:"Sortable and filterable columns are <strong>allowlisted</strong> on the server; client column names never reach raw SQL. Endpoints must authorize every query. <code>query()</code> and <code>columns()</code> are protected, so the browser cannot call them. Invalid URL state is dropped instead of failing the page; selected keys are only looked up inside <code>query()</code>. The view is plain Blade with the DOM renderer's <code>adt-*</code> class names, so the same optional <code>styles.css</code> styles both."},
     lang:"php", code:
 `<\?php
-// Taslak API — paket yazılıyor. / Draft API — being written.
 use Acunsoft\\DataTable\\Laravel\\Column;
 use Illuminate\\Database\\Eloquent\\Builder;
 
@@ -331,24 +341,49 @@ class OrdersTable extends \\Livewire\\Component
     protected function columns(): array
     {
         return [
-            Column::make('customer')->sortable()->filterable(),
-            Column::make('total')->type('decimal')->sortable()->filterable(),
-            Column::make('created')->column('created_at')->type('datetime')->sortable(),
+            Column::make('customer')->header('Müşteri')->sortable()->filterable()->searchUsing('customer_search'),
+            Column::make('total')->header('Tutar')->type('decimal')->sortable()->filterable(),
+            Column::make('created')->column('created_at')->header('Tarih')->type('datetime')->sortable(),
         ];
     }
 
     protected function query(): Builder
     {
-        return \\App\\Models\\Order::query();
+        return \\App\\Models\\Order::query(); // only the rows this user may see
     }
+
+    protected function selectable(): bool { return true; }
 }
+
+// <livewire:orders-table />
 
 // 2) JSON endpoint for @acunsoft/datatable-http (Blade + JS, Vue, React).
 use Acunsoft\\DataTable\\Laravel\\TableResponse;
 
 Route::get('/orders/data', fn () => TableResponse::for(\\App\\Models\\Order::query())
     ->columns([Column::make('customer')->sortable()->filterable()])
-    ->maxPageSize(100));` },
+    ->maxPageSize(100));`,
+    examples:[
+      { title:{tr:"Kendi filtre kontrolleriniz", en:"Your own filter controls"},
+        desc:{tr:"Filtreler URL'de tutulur; geçersiz bir kural eklenmez.", en:"Filters live in the URL; an invalid rule is not added."}, lang:"xml", code:
+`<button type="button" wire:click="setFilter('active', 'eq', 'true')">Aktif</button>
+<button type="button" wire:click="setFilter('total', 'between', ['100', '500'])">100–500 ₺</button>
+<button type="button" wire:click="clearFilters">Temizle</button>
+
+@include('acun-datatable::livewire.table')` },
+      { title:{tr:"Toplu işlem", en:"Bulk action"},
+        desc:{tr:"selectedQuery() seçili satırları query() içinde döndürür; \"eşleşen tümü\" seçiminde de çalışır.", en:"selectedQuery() returns the selected rows inside query(); it also works for \"all matching\" selection."}, lang:"php", code:
+`public function archive(): void
+{
+    $this->authorize('update', Order::class);
+    $this->selectedQuery()->update(['status' => 'archived']);
+    $this->clearSelection();
+}` },
+      { title:{tr:"Görünümü değiştirmek", en:"Changing the markup"},
+        desc:{tr:"Görünümü yayınla veya kendi render() metodunda dahil et; metinler TR/EN.", en:"Publish the view or include it from your own render(); texts are TR/EN."}, lang:"bash", code:
+`php artisan vendor:publish --tag=acun-datatable-views
+php artisan vendor:publish --tag=acun-datatable-lang` },
+    ] },
   html:{ name:"HTML", pkg:"@acunsoft/datatable-dom", status:"ready",
     lead:{tr:"Framework olmadan: çekirdek + DOM renderer ile erişilebilir, semantik bir <code>&lt;table&gt;</code>, sayfalama ve arama. Sunucu modunda http paketiyle birlikte çalışır.",
           en:"No framework: the core + DOM renderer give an accessible, semantic <code>&lt;table&gt;</code>, pagination and search. Works with the HTTP package in server mode."},
@@ -437,8 +472,8 @@ const T = {
        h_s2:"Neler var?", h_s2d:"Her ortamda aynı çekirdek yetenekler.",
        h_s3:"Kod örneği", h_s3d:"Çekirdek bugün kullanılabilir.",
        h_core_install:"Paketler henüz npm'de yayınlanmadı. Yayından sonra yalnızca çekirdek için:", go:"İncele →",
-       fw_desc:{vue:"Planlanıyor: composable ve bileşen.",react:"Planlanıyor: hook ve bileşen.",html:"Hazır: framework olmadan DOM renderer.",laravel:"Yazılıyor: Livewire tabloları ve JSON uç nokta, tek Composer paketi."},
-       api_title:"API referansı", api_lead:"Depoda bugün var olan üç paketin genel fonksiyonları: çekirdek, HTTP ve DOM. Henüz npm'de yayınlanmadılar.",
+       fw_desc:{vue:"Planlanıyor: composable ve bileşen.",react:"Planlanıyor: hook ve bileşen.",html:"Hazır: framework olmadan DOM renderer.",laravel:"Hazır: Livewire tablosu ve JSON uç nokta, tek Composer paketi."},
+       api_title:"API referansı", api_lead:"Depodaki dört paketin genel API'si: çekirdek, HTTP, DOM ve Laravel. Henüz npm'de ve Packagist'te yayınlanmadılar.",
        a_s1:"Fonksiyonlar", a_s1d:"İmza ve kısa açıklama.", a_s2:"Örnek", a_s2d:"Fonksiyonların birlikte kullanımı." },
   en:{ nav_start:"Getting started", nav_fw:"Frameworks", nav_api:"API", cta:"Get started",
        g_start:"Getting started", g_fw:"Frameworks", g_core:"Core",
@@ -460,8 +495,8 @@ const T = {
        h_s2:"What's inside?", h_s2d:"The same core capabilities everywhere.",
        h_s3:"Code example", h_s3d:"The core is available today.",
        h_core_install:"The packages are not on npm yet. After release, core only:", go:"Open →",
-       fw_desc:{vue:"Planned: composable and component.",react:"Planned: hook and component.",html:"Ready: DOM renderer, no framework.",laravel:"In progress: Livewire tables and a JSON endpoint, one Composer package."},
-       api_title:"API reference", api_lead:"Public functions of the three packages that exist in the repository today: core, HTTP and DOM. They are not published to npm yet.",
+       fw_desc:{vue:"Planned: composable and component.",react:"Planned: hook and component.",html:"Ready: DOM renderer, no framework.",laravel:"Ready: a Livewire table and a JSON endpoint, one Composer package."},
+       api_title:"API reference", api_lead:"Public API of the four packages in the repository: core, HTTP, DOM and Laravel. They are not published to npm or Packagist yet.",
        a_s1:"Functions", a_s1d:"Signature and short description.", a_s2:"Example", a_s2d:"Using the functions together." }
 };
 
@@ -504,11 +539,13 @@ function page(r) {
     `<h1><span class="hi">${ICON[r]}</span>${f.name}${f.status === 'ready' ? '' : ` <span class="pill">${t.preview}</span>`}</h1><p class="lead">${f.lead[lang]}</p><div class="meta"><span>${esc(f.pkg)}</span><span>${t.updated}</span></div>` +
     (f.status === 'ready' ? '' : `<div class="note warn" style="margin-top:22px">${t.prevNote}</div>`) +
     sec('install',1,t.s_install,t.d_install,
-      (f.status === 'ready' ? `<p>${t.unpub}</p>${code(f.install,'bash')}` : `<p>${t.planned_install}</p>`) + `<div class="note">${f.note[lang]}</div>`) +
+      (f.status === 'ready' ? `<p>${f.unpub ? f.unpub[lang] : t.unpub}</p>${code(f.install,'bash')}` : `<p>${t.planned_install}</p>`) + `<div class="note">${f.note[lang]}</div>`) +
     sec('usage',2,t.s_usage,t.d_usage,code(f.code,f.lang)) +
     sec('features',3,t.s_features,t.d_features,`<p>${esc(t.feat_for(f.name))}</p>`+featCards()) +
-    sec('examples',4,t.s_examples,t.d_examples,`<h3 class="sub">${t.ex1}</h3><p>${t.ex1d}</p>${code(EX_SORT,'typescript')}<h3 class="sub">${t.ex2}</h3><p>${t.ex2d}</p>${code(EX_STATE,'typescript')}`) +
-    sec('api',5,t.s_api,t.d_api,apiList(f.status === 'ready' ? undefined : '@acunsoft/datatable-core')) };
+    sec('examples',4,t.s_examples,t.d_examples, f.examples
+      ? f.examples.map(x => `<h3 class="sub">${esc(x.title[lang])}</h3><p>${esc(x.desc[lang])}</p>${code(x.code,x.lang)}`).join('')
+      : `<h3 class="sub">${t.ex1}</h3><p>${t.ex1d}</p>${code(EX_SORT,'typescript')}<h3 class="sub">${t.ex2}</h3><p>${t.ex2d}</p>${code(EX_STATE,'typescript')}`) +
+    sec('api',5,t.s_api,t.d_api,apiList(f.api ?? (f.status === 'ready' ? undefined : '@acunsoft/datatable-core'))) };
 }
 
 /* ======================= render ======================= */
