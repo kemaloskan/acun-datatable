@@ -3,135 +3,444 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Acun DataTable — Dokümantasyon</title>
+<title>Kurulum — Acun DataTable</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
 <style>
-  :root {
-    --bg:#ffffff; --fg:#1b1f24; --muted:#656d76; --border:#e4e7ec;
-    --panel:#f7f8fa; --accent:#6d4aff; --accent-weak:#efeafe; --topbar:#ffffff; --code-bg:#1b1f2b;
+  :root{
+    --bg:#ffffff; --fg:#161a20; --muted:#6b7280; --border:#e6e8ec;
+    --rail:#111318; --rail-fg:#9aa0ae; --rail-active-bg:#262a33;
+    --side:#ffffff; --side-active:#f1f2f4; --accent:#4f46e5; --accent-weak:#eef0ff;
+    --code-bg:#1b1f2b; --chip:#eef0f3;
   }
-  :root[data-theme="dark"] {
-    --bg:#0d1117; --fg:#e6edf3; --muted:#9198a1; --border:#262c36;
-    --panel:#12171f; --accent:#9d86ff; --accent-weak:#1d1733; --topbar:#0d1117; --code-bg:#0b0e14;
+  :root[data-theme="dark"]{
+    --bg:#0d1117; --fg:#e6edf3; --muted:#9198a1; --border:#20262f;
+    --rail:#05070a; --rail-fg:#737a86; --rail-active-bg:#1b2029;
+    --side:#0d1117; --side-active:#1a2029; --accent:#8b83ff; --accent-weak:#1a1733;
+    --code-bg:#0b0e14; --chip:#161b22;
   }
-  * { box-sizing:border-box; }
-  html,body { margin:0; }
-  body { font:16px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif; color:var(--fg); background:var(--bg); }
-  a { color:var(--accent); text-decoration:none; }
-  code { font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; }
-  .top { position:sticky; top:0; z-index:20; display:flex; align-items:center; gap:18px; padding:0 24px; height:60px; background:var(--topbar); border-bottom:1px solid var(--border); }
-  .brand { display:flex; align-items:center; gap:10px; font-weight:700; font-size:17px; color:var(--fg); }
-  .brand .mark { width:28px; height:28px; border-radius:8px; background:linear-gradient(135deg,var(--accent),#b69bff); display:grid; place-items:center; color:#fff; font-weight:800; }
-  .top nav { display:flex; gap:18px; } .top nav a { color:var(--muted); font-size:14px; } .top nav a:hover{ color:var(--fg); }
-  .top .spacer { flex:1; }
-  .ctl { display:inline-flex; align-items:center; gap:6px; border:1px solid var(--border); background:var(--bg); color:var(--fg); border-radius:8px; padding:7px 10px; font-size:13px; cursor:pointer; }
-  .ctl:hover { border-color:var(--accent); }
-  .seg { display:inline-flex; border:1px solid var(--border); border-radius:8px; overflow:hidden; }
-  .seg button { border:0; background:var(--bg); color:var(--muted); padding:7px 11px; font-size:13px; cursor:pointer; }
-  .seg button.active { background:var(--accent); color:#fff; }
-  .wrap { max-width:920px; margin:0 auto; padding:0 24px; }
-  .hero { padding:72px 0 40px; text-align:center; }
-  .hero .pill { display:inline-block; font-size:12px; font-weight:600; color:var(--accent); background:var(--accent-weak); border:1px solid var(--accent); border-radius:999px; padding:4px 12px; margin-bottom:18px; }
-  .hero h1 { font-size:44px; line-height:1.12; margin:.1em 0 .25em; letter-spacing:-.02em; }
-  .hero p { font-size:19px; color:var(--muted); max-width:620px; margin:0 auto 28px; }
-  .btns { display:flex; gap:12px; justify-content:center; flex-wrap:wrap; }
-  .btn { padding:12px 20px; border-radius:10px; font-size:15px; font-weight:600; border:1px solid var(--border); }
-  .btn.primary { background:var(--accent); color:#fff; border-color:var(--accent); }
-  .btn.ghost { background:var(--bg); color:var(--fg); }
-  .btn:hover { opacity:.92; }
-  .install { max-width:560px; margin:26px auto 0; text-align:left; }
-  .install pre { background:var(--code-bg); color:#e6edf3; border-radius:10px; padding:14px 16px; overflow:auto; font-size:14px; margin:0; }
-  .install .cap { color:var(--muted); font-size:13px; margin:0 0 8px 2px; }
-  .grid { display:grid; grid-template-columns:repeat(3,1fr); gap:16px; padding:36px 0 80px; }
-  .card { border:1px solid var(--border); border-radius:12px; padding:20px; background:var(--panel); }
-  .card h3 { margin:.2em 0 .4em; font-size:16px; }
-  .card p { margin:0; color:var(--muted); font-size:14px; }
-  .card .i { width:34px; height:34px; border-radius:9px; background:var(--accent-weak); color:var(--accent); display:grid; place-items:center; font-size:18px; margin-bottom:10px; }
-  footer { border-top:1px solid var(--border); padding:24px; text-align:center; color:var(--muted); font-size:13px; }
-  @media (max-width:760px){ .grid{ grid-template-columns:1fr; } .hero h1{ font-size:34px; } .top nav{ display:none; } }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%}
+  body{font:15px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;color:var(--fg);background:var(--bg)}
+  a{color:inherit;text-decoration:none}
+  code,pre{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+  button{font:inherit}
+  .app{display:grid;grid-template-columns:96px 262px 1fr;height:100vh}
+
+  /* far-left item rail */
+  .rail{background:var(--rail);display:flex;flex-direction:column;align-items:center;padding:14px 8px;gap:6px;overflow:auto}
+  .rail .fw{display:flex;flex-direction:column;align-items:center;gap:6px;width:80px;padding:10px 4px;border:0;background:none;color:var(--rail-fg);border-radius:13px;cursor:pointer;font-size:11px;font-weight:600;flex:none;text-align:center}
+  .rail .fw .ic{width:38px;height:38px;border-radius:10px;background:#ffffff12;display:grid;place-items:center}
+  .rail .fw .ic svg{display:block}
+  .rail .fw:hover{background:#ffffff12;color:#fff}
+  .rail .fw.active{background:var(--rail-active-bg);color:#fff}
+  .rail .fw.active .ic{box-shadow:0 0 0 2px var(--accent) inset}
+  .rail .sep{width:46px;height:1px;background:#ffffff14;margin:4px 0;flex:none}
+  .rail .grow{flex:1;min-height:6px}
+  .rail .ava{width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,#f0b43a,#e07b39);margin-top:4px;flex:none}
+
+  /* middle sidebar: sections of current item */
+  .side{background:var(--side);border-right:1px solid var(--border);overflow:auto;padding:22px 14px}
+  .side h2{font-size:21px;margin:0 16px 6px;display:flex;align-items:center;gap:10px}
+  .side h2 .ic{width:26px;height:26px;display:grid;place-items:center}
+  .side .sub{color:var(--muted);font-size:13px;margin:0 16px 16px}
+  .side .sec{display:flex;align-items:center;gap:11px;width:100%;text-align:left;border:0;background:none;color:var(--fg);padding:10px 14px;border-radius:10px;cursor:pointer;font-size:15px;font-weight:600}
+  .side .sec:hover{background:var(--side-active)}
+  .side .sec.active{background:var(--side-active);color:var(--accent)}
+  .side .sec .dot{width:7px;height:7px;border-radius:50%;background:currentColor;opacity:.5;flex:none}
+  .side .sec.active .dot{opacity:1}
+
+  /* content */
+  .main{background:var(--bg);overflow:auto;min-width:0}
+  .topbar{position:sticky;top:0;z-index:5;display:flex;align-items:center;gap:12px;padding:14px 32px;background:var(--bg);border-bottom:1px solid var(--border)}
+  .crumb{color:var(--muted);font-size:13px}
+  .topbar .grow{flex:1}
+  .seg{display:inline-flex;border:1px solid var(--border);border-radius:9px;overflow:hidden}
+  .seg button{border:0;background:var(--bg);color:var(--muted);padding:7px 11px;font-size:13px;cursor:pointer}
+  .seg button.active{background:var(--accent);color:#fff}
+  .ctl{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--border);background:var(--bg);color:var(--fg);border-radius:9px;padding:7px 10px;font-size:13px;cursor:pointer}
+  .ctl:hover{border-color:var(--accent)}
+
+  /* mobile section bar (hidden on desktop) */
+  .secbar{display:none}
+
+  .doc{max-width:800px;padding:32px 32px 120px}
+  .doc .big-h{font-size:28px;margin:.1em 0 .1em;display:flex;align-items:center;gap:14px;font-weight:700}
+  .doc .big-h .big{width:46px;height:46px;border-radius:12px;background:var(--chip);display:grid;place-items:center;flex:none}
+  .badge2{font-size:11px;font-weight:600;color:var(--accent);background:var(--accent-weak);border:1px solid var(--accent);border-radius:999px;padding:3px 9px}
+  .lead{color:var(--muted);font-size:16px;margin:.5em 0 1.4em}
+  .doc h3{font-size:18px;margin:1.9em 0 .5em;display:flex;align-items:center;gap:10px}
+  .num{display:inline-grid;place-items:center;width:24px;height:24px;border-radius:50%;background:var(--accent);color:#fff;font-size:13px;font-weight:700}
+  .codewrap{position:relative;margin:12px 0}
+  pre{background:var(--code-bg);color:#e6edf3;border-radius:11px;padding:16px 18px;overflow:auto;margin:0;font-size:13.5px;line-height:1.55}
+  .copy{position:absolute;top:8px;right:8px;border:1px solid #ffffff22;background:#ffffff14;color:#cfd6e4;border-radius:7px;padding:5px 9px;font-size:12px;cursor:pointer}
+  .copy:hover{background:#ffffff26}
+  .note{border:1px solid var(--border);background:var(--chip);border-left:3px solid var(--accent);border-radius:9px;padding:12px 14px;margin:14px 0;font-size:14px;color:var(--muted)}
+  .cards{display:grid;grid-template-columns:repeat(2,1fr);gap:14px;margin:14px 0}
+  .card{border:1px solid var(--border);border-radius:12px;padding:16px;background:var(--side)}
+  .card .i{width:32px;height:32px;border-radius:9px;background:var(--accent-weak);color:var(--accent);display:grid;place-items:center;font-size:17px;margin-bottom:9px}
+  .card h4{margin:.1em 0 .3em;font-size:15px}
+  .card p{margin:0;color:var(--muted);font-size:13.5px}
+  .deflist{margin:12px 0;border:1px solid var(--border);border-radius:12px;overflow:hidden}
+  .deflist .row{display:flex;gap:14px;padding:12px 16px;border-top:1px solid var(--border)}
+  .deflist .row:first-child{border-top:0}
+  .deflist code{color:var(--accent);font-size:13.5px;white-space:nowrap}
+  .deflist span{color:var(--muted);font-size:14px}
+  .links{display:flex;flex-wrap:wrap;gap:10px;margin-top:12px}
+  .links button{border:1px solid var(--border);border-radius:9px;padding:9px 13px;font-size:14px;background:var(--bg);color:var(--fg);cursor:pointer}
+  .links button:hover{border-color:var(--accent);color:var(--accent)}
+  .btns{display:flex;flex-wrap:wrap;gap:12px;margin-top:20px}
+  .btn{padding:11px 18px;border-radius:10px;font-size:15px;font-weight:600;border:1px solid var(--border);background:var(--bg);color:var(--fg);cursor:pointer}
+  .btn.primary{background:var(--accent);color:#fff;border-color:var(--accent)}
+
+  @media(max-width:980px){
+    .app{grid-template-columns:96px 1fr}
+    .side{display:none}
+    .topbar{position:static}
+    .secbar{display:flex;gap:8px;overflow-x:auto;padding:12px 24px;border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--bg);z-index:4;-webkit-overflow-scrolling:touch}
+    .secbar button{flex:none;border:1px solid var(--border);background:var(--bg);color:var(--fg);border-radius:999px;padding:7px 14px;font-size:14px;font-weight:600;cursor:pointer;white-space:nowrap}
+    .secbar button.active{border-color:var(--accent);color:var(--accent);background:var(--accent-weak)}
+    .cards{grid-template-columns:1fr 1fr}
+    .doc{padding:26px 24px 90px}
+  }
+  @media(max-width:640px){
+    .app{grid-template-columns:1fr;height:auto;min-height:100vh}
+    .rail{flex-direction:row;align-items:center;height:auto;padding:10px 12px;gap:8px;position:sticky;top:0;z-index:6}
+    .rail .fw{flex-direction:row;width:auto;gap:8px;padding:8px 13px;border-radius:999px;font-size:13px}
+    .rail .fw .ic{width:22px;height:22px;border-radius:7px}
+    .rail .sep{display:none}.rail .grow{display:none}.rail .ava{display:none}
+    .secbar{top:0}
+    .topbar{padding:12px 16px}
+    .doc{padding:22px 16px 80px}
+    .doc .big-h{font-size:23px}.doc .big-h .big{width:38px;height:38px}
+    .cards{grid-template-columns:1fr}
+    pre{font-size:12.5px}
+  }
 </style>
 </head>
 <body>
-<div class="top">
-  <a class="brand" href="index.html"><span class="mark">A</span> Acun DataTable</a>
-  <nav>
-    <a href="framework-guide.html" data-i="nav_install">Kurulum</a>
-    <a href="#features" data-i="nav_features">Özellikler</a>
-  </nav>
-  <div class="spacer"></div>
-  <div class="seg" id="lang"><button data-lang="tr" class="active">TR</button><button data-lang="en">EN</button></div>
-  <button class="ctl" id="theme">🌙 <span data-i="theme">Koyu</span></button>
+<div class="app">
+  <nav class="rail" id="rail"></nav>
+
+  <aside class="side">
+    <h2><span class="ic" id="side-ico"></span><span id="side-name"></span></h2>
+    <p class="sub" id="side-sub"></p>
+    <div id="side-secs"></div>
+  </aside>
+
+  <div class="main">
+    <div class="topbar">
+      <span class="crumb" id="crumb"></span>
+      <div class="grow"></div>
+      <div class="seg" id="lang"><button data-lang="tr" class="active">TR</button><button data-lang="en">EN</button></div>
+      <button class="ctl" id="theme">🌙 <span id="theme-label">Koyu</span></button>
+    </div>
+    <div class="secbar" id="secbar"></div>
+    <div class="doc" id="content"></div>
+  </div>
 </div>
 
-<div class="wrap">
-  <section class="hero">
-    <span class="pill" data-i="pill">Erken geliştirme · v0.1</span>
-    <h1 data-i="title">Framework'ten bağımsız veri tablosu motoru</h1>
-    <p data-i="lead">Erişilebilir, genişletilebilir, tip-güvenli bir TypeScript çekirdeği. Laravel, Livewire, React veya Vue'ya bağlı değil — DOM renderer ve framework adapter'larıyla kullanılır.</p>
-    <div class="btns">
-      <a class="btn primary" href="framework-guide.html" data-i="cta1">Kuruluma başla →</a>
-      <a class="btn ghost" href="#features" data-i="cta2">Özellikleri gör</a>
-    </div>
-    <div class="install">
-      <p class="cap" data-i="inst_cap">Çekirdeği kur:</p>
-      <pre><code>npm install @acunsoft/datatable-core</code></pre>
-    </div>
-  </section>
-
-  <section class="grid" id="features"></section>
-</div>
-
-<footer><span data-i="foot">Acun DataTable · framework-bağımsız TypeScript veri tablosu motoru</span> · <a href="framework-guide.html" data-i="nav_install">Kurulum</a></footer>
-
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
 <script>
-const UI = {
-  tr:{ theme:"Koyu", nav_install:"Kurulum", nav_features:"Özellikler", pill:"Erken geliştirme · v0.1",
-    title:"Framework'ten bağımsız veri tablosu motoru",
-    lead:"Erişilebilir, genişletilebilir, tip-güvenli bir TypeScript çekirdeği. Laravel, Livewire, React veya Vue'ya bağlı değil — DOM renderer ve framework adapter'larıyla kullanılır.",
-    cta1:"Kuruluma başla →", cta2:"Özellikleri gör", inst_cap:"Çekirdeği kur:",
-    foot:"Acun DataTable · framework-bağımsız TypeScript veri tablosu motoru",
-    features:[
-      ["🧩","Headless çekirdek","DOM ve framework'ten bağımsız saf TypeScript. İstediğin renderer veya adapter ile kullan."],
-      ["🔒","Değişmez state","Her değişim donmuş (immutable) bir snapshot üretir; çağıranın verisi asla mutasyona uğramaz."],
-      ["↕","Kararlı sıralama","Çok kolonlu, locale-duyarlı, kararlı (stable) sıralama; eşitlikte giriş sırası korunur."],
-      ["📄","Sayfalama","1-tabanlı sayfa dilimleme; sınır-dışı sayfa hata yerine son sayfaya clamp edilir."],
-      ["🛡","Güvenli varsayılan","Hücre içeriği varsayılan olarak metin basılır; güvenilmeyen HTML enjekte edilmez."],
-      ["⚡","Ölçekli","Milyon satır vaadi yok; ölçek uzak (remote) işleme ve ölçülmüş render ile sağlanır."]
-    ]},
-  en:{ theme:"Dark", nav_install:"Install", nav_features:"Features", pill:"Early development · v0.1",
-    title:"A framework-independent data table engine",
-    lead:"An accessible, extensible, type-safe TypeScript core. Not coupled to Laravel, Livewire, React or Vue — used via a DOM renderer and framework adapters.",
-    cta1:"Get started →", cta2:"See features", inst_cap:"Install the core:",
-    foot:"Acun DataTable · framework-independent TypeScript data table engine",
-    features:[
-      ["🧩","Headless core","Pure TypeScript, free of DOM and frameworks. Use it with any renderer or adapter."],
-      ["🔒","Immutable state","Every change yields a frozen snapshot; caller-owned data is never mutated."],
-      ["↕","Stable sorting","Multi-column, locale-aware, stable sorting; equal rows keep their input order."],
-      ["📄","Pagination","1-based page slicing; an out-of-range page is clamped to the last page, not thrown."],
-      ["🛡","Secure by default","Cell content is rendered as text by default; untrusted HTML is never injected."],
-      ["⚡","Scales honestly","No million-row promise; scale comes from remote processing and measured rendering."]
-    ]}
+const ICON = {
+  home:`<svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/></svg>`,
+  vue:`<svg width="22" height="22" viewBox="0 0 196 170"><path d="M120 0 98 38 76 0H0l98 170L196 0z" fill="#41B883"/><path d="M120 0 98 38 76 0H38l60 104L158 0z" fill="#35495E"/></svg>`,
+  react:`<svg width="24" height="24" viewBox="-11.5 -10.23 23 20.46" fill="none"><circle r="2.05" fill="#61DAFB"/><g stroke="#61DAFB" stroke-width="1"><ellipse rx="11" ry="4.2"/><ellipse rx="11" ry="4.2" transform="rotate(60)"/><ellipse rx="11" ry="4.2" transform="rotate(120)"/></g></svg>`,
+  html:`<svg width="20" height="20" viewBox="0 0 512 512"><path fill="#E34F26" d="M71 460 30 0h452l-41 460-185 52z"/><path fill="#EF652A" d="M256 472l149-41 35-394H256z"/><path fill="#fff" d="M256 208h-75l-5-53h80v-52H119l15 157h122zm0 134-63-17-4-45h-52l7 89 112 31z"/><path fill="#EBEBEB" d="M256 208v52h70l-7 73-63 17v54l112-31 15-165zm0-105v52h132l4-52z"/></svg>`,
+  livewire:`<svg width="20" height="20" viewBox="0 0 24 24" fill="#FB70A9"><path d="M13 2 4.5 13H11l-1 9 9-12h-6z"/></svg>`,
+  laravel:`<svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="#FF2D20" stroke-width="1.7" stroke-linejoin="round" stroke-linecap="round"><path d="M3 7l4.5-2.5L12 7 7.5 9.5z"/><path d="M3 7v5l4.5 2.5V9.5"/><path d="M12 7v5l-4.5 2.5"/><path d="M12 7l4.5-2.5L21 7l-4.5 2.5z"/><path d="M16.5 9.5V15L12 17.5"/></svg>`
 };
-let lang = "tr";
-try { lang = localStorage.getItem('adt-lang') || lang; } catch(e){}
-function render(){
-  const t = UI[lang];
-  document.querySelectorAll('[data-i]').forEach(el=>{ const k=el.getAttribute('data-i'); if(typeof t[k]==='string') el.textContent=t[k]; });
-  document.getElementById('features').innerHTML = t.features.map(([i,h,p])=>
-    `<div class="card"><div class="i">${i}</div><h3>${h}</h3><p>${p}</p></div>`).join('');
-  document.documentElement.lang = lang;
-  document.querySelectorAll('#lang button').forEach(b=>b.classList.toggle('active',b.dataset.lang===lang));
-}
-document.querySelectorAll('#lang button').forEach(btn=>{
-  btn.onclick=()=>{ lang=btn.dataset.lang; try{localStorage.setItem('adt-lang',lang);}catch(e){} render(); applyTheme(); };
+const FEATURES = {
+  tr:[["🧩","Headless çekirdek","DOM ve framework'ten bağımsız saf TypeScript."],
+      ["🔒","Değişmez state","Her değişim donmuş snapshot üretir; veriniz mutasyona uğramaz."],
+      ["↕","Kararlı sıralama","Çok kolonlu, locale-duyarlı, stable sıralama."],
+      ["📄","Sayfalama","1-tabanlı dilimleme; sınır-dışı sayfa son sayfaya clamp."],
+      ["🛡","Güvenli varsayılan","Hücre içeriği metin basılır; güvenilmeyen HTML enjekte edilmez."],
+      ["⚡","Tip-güvenli","Kolonlar ve satır ID'leri tam tiplenir."]],
+  en:[["🧩","Headless core","Pure TypeScript, free of DOM and frameworks."],
+      ["🔒","Immutable state","Every change yields a frozen snapshot; your data is never mutated."],
+      ["↕","Stable sorting","Multi-column, locale-aware, stable sorting."],
+      ["📄","Pagination","1-based slicing; an out-of-range page clamps to the last page."],
+      ["🛡","Secure by default","Cell content is rendered as text; untrusted HTML is never injected."],
+      ["⚡","Type-safe","Columns and row IDs are fully typed."]]
+};
+const API = {
+  tr:[["createColumns()","Tipli kolon tanımları; doğrular ve dondurur."],
+      ["createRows()","Kararlı satır kimlikleri; caller verisini klonlamaz."],
+      ["createLocalRowModel()","Yerel çok-kolonlu sıralama + önbellek."],
+      ["paginateRows()","1-tabanlı sayfa dilimleme; clamp'li."],
+      ["createTableState()","Değişmez state: page/pageSize/sorting + abonelik."]],
+  en:[["createColumns()","Typed column definitions; validated and frozen."],
+      ["createRows()","Stable row identities; never clones caller data."],
+      ["createLocalRowModel()","Local multi-column sorting with caching."],
+      ["paginateRows()","1-based page slicing, clamped."],
+      ["createTableState()","Immutable state: page/pageSize/sorting + subscription."]]
+};
+const CORE_EXAMPLE =
+`import { createColumns, createRows, createLocalRowModel, paginateRows } from '@acunsoft/datatable-core';
+
+const columns = createColumns([
+  { id: 'customer', header: 'Müşteri', accessorKey: 'customer', enableSorting: true },
+  { id: 'total', header: 'Tutar', accessorKey: 'total', enableSorting: true },
+]);
+
+const model = createLocalRowModel(createRows(data), columns, { locale: 'tr' });
+const sorted = model.getSortedRows([{ field: 'total', direction: 'desc' }]);
+const page = paginateRows(sorted, { page: 1, pageSize: 25 });
+console.log(page.rows, page.pageCount);`;
+
+const FW = [
+  { id:"vue", name:"Vue", ico:ICON.vue, preview:true,
+    lead:{tr:"Vue 3 için <code>@acunsoft/datatable-vue</code>: çekirdeği bir composable ve <code>&lt;DataTable&gt;</code> bileşeniyle sunar.",
+          en:"For Vue 3, <code>@acunsoft/datatable-vue</code> exposes the core as a composable and a <code>&lt;DataTable&gt;</code> component."},
+    install:"npm install @acunsoft/datatable-core @acunsoft/datatable-vue",
+    note:{tr:"Vue 3.4+ peer dependency. State reaktiftir; çekirdeğin immutable snapshot'larıyla uyumludur.",
+          en:"Vue 3.4+ peer dependency. State is reactive and tracks the core's immutable snapshots."},
+    lang:"xml", code:
+`<script setup lang="ts">
+import { useDataTable, DataTable } from '@acunsoft/datatable-vue';
+import { createColumns } from '@acunsoft/datatable-core';
+
+const columns = createColumns([
+  { id: 'customer', header: 'Müşteri', accessorKey: 'customer', enableSorting: true },
+  { id: 'total', header: 'Tutar', accessorKey: 'total', enableSorting: true },
+]);
+const table = useDataTable({ rows, columns, getRowId: r => r.id });
+<\/script>
+
+<template>
+  <DataTable :table="table" />
+</template>` },
+
+  { id:"react", name:"React", ico:ICON.react, preview:true,
+    lead:{tr:"React için <code>@acunsoft/datatable-react</code>: headless çekirdeği bir hook ve hazır bileşenle sarar.",
+          en:"For React, <code>@acunsoft/datatable-react</code> wraps the headless core with a hook and a ready component."},
+    install:"npm install @acunsoft/datatable-core @acunsoft/datatable-react",
+    note:{tr:"React 18+ peer dependency. Next.js'te bileşeni bir <code>\"use client\"</code> sınırında kullanın.",
+          en:"React 18+ peer dependency. In Next.js, use the component inside a <code>\"use client\"</code> boundary."},
+    lang:"typescript", code:
+`import { useDataTable, DataTable } from '@acunsoft/datatable-react';
+import { createColumns } from '@acunsoft/datatable-core';
+
+const columns = createColumns<Order>([
+  { id: 'customer', header: 'Müşteri', accessorKey: 'customer', enableSorting: true },
+  { id: 'total', header: 'Tutar', accessorKey: 'total', enableSorting: true },
+]);
+
+export function Orders({ rows }: { rows: Order[] }) {
+  const table = useDataTable({ rows, columns, getRowId: r => r.id,
+    initialState: { page: 1, pageSize: 25 } });
+  return <DataTable table={table} />;
+}` },
+
+  { id:"html", name:"HTML", ico:ICON.html, preview:true,
+    lead:{tr:"Framework olmadan: headless çekirdek + <code>@acunsoft/datatable-dom</code> ile erişilebilir bir <code>&lt;table&gt;</code> render edin.",
+          en:"Without a framework: render an accessible <code>&lt;table&gt;</code> with the headless core + <code>@acunsoft/datatable-dom</code>."},
+    install:"npm install @acunsoft/datatable-core @acunsoft/datatable-dom",
+    note:{tr:"Hücre içeriği varsayılan olarak <code>textContent</code> ile güvenli metin basılır; güvenilmeyen HTML enjekte edilmez.",
+          en:"Cell content is rendered as safe text via <code>textContent</code> by default; untrusted HTML is never injected."},
+    lang:"typescript", code:
+`import { createColumns, createRows, createLocalRowModel, paginateRows } from '@acunsoft/datatable-core';
+import { renderTable } from '@acunsoft/datatable-dom';
+
+const columns = createColumns([
+  { id: 'customer', header: 'Müşteri', accessorKey: 'customer', enableSorting: true },
+  { id: 'total', header: 'Tutar', accessorKey: 'total', enableSorting: true },
+]);
+const model = createLocalRowModel(createRows(data), columns, { locale: 'tr' });
+const page = paginateRows(
+  model.getSortedRows([{ field: 'total', direction: 'desc' }]),
+  { page: 1, pageSize: 25 });
+
+renderTable(document.querySelector('#grid'), { columns, rows: page.rows });` },
+
+  { id:"livewire", name:"Livewire", ico:ICON.livewire, preview:true,
+    lead:{tr:"Laravel Livewire için <code>acunsoft/datatable-livewire</code>: sunucu taraflı sayfalama, sıralama ve filtreleme çekirdeğin kontratıyla.",
+          en:"For Laravel Livewire, <code>acunsoft/datatable-livewire</code>: server-side paging, sorting and filtering via the core contract."},
+    install:"composer require acunsoft/datatable-livewire\nnpm install @acunsoft/datatable-core",
+    note:{tr:"Sıralanabilir kolonları sunucuda <strong>allowlist</strong> edin; istemci kolon adlarını asla ham SQL'e koymayın.",
+          en:"<strong>Allowlist</strong> sortable columns on the server; never interpolate client column names into raw SQL."},
+    lang:"php", code:
+`<\?php
+use Acunsoft\\DataTable\\Livewire\\WithDataTable;
+
+class OrdersTable extends \\Livewire\\Component
+{
+    use WithDataTable;
+
+    public function columns(): array
+    {
+        return [
+            ['id' => 'customer', 'header' => 'Müşteri', 'sortable' => true],
+            ['id' => 'total', 'header' => 'Tutar', 'sortable' => true],
+        ];
+    }
+
+    public function query()
+    {
+        return \\App\\Models\\Order::query(); // page/sort/filter çekirdekten uygulanır
+    }
+}` },
+
+  { id:"laravel", name:"Laravel", ico:ICON.laravel, preview:true,
+    lead:{tr:"Livewire olmadan Laravel: bir Blade bileşeni + JSON uç noktası ile uzak (remote) DataSource. Ağır işi sunucu yapar.",
+          en:"Laravel without Livewire: a Blade component + JSON endpoint backing a remote DataSource. The server does the heavy work."},
+    install:"composer require acunsoft/datatable-laravel\nphp artisan vendor:publish --tag=datatable",
+    note:{tr:"Uç nokta her sorguyu bağımsız yetkilendirmeli ve sayfa boyutu sınırını uygulamalı; sıralanabilir kolonlar allowlist'tir.",
+          en:"The endpoint must authorize every query independently and enforce a page-size limit; sortable columns are allowlisted."},
+    lang:"php", code:
+`// routes/web.php — uzak DataSource için JSON uç noktası
+use Acunsoft\\DataTable\\Laravel\\TableResponse;
+
+Route::get('/orders/data', function () {
+    return TableResponse::for(\\App\\Models\\Order::query())
+        ->sortable(['customer', 'total'])      // allowlist
+        ->searchable(['customer'])
+        ->maxPageSize(100);
 });
+
+// resources/views/orders.blade.php
+<x-datatable
+    :source="route('orders.data')"
+    :columns="[
+        ['id' => 'customer', 'header' => 'Müşteri', 'sortable' => true],
+        ['id' => 'total', 'header' => 'Tutar', 'sortable' => true],
+    ]" />` }
+];
+
+const T = {
+  tr:{ install:"Kurulum", features:"Özellikler", examples:"Örnekler", api:"API",
+       overview:"Genel bakış", quickstart:"Hızlı başlangıç", usage:"Kullanım",
+       theme:"Koyu", copy:"kopyala", copied:"kopyalandı ✓", core:"çekirdek", preview:"önizleme",
+       home:"Giriş", getStart:"Başlangıç",
+       ex_basic:"Temel kullanım", ex_core:"Sıralama + sayfalama (çekirdek)",
+       feat_intro:n=>`${n} aynı headless çekirdeği kullanır — sağlanan özellikler:`,
+       api_intro:"Çekirdek genel API:", qs_intro:"Önce çekirdeği kur, sonra bir framework adapter'ı ekle:",
+       qs_pick:"Bir framework seç:",
+       hero_t:"Framework'ten bağımsız veri tablosu motoru",
+       hero_s:"Erişilebilir, genişletilebilir, tip-güvenli bir TypeScript çekirdeği. Soldan bir framework seç; kurulum, özellikler ve örnekler hemen burada.",
+       hero_c1:"Vue ile başla", hero_c2:"Özellikleri gör" },
+  en:{ install:"Installation", features:"Features", examples:"Examples", api:"API",
+       overview:"Overview", quickstart:"Quick start", usage:"Usage",
+       theme:"Dark", copy:"copy", copied:"copied ✓", core:"core", preview:"preview",
+       home:"Home", getStart:"Getting started",
+       ex_basic:"Basic usage", ex_core:"Sorting + pagination (core)",
+       feat_intro:n=>`${n} uses the same headless core — the features it provides:`,
+       api_intro:"Core public API:", qs_intro:"Install the core first, then add a framework adapter:",
+       qs_pick:"Pick a framework:",
+       hero_t:"A framework-independent data table engine",
+       hero_s:"An accessible, extensible, type-safe TypeScript core. Pick a framework on the left; installation, features and examples are right here.",
+       hero_c1:"Start with Vue", hero_c2:"See features" }
+};
+
+const HOME = { id:"home", type:"home", ico:ICON.home, sections:["overview","quickstart","features"] };
+const NAV = [HOME, ...FW.map(f=>({ ...f, type:"fw", sections:["install","features","examples","api"] }))];
+
+let lang="tr", curItem="home", curSec="overview";
+try{ lang=localStorage.getItem('adt-lang')||lang; curItem=localStorage.getItem('adt-item')||curItem; curSec=localStorage.getItem('adt-sec')||curSec; }catch(e){}
+const $=s=>document.querySelector(s);
+const item=()=>NAV.find(n=>n.id===curItem)||HOME;
+const nameOf=n=>n.type==="home"?T[lang].home:n.name;
+
+function go(id, sec){
+  const it=NAV.find(n=>n.id===id)||HOME;
+  const section = sec && it.sections.includes(sec) ? sec
+    : (it.sections.includes(curSec) ? curSec : it.sections[0]);
+  curItem=it.id; curSec=section; persist(); renderAll();
+}
+function persist(){try{localStorage.setItem('adt-lang',lang);localStorage.setItem('adt-item',curItem);localStorage.setItem('adt-sec',curSec);}catch(e){}}
+
+/* ---------- block builders ---------- */
+function blocksFor(it, sec){
+  const t=T[lang];
+  if(it.type==="home"){
+    if(sec==="overview") return [{hero:{t:t.hero_t,s:t.hero_s,ctas:[["vue","install",t.hero_c1,true],["home","features",t.hero_c2,false]]}}];
+    if(sec==="quickstart") return [{p:t.qs_intro},{step:1,label:t.install},{code:"npm install @acunsoft/datatable-core",lang:"bash"},{p:t.qs_pick},{links:FW.map(f=>[f.id,"install",f.name])}];
+    if(sec==="features") return [{cards:FEATURES[lang]}];
+  }
+  if(sec==="install") return [{lead:it.lead[lang]},{step:1,label:t.install},{code:it.install,lang:"bash"},{note:it.note[lang]},{step:2,label:t.usage},{code:it.code,lang:it.lang}];
+  if(sec==="features") return [{p:t.feat_intro(it.name)},{cards:FEATURES[lang]}];
+  if(sec==="examples") return [{h:t.ex_basic},{code:it.code,lang:it.lang},{h:t.ex_core},{code:CORE_EXAMPLE,lang:"typescript"}];
+  if(sec==="api") return [{p:t.api_intro},{deflist:API[lang]}];
+  return [];
+}
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function blockHTML(b){
+  const t=T[lang];
+  if(b.hero) return `<div class="big-h" style="font-size:34px">${esc(b.hero.t)}</div><p class="lead">${esc(b.hero.s)}</p><div class="btns">${b.hero.ctas.map(c=>`<button class="btn ${c[3]?'primary':''}" data-go="${c[0]}:${c[1]}">${esc(c[2])}</button>`).join('')}</div>`;
+  if(b.lead) return `<p class="lead">${b.lead}</p>`;
+  if(b.p) return `<p>${b.p}</p>`;
+  if(b.h) return `<h3>${esc(b.h)}</h3>`;
+  if(b.step) return `<h3><span class="num">${b.step}</span>${esc(b.label)}</h3>`;
+  if(b.code) return `<div class="codewrap"><pre><code class="language-${b.lang}">${esc(b.code)}</code></pre><button class="copy">${t.copy}</button></div>`;
+  if(b.note) return `<div class="note">${b.note}</div>`;
+  if(b.cards) return `<div class="cards">${b.cards.map(c=>`<div class="card"><div class="i">${c[0]}</div><h4>${esc(c[1])}</h4><p>${esc(c[2])}</p></div>`).join('')}</div>`;
+  if(b.deflist) return `<div class="deflist">${b.deflist.map(r=>`<div class="row"><code>${esc(r[0])}</code><span>${esc(r[1])}</span></div>`).join('')}</div>`;
+  if(b.links) return `<div class="links">${b.links.map(l=>`<button data-go="${l[0]}:${l[1]}">${esc(l[2])} →</button>`).join('')}</div>`;
+  return '';
+}
+
+/* ---------- renderers ---------- */
+function renderRail(){
+  const el=$('#rail'); el.innerHTML='';
+  NAV.forEach((n,i)=>{
+    if(i===1){ const s=document.createElement('div'); s.className='sep'; el.appendChild(s); }
+    const b=document.createElement('button');
+    b.className='fw'+(n.id===curItem?' active':''); b.title=nameOf(n);
+    b.innerHTML=`<span class="ic">${n.ico}</span>${nameOf(n)}`;
+    b.onclick=()=>go(n.id);
+    el.appendChild(b);
+  });
+  const g=document.createElement('div'); g.className='grow'; el.appendChild(g);
+  const a=document.createElement('div'); a.className='ava'; el.appendChild(a);
+}
+function renderSidebar(){
+  const it=item(), t=T[lang];
+  $('#side-ico').innerHTML=it.ico; $('#side-name').textContent=nameOf(it);
+  $('#side-sub').textContent = it.type==="home" ? t.getStart : (it.preview?t.preview:t.core);
+  const wrap=$('#side-secs'), bar=$('#secbar'); wrap.innerHTML=''; bar.innerHTML='';
+  it.sections.forEach(sec=>{
+    const b=document.createElement('button');
+    b.className='sec'+(sec===curSec?' active':'');
+    b.innerHTML=`<span class="dot"></span>${t[sec]}`;
+    b.onclick=()=>go(it.id,sec);
+    wrap.appendChild(b);
+    const m=document.createElement('button');
+    m.className=(sec===curSec?'active':''); m.textContent=t[sec];
+    m.onclick=()=>{go(it.id,sec);};
+    bar.appendChild(m);
+  });
+}
+function renderContent(){
+  const it=item(), t=T[lang];
+  const badge = it.type==="home" ? "" : `<span class="badge2">${it.preview?t.preview:t.core}</span>`;
+  const head = it.type==="home" ? "" :
+    `<div class="big-h"><span class="big">${it.ico}</span>${it.name} ${badge}</div>`;
+  const body = blocksFor(it,curSec).map(blockHTML).join('');
+  $('#content').innerHTML = head + body;
+  $('#crumb').textContent = `${t.getStart} · ${nameOf(it)} · ${t[curSec]}`;
+  document.querySelectorAll('#content pre code').forEach(b=>{try{hljs.highlightElement(b);}catch(e){}});
+}
+function renderAll(){ renderRail(); renderSidebar(); renderContent(); applyThemeLabel(); updateLang(); }
+
+/* ---------- controls ---------- */
+function updateLang(){ document.documentElement.lang=lang; document.querySelectorAll('#lang button').forEach(b=>b.classList.toggle('active',b.dataset.lang===lang)); }
+document.querySelectorAll('#lang button').forEach(btn=>{ btn.onclick=()=>{lang=btn.dataset.lang;persist();renderAll();}; });
+
 let theme='light';
-try{ theme=localStorage.getItem('adt-theme')||(matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light'); }catch(e){}
-function applyTheme(){ document.documentElement.setAttribute('data-theme',theme);
-  const th=document.getElementById('theme'); th.firstChild.textContent=theme==='dark'?'☀ ':'🌙 ';
-  th.querySelector('[data-i=theme]').textContent = lang==='tr'?(theme==='dark'?'Açık':'Koyu'):(theme==='dark'?'Light':'Dark'); }
-document.getElementById('theme').onclick=()=>{ theme=theme==='dark'?'light':'dark'; try{localStorage.setItem('adt-theme',theme);}catch(e){} applyTheme(); };
+try{theme=localStorage.getItem('adt-theme')||(matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light');}catch(e){}
+function applyThemeLabel(){ document.documentElement.setAttribute('data-theme',theme);
+  const th=$('#theme'); th.firstChild.textContent=theme==='dark'?'☀ ':'🌙 ';
+  $('#theme-label').textContent=lang==='tr'?(theme==='dark'?'Açık':'Koyu'):(theme==='dark'?'Light':'Dark'); }
+$('#theme').onclick=()=>{theme=theme==='dark'?'light':'dark';try{localStorage.setItem('adt-theme',theme);}catch(e){}applyThemeLabel();};
+
+document.addEventListener('click',e=>{
+  const g=e.target.closest('[data-go]'); if(g){ const [i,s]=g.dataset.go.split(':'); go(i,s); return; }
+  const c=e.target.closest('.copy'); if(c){ const code=c.closest('.codewrap').querySelector('code').textContent;
+    navigator.clipboard?.writeText(code).then(()=>{c.textContent=T[lang].copied;setTimeout(()=>c.textContent=T[lang].copy,1200);}).catch(()=>{}); }
+});
+
 document.documentElement.setAttribute('data-theme',theme);
-render(); applyTheme();
+renderAll();
 </script>
 </body>
 </html>
