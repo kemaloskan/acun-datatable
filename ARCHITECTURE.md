@@ -119,7 +119,7 @@ acun-datatable/
   .github/workflows/
 ```
 
-Directories are named by role (`renderer-dom`, `datasource-http`); published names use the `datatable-` prefix. Planned entries are reservations for roadmap planning, not a claim that those packages exist. Nothing is published yet. Blade/Livewire components use the `acun:datatable-*` prefix (e.g. `<x-acun-datatable::table>`), because Acun Pro already has a different `acun:data-table` component.
+Directories are named by role (`renderer-dom`, `datasource-http`); published names use the `datatable-` prefix. Planned entries are reservations for roadmap planning, not a claim that those packages exist. Nothing is published yet. Blade/Livewire components use the `acun:datatable-*` prefix (e.g. `<x-acun-datatable::table>`). Acun Pro will build its tables on Acun DataTable; its earlier DataTables-based `acun:data-table` component is being removed.
 
 ## 5. Toolchain and packaging
 
