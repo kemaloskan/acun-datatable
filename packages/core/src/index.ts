@@ -1,4 +1,5 @@
 export { createColumns, type ColumnDef } from './columns';
+export { filterRows, type FilterOperator, type FilterRule, type FilterQuery, type FilterOptions } from './filtering';
 export { createLocalRowModel, type LocalRowModel, type LocalRowModelOptions, type SortComparator, type NullPlacement } from './local-row-model';
 export { paginateRows, type PageView } from './pagination';
 export { createRows, type Row, type RowId, type RowIdValue, type GetRowId, type RowOptions } from './rows';

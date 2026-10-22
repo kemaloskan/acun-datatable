@@ -51,9 +51,10 @@ subscribers. Equivalent setter calls do not notify. After `destroy`, setters and
 new subscriptions are no-ops while the final snapshot remains readable.
 
 The existing `createPagination(page, pageSize)` helper remains available. Local
-multi-column sorting is available via `createLocalRowModel` (below). No renderer,
-HTTP DataSource, local filtering/global search, selection or a composed full
-table API has been implemented yet. See `SPEC.md` for milestones.
+multi-column sorting (`createLocalRowModel`), column filtering and global search
+(`filterRows`) and pagination (`paginateRows`) are available (below). No renderer,
+HTTP DataSource, selection or a composed full table API has been implemented
+yet. See `SPEC.md` for milestones.
 
 ## Column schema and stable row IDs (M1)
 
@@ -185,6 +186,47 @@ the semantic sort key and reused until `setRows(...)` or `invalidate()` is calle
 because the engine does not own caller records, call `invalidate()` after mutating
 shared `original` objects. `getSortedRows([])` returns the unsorted core rows.
 
+## Column filtering and global search (M1)
+
+```ts
+import { filterRows } from '@acunsoft/datatable-core';
+
+const visible = filterRows(sortedRows, columns, {
+  filters: [
+    { field: 'total', operator: 'gt', value: 100 },
+    { field: 'total', operator: 'lt', value: 500 },
+    { field: 'customer', operator: 'contains', value: 'ay' },
+  ],
+  globalSearch: 'istanbul',
+}, { locale: 'tr' });
+```
+
+`filterRows(rows, columns, { filters?, globalSearch? }, { locale? })` returns the
+rows that match **every** filter rule and the global search. Only columns with
+`enableFiltering: true` can be filtered or searched; unknown or disabled column
+IDs, blank fields, unknown operators and invalid values throw explicit errors.
+
+| Operator | Matches | Accepted `value` |
+|---|---|---|
+| `contains` | case-insensitive substring of a string, or of a finite number's text | string (`''` = no constraint) |
+| `eq` | exact, same-type equality; `Date` by time | string, number, boolean, valid `Date` |
+| `gt` / `lt` | strictly greater / less than a value of the same type; strings by collation | string, number, valid `Date` |
+
+- **No coercion:** `28` never equals `'28'`, and values of different types never
+  compare. Missing values (`null`, `undefined`, `NaN`, invalid `Date`) never match.
+- **Global search** trims the text and matches if any filterable column
+  `contains` it. Empty or whitespace-only search is no constraint; it is combined
+  with the column filters by AND.
+- **Locale:** case folding and string ordering use `locale` (default `'en'`). With
+  `'tr'`, `İ`/`i` and `I`/`ı` are matched as Turkish letter pairs.
+- **Order and immutability:** input order is preserved and the same `Row` wrappers
+  are returned in a frozen array; the input is never mutated. With no active rule
+  a frozen input is returned as is. Each needed accessor runs at most once per row.
+
+Because the order is preserved, filtering the output of `getSortedRows` gives the
+same rows as sorting the filtered rows, so the sorting cache stays useful:
+`getSortedRows → filterRows → paginateRows`.
+
 ## Paginating a row view (M1)
 
 ```ts
@@ -206,6 +248,7 @@ input array is not mutated and the same `Row` wrappers are reused in a frozen
 result.
 
 `npm run check` checks source, runtime tests, and compile-only type assertions
-in `packages/core/tests/schema.types.ts` and
+in `packages/core/tests/schema.types.ts`,
+`packages/core/tests/filtering.types.ts` and
 `packages/core/tests/local-row-model.types.ts`; build declarations remain
 source-only.
