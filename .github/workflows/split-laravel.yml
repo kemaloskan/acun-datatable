@@ -1,0 +1,45 @@
+name: Laravel package split
+# Packagist reads composer.json from a repository root, so
+# packages/adapter-laravel is mirrored (with its history) to the read-only
+# repository kemaloskan/datatable-laravel, which Packagist watches.
+#
+# - every push to main that touches the package updates its main branch;
+# - a tag `laravel-v1.2.3` here becomes the version tag `v1.2.3` there.
+#
+# Needs the SPLIT_TOKEN secret: a fine-grained token with "Contents: read and
+# write" on kemaloskan/datatable-laravel only. Without it the job is skipped.
+on:
+  push:
+    branches: [main]
+    paths: ['packages/adapter-laravel/**']
+    tags: ['laravel-v*']
+  workflow_dispatch:
+
+concurrency:
+  group: split-laravel
+  cancel-in-progress: false
+
+jobs:
+  split:
+    runs-on: ubuntu-latest
+    env:
+      SPLIT_TOKEN: ${{ secrets.SPLIT_TOKEN }}
+    steps:
+      - name: Skip without a token
+        if: env.SPLIT_TOKEN == ''
+        run: echo "::notice::SPLIT_TOKEN is not set; the Laravel package was not mirrored."
+      - uses: actions/checkout@v4
+        if: env.SPLIT_TOKEN != ''
+        with:
+          fetch-depth: 0
+      - name: Mirror packages/adapter-laravel
+        if: env.SPLIT_TOKEN != ''
+        run: |
+          git subtree split --prefix packages/adapter-laravel -b split
+          remote="https://x-access-token:${SPLIT_TOKEN}@github.com/kemaloskan/datatable-laravel.git"
+          if [ "${GITHUB_REF_TYPE}" = "tag" ]; then
+            version="${GITHUB_REF_NAME#laravel-}"
+            git push "$remote" "split:refs/tags/${version}"
+          else
+            git push "$remote" split:main
+          fi

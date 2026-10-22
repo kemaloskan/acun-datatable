@@ -12,6 +12,16 @@
     "pagination",
     "typescript"
   ],
+  "homepage": "https://kemaloskan.github.io/acun-datatable/",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kemaloskan/acun-datatable.git",
+    "directory": "packages/core"
+  },
+  "bugs": {
+    "url": "https://github.com/kemaloskan/acun-datatable/issues"
+  },
+  "author": "Kemal OSKAN (https://github.com/kemaloskan)",
   "license": "MIT",
   "type": "module",
   "sideEffects": false,

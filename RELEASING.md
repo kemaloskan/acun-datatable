@@ -36,16 +36,33 @@ change for users. Commit the generated `.changeset/*.md` with the change.
 To publish from a machine instead: `npm login`, then `npm run release`, then
 `git push --tags`. Use `npx changeset pack` to inspect the exact tarballs first.
 
+## Laravel package (Packagist)
+
+Packagist reads `composer.json` from a repository root, so the
+**Laravel package split** workflow mirrors `packages/adapter-laravel`, with its
+history, to the read-only repository
+[kemaloskan/datatable-laravel](https://github.com/kemaloskan/datatable-laravel)
+on every push to `main` that touches it. Never commit there directly.
+
+To release a Composer version, tag the monorepo and push the tag:
+
+```bash
+git tag laravel-v0.1.0 && git push origin laravel-v0.1.0
+```
+
+The workflow turns it into the tag `v0.1.0` in the split repository, which
+Packagist reads as the version.
+
 ## One-time setup
 
 - [x] The `@acunsoft` npm scope belongs to the project owner.
-- [ ] `repository`, `homepage`, `bugs` and `author` in each `package.json` (npm
-      provenance requires `repository.url` to match the GitHub repository).
+- [x] `repository`, `homepage`, `bugs` and `author` in each `package.json` and
+      `composer.json`.
 - [ ] `NPM_TOKEN` repository secret: an npm automation token with publish
       rights to `@acunsoft`. After the first release, npm trusted publishing
       (OIDC) can replace the token.
-- [ ] Packagist: Packagist reads `composer.json` from the **repository root**,
-      so `packages/adapter-laravel` needs its own read-only repository (for
-      example `acunsoft/datatable-laravel`, kept in sync by a subtree-split
-      action) registered on Packagist. Composer versions come from that
-      repository's git tags.
+- [ ] `SPLIT_TOKEN` repository secret: a fine-grained GitHub token with
+      "Contents: read and write" on `kemaloskan/datatable-laravel` only.
+- [ ] Submit `https://github.com/kemaloskan/datatable-laravel` on
+      [packagist.org](https://packagist.org/packages/submit) and enable its
+      GitHub auto-update hook.
