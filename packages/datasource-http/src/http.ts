@@ -59,6 +59,10 @@ function encodeValue(value: unknown, field: string): string {
  * Default wire format, readable by PHP/Laravel and Node `qs` as nested arrays:
  * `page=2&pageSize=25&sort=total:desc,customer:asc`
  * `&filters[0][field]=total&filters[0][op]=gt&filters[0][value]=100&search=ayşe`.
+ * `between` and `in` send `filters[i][value][0..n]`; `empty` / `notEmpty` send
+ * no value. `search` is the raw text: servers should apply the same smart
+ * search (split into words, quoted phrases kept together, every word must
+ * match in some searchable column).
  * Dates are sent in local time (`formatLocalDate`). The server must re-validate everything.
  */
 export function serializeTableQuery(query: TableQuery): URLSearchParams {
@@ -71,7 +75,12 @@ export function serializeTableQuery(query: TableQuery): URLSearchParams {
   query.filters.forEach((rule, index) => {
     params.set(`filters[${index}][field]`, rule.field);
     params.set(`filters[${index}][op]`, rule.operator);
-    params.set(`filters[${index}][value]`, encodeValue(rule.value, rule.field));
+    if (Array.isArray(rule.value)) {
+      // between: [min, max]; in: the list. PHP and qs read these as arrays.
+      rule.value.forEach((item, position) => params.set(`filters[${index}][value][${position}]`, encodeValue(item, rule.field)));
+    } else if (rule.value !== undefined) {
+      params.set(`filters[${index}][value]`, encodeValue(rule.value, rule.field));
+    } // empty / notEmpty carry no value
   });
   if (query.globalSearch !== undefined) params.set('search', query.globalSearch);
   return params;

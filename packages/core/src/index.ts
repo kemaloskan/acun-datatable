@@ -6,7 +6,7 @@ export {
   createDataTable, type DataTable, type DataTableEvent, type DataTableInitialState,
   type DataTableListener, type DataTableMode, type DataTableOptions, type DataTableState,
 } from './data-table';
-export { FILTER_OPERATORS, filterRows, type FilterOperator, type FilterRule, type FilterQuery, type FilterOptions } from './filtering';
+export { FILTER_OPERATORS, filterRows, MAX_IN_VALUES, splitSearchTerms, type FilterOperator, type FilterRule, type FilterQuery, type FilterOptions } from './filtering';
 export { createLocalRowModel, type LocalRowModel, type LocalRowModelOptions, type SortComparator, type NullPlacement } from './local-row-model';
 export { paginateRows, type PageView } from './pagination';
 export {

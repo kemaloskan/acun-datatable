@@ -191,7 +191,7 @@ describe('filterRows validation', () => {
     [{ filters: [{ field: 'note', operator: 'eq', value: 'x' }] }, 'filtering is disabled for column "note"'],
     [{ filters: [{ field: '', operator: 'eq', value: 1 }] }, 'non-empty column ID'],
     [{ filters: [null] }, 'non-empty column ID'],
-    [{ filters: [{ field: 'age', operator: 'between', value: 1 }] }, 'must be one of contains, eq, gt, lt'],
+    [{ filters: [{ field: 'age', operator: 'like', value: 1 }] }, 'must be one of contains, startsWith, eq, gt, lt, between, in, empty, notEmpty'],
     [{ filters: [{ field: 'name', operator: 'contains', value: 1 }] }, 'contains value must be a string'],
     [{ filters: [{ field: 'age', operator: 'gt', value: true }] }, 'gt value must be a string, number or valid Date'],
     [{ filters: [{ field: 'age', operator: 'lt', value: NaN }] }, 'lt value must be a string, number or valid Date'],

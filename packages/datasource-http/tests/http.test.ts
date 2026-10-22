@@ -160,3 +160,25 @@ describe('createHttpDataSource', () => {
     expect(runner.getState()).toMatchObject({ status: 'success', query: { page: 2 }, result: { rows: [{ id: 2 }] } });
   });
 });
+
+describe('serializeTableQuery — list and valueless operators', () => {
+  it('sends between/in as indexed lists and empty without a value', () => {
+    const params = serializeTableQuery(createTableQuery({
+      page: 1, pageSize: 10,
+      filters: [
+        { field: 'price', operator: 'between', value: ['80.00', 120] },
+        { field: 'plate', operator: 'in', value: [6, 34, 35] },
+        { field: 'note', operator: 'empty' },
+        { field: 'name', operator: 'startsWith', value: 'İs' },
+      ],
+    }));
+    expect(Object.fromEntries(params)).toEqual({
+      page: '1', pageSize: '10',
+      'filters[0][field]': 'price', 'filters[0][op]': 'between', 'filters[0][value][0]': '80.00', 'filters[0][value][1]': '120',
+      'filters[1][field]': 'plate', 'filters[1][op]': 'in',
+      'filters[1][value][0]': '6', 'filters[1][value][1]': '34', 'filters[1][value][2]': '35',
+      'filters[2][field]': 'note', 'filters[2][op]': 'empty',
+      'filters[3][field]': 'name', 'filters[3][op]': 'startsWith', 'filters[3][value]': 'İs',
+    });
+  });
+});

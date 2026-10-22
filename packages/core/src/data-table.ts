@@ -1,5 +1,6 @@
 import { createColumns, type ColumnDef } from './columns';
 import { createEmitter } from './emitter';
+import { copyRuleValue } from './filter-rules';
 import { filterRows, type FilterRule } from './filtering';
 import { createTableState, type SortRule } from './index';
 import {
@@ -117,13 +118,18 @@ export interface DataTable<TData> {
   destroy(): void;
 }
 
+function sameValue(left: unknown, right: unknown): boolean {
+  if (left instanceof Date && right instanceof Date) return left.getTime() === right.getTime();
+  if (Array.isArray(left) && Array.isArray(right)) {
+    return left.length === right.length && left.every((item, index) => sameValue(item, right[index]));
+  }
+  return Object.is(left, right);
+}
+
 function sameFilters(left: readonly FilterRule[], right: readonly FilterRule[]): boolean {
   return left.length === right.length && left.every((rule, index) => {
     const other = right[index]!;
-    const sameValue = rule.value instanceof Date && other.value instanceof Date
-      ? rule.value.getTime() === other.value.getTime()
-      : Object.is(rule.value, other.value);
-    return rule.field === other.field && rule.operator === other.operator && sameValue;
+    return rule.field === other.field && rule.operator === other.operator && sameValue(rule.value, other.value);
   });
 }
 
@@ -177,9 +183,12 @@ export function createDataTable<TData>(options: DataTableOptions<TData>): DataTa
   };
   const copyFilters = (filters: readonly FilterRule[]): readonly Readonly<FilterRule>[] => {
     if (!Array.isArray(filters)) throw new TypeError('filters must be an array');
-    const copy = Object.freeze(filters.map(rule => (rule && typeof rule === 'object'
-      ? Object.freeze({ field: rule.field, operator: rule.operator, value: rule.value })
-      : rule)));
+    const copy = Object.freeze(filters.map(rule => {
+      if (!rule || typeof rule !== 'object') return rule;
+      return Object.freeze(rule.value === undefined
+        ? { field: rule.field, operator: rule.operator }
+        : { field: rule.field, operator: rule.operator, value: copyRuleValue(rule.value) });
+    }));
     filterRows([], columns, { filters: copy }, { locale }); // validates against the columns
     return copy;
   };

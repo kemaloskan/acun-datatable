@@ -29,6 +29,10 @@ will start at `0.1.0` (see SPEC "Planned release approach").
 
 ### Changed behaviour
 
+- Global search with several words now requires each word, in any column,
+  instead of the whole text as one substring (`ali ankara`).
+- Node 20 (end of life April 2026) is no longer supported; `engines >=22`.
+- MIT license.
 - Text sort order is natural by default (see above).
 - `contains` and search no longer distinguish case, accents or Turkish dotted
   and dotless i; untyped booleans and dates are now searchable.
@@ -38,6 +42,14 @@ will start at `0.1.0` (see SPEC "Planned release approach").
 
 ### Added
 
+- **DataTables-style smart search:** global search splits the text into words
+  (quoted phrases stay together); every word must match in some filterable
+  column. `splitSearchTerms` exposes the splitting for servers.
+- **New filter operators:** `startsWith`, `between` (`[min, max]`, inclusive),
+  `in` (list, at most 1000), `empty`, `notEmpty`; supported by `filterRows`,
+  `createTableQuery`, `createDataTable` and the HTTP serializer
+  (`filters[i][value][n]` for lists, no value for `empty`/`notEmpty`). The
+  Laravel and Node backend examples handle them.
 - Column `type`, `normalizeValue`, `isDecimal`, `foldText`, `COLUMN_TYPES`,
   `FILTER_OPERATORS`, `createEmitter`; `LocalRowModelOptions.numeric`;
   `FilterOptions.booleanLabels`; `formatLocalDate` in `@acunsoft/datatable-http`.

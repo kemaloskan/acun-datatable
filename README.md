@@ -292,8 +292,12 @@ IDs, blank fields, unknown operators and invalid values throw explicit errors.
 | Operator | Matches | Accepted `value` |
 |---|---|---|
 | `contains` | the cell's text contains the value, ignoring case and accents (see below) | string (blank = no constraint) |
+| `startsWith` | the cell's text starts with the value, folded the same way | string (blank = no constraint) |
 | `eq` | equal values of the same type; `Date` by time; text is exact | string, number, boolean, valid `Date` |
 | `gt` / `lt` | strictly greater / less than a value of the same type; text by collation | string, number, valid `Date` |
+| `between` | `min <= cell <= max` (both ends included) | `[min, max]` of the same type |
+| `in` | equal to any listed value | non-empty list, at most 1000 |
+| `empty` / `notEmpty` | missing, unreadable or blank values / everything else | no `value` |
 
 - **Search text is folded** for `contains` and global search, in every locale:
   case- and accent-insensitive and Turkish-aware. `isparta` finds `ISPARTA`,
@@ -306,12 +310,17 @@ IDs, blank fields, unknown operators and invalid values throw explicit errors.
   otherwise).
 - **Typed columns** read cells and filter values as their type first, so
   `gt 50` matches `"100.00"` in a `decimal` column. A filter value the type cannot
-  read throws; `gt`/`lt` on a boolean column throws.
+  read throws; `gt`/`lt`/`between` on a boolean column throws, as does
+  `between` with `min > max`.
 - **Untyped columns, no coercion:** `28` never equals `'28'`, and values of
   different types never compare. Missing values (`null`, `undefined`, `NaN`,
   invalid `Date`, unreadable typed values) never match.
-- **Global search** matches if any filterable column contains the folded text;
-  blank search is no constraint; it is combined with the column filters by AND.
+- **Smart global search**, like DataTables: the text is split into words and
+  every word must match in some filterable column, not necessarily the same one
+  (`ali ankara` finds Ali from Ankara); a quoted phrase is one term
+  (`"new york" 2026`). Blank search is no constraint; it is combined with the
+  column filters by AND. `splitSearchTerms` exposes the same splitting for
+  servers and adapters.
 - **Order and immutability:** input order is preserved and the same `Row` wrappers
   are returned in a frozen array; the input is never mutated. With no active rule
   a frozen input is returned as is. Each needed accessor runs at most once per row.

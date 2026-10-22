@@ -11,7 +11,7 @@ export function verifyFilteringTypes(): void {
   // @ts-expect-error results are readonly
   result.push(rows[0]!);
   // @ts-expect-error unsupported operator
-  const bad: FilterRule = { field: 'name', operator: 'between', value: 1 };
+  const bad: FilterRule = { field: 'name', operator: 'like', value: 1 };
   // @ts-expect-error globalSearch must be a string
   filterRows(rows, columns, { globalSearch: 1 });
   // @ts-expect-error row types must match the columns

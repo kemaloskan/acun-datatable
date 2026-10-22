@@ -1,4 +1,4 @@
-import { checkFilterRule, isNoOpRule, type FilterRule } from './filter-rules';
+import { checkFilterRule, copyRuleValue, isNoOpRule, type FilterRule } from './filter-rules';
 import { createPagination, createTableState, type SortRule } from './index';
 
 /** Query a remote data source answers. Pages are 1-based. */
@@ -54,7 +54,8 @@ export interface TableQueryInput {
  * Filter rules get the same checks as local filtering (known operator, value of
  * an allowed type), so an invalid rule such as `operator: 'DROP'` is rejected
  * here instead of reaching a server. `contains` rules with empty text constrain
- * nothing and are left out, as is empty search text. The server must still
+ * nothing and are left out, as is empty search text. `between` / `in` lists are
+ * copied and frozen. The server must still
  * validate everything against its own allowlist.
  */
 export function createTableQuery(input: TableQueryInput): TableQuery {
@@ -66,7 +67,9 @@ export function createTableQuery(input: TableQueryInput): TableQuery {
   const copied = Object.freeze(filters
     .map((rule, index) => {
       checkFilterRule(rule, `filters[${index}]`);
-      return Object.freeze({ field: rule.field, operator: rule.operator, value: rule.value });
+      return Object.freeze(rule.value === undefined
+        ? { field: rule.field, operator: rule.operator }
+        : { field: rule.field, operator: rule.operator, value: copyRuleValue(rule.value) });
     })
     .filter(rule => !isNoOpRule(rule)));
   const search = input.globalSearch ?? '';

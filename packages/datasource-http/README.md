@@ -97,24 +97,44 @@ public function index(Request $request)
         'search' => ['nullable', 'string', 'max:100'],
         'filters' => ['array', 'max:10'],
         'filters.*.field' => ['required', Rule::in($columns)],
-        'filters.*.op' => ['required', Rule::in(['contains', 'eq', 'gt', 'lt'])],
-        'filters.*.value' => ['required', 'string', 'max:100'],
+        'filters.*.op' => ['required', Rule::in(['contains', 'startsWith', 'eq', 'gt', 'lt', 'between', 'in', 'empty', 'notEmpty'])],
+        'filters.*.value' => ['nullable'],              // checked per operator below
+        'filters.*.value.*' => ['string', 'max:100'],
     ]);
 
-    $like = fn (string $text) => '%'.addcslashes($text, '%_\\').'%';
+    $escape = fn (string $text) => addcslashes($text, '%_\\');
     $query = Order::query();
 
     foreach ($input['filters'] ?? [] as $filter) {
-        match ($filter['op']) {                         // values are always bound
-            'contains' => $query->where($filter['field'], 'like', $like($filter['value'])),
-            'eq' => $query->where($filter['field'], $filter['value']),
-            'gt' => $query->where($filter['field'], '>', $filter['value']),
-            'lt' => $query->where($filter['field'], '<', $filter['value']),
+        [$field, $op, $value] = [$filter['field'], $filter['op'], $filter['value'] ?? null];
+        $list = is_array($value) ? $value : null;
+        $text = is_string($value) && strlen($value) <= 100 ? $value : null;
+        abort_if(match ($op) {                          // reject malformed rules
+            'between' => count($list ?? []) !== 2,
+            'in' => $list === null || count($list) < 1 || count($list) > 100,
+            'empty', 'notEmpty' => $value !== null,
+            default => $text === null,
+        }, 422);
+        match ($op) {                                   // values are always bound
+            'contains' => $query->where($field, 'like', '%'.$escape($text).'%'),
+            'startsWith' => $query->where($field, 'like', $escape($text).'%'),
+            'eq' => $query->where($field, $text),
+            'gt' => $query->where($field, '>', $text),
+            'lt' => $query->where($field, '<', $text),
+            'between' => $query->whereBetween($field, $list),
+            'in' => $query->whereIn($field, $list),
+            'empty' => $query->where(fn ($q) => $q->whereNull($field)->orWhere($field, '')),
+            'notEmpty' => $query->whereNotNull($field)->where($field, '<>', ''),
         };
     }
-    if (filled($input['search'] ?? null)) {
-        $query->where(function ($q) use ($columns, $like, $input) {
-            foreach ($columns as $column) $q->orWhere($column, 'like', $like($input['search']));
+    // Smart search, as on the client: every word must match some column;
+    // "quoted phrases" stay together.
+    preg_match_all('/"([^"]*)"?|(\S+)/u', $input['search'] ?? '', $matches, PREG_SET_ORDER);
+    foreach (array_slice($matches, 0, 10) as $match) {
+        $term = trim(($match[1] ?? '') !== '' ? $match[1] : ($match[2] ?? ''));
+        if ($term === '') continue;
+        $query->where(function ($q) use ($columns, $escape, $term) {
+            foreach ($columns as $column) $q->orWhere($column, 'like', '%'.$escape($term).'%');
         });
     }
     foreach (array_filter(explode(',', $input['sort'] ?? '')) as $part) {
@@ -135,11 +155,18 @@ public function index(Request $request)
 return `$query->paginate(...)` directly with `fromLaravelPaginator`, or pass a
 `parseResponse` that reads `meta.total`.
 
+For the same case- and accent-insensitive matching as the client (`ayse` finds
+`Ayşe`, `istanbul` finds `İSTANBUL`), match against a folded copy of the text:
+for example a generated search column that stores the lower-cased text without
+accents, or a database function that removes them. A plain `LIKE` on the
+original column follows the database collation and may differ from the client.
+
 ## Node backend (Express + PostgreSQL)
 
 ```js
 import express from 'express';
 import pg from 'pg';
+import { splitSearchTerms } from '@acunsoft/datatable-core';
 
 const db = new pg.Pool();
 const app = express();
@@ -147,7 +174,7 @@ app.set('query parser', 'extended');                    // parse filters[0][fiel
 
 const COLUMNS = { customer: 'customer', total: 'total', city: 'city' }; // API id -> SQL column
 const SORTABLE = new Set(['customer', 'total']);
-const OPS = { eq: '=', gt: '>', lt: '<' };
+const OPS = { eq: '=', gt: '>', lt: '<' };  // between, in and empty work the same way
 const int = (value, fallback, min, max) => {
   const n = Number.parseInt(value, 10);
   return Number.isSafeInteger(n) ? Math.min(Math.max(n, min), max) : fallback;
@@ -170,10 +197,11 @@ app.get('/api/orders', requireAuth, async (req, res) => {
     else if (OPS[filter.op]) where.push(`${column} ${OPS[filter.op]} ${bind(filter.value)}`);
     else return res.status(400).json({ error: 'invalid operator' });
   }
+  // Smart search, as on the client: every word must match some column.
   const search = typeof req.query.search === 'string' ? req.query.search.slice(0, 100) : '';
-  if (search) {
-    const term = bind(like(search));
-    where.push(`(${Object.values(COLUMNS).map((c) => `${c}::text ILIKE ${term}`).join(' OR ')})`);
+  for (const term of splitSearchTerms(search).slice(0, 10)) {   // from @acunsoft/datatable-core
+    const placeholder = bind(like(term));
+    where.push(`(${Object.values(COLUMNS).map((c) => `${c}::text ILIKE ${placeholder}`).join(' OR ')})`);
   }
   const order = String(req.query.sort ?? '').split(',').map((part) => part.split(':'))
     .filter(([field, dir]) => SORTABLE.has(field) && (dir === 'asc' || dir === 'desc'))
