@@ -223,6 +223,7 @@ const FEATURES = {
 };
 
 const API = [
+  ["createDataTable({ data, columns, ... })", {tr:"Hepsi bir arada yerel tablo: sıralama, filtre, arama, sayfa ve seçim; tek state, işlem başına bir olay.", en:"All-in-one local table: sorting, filters, search, pages and selection; one state, one event per action."}],
   ["createTableState(options?)", {tr:"Değişmez state: page, pageSize, sorting; subscribe ve destroy.", en:"Immutable state: page, pageSize, sorting; subscribe and destroy."}],
   ["createColumns(definitions)", {tr:"Tipli kolon tanımlarını doğrular, kopyalar ve dondurur.", en:"Validates, copies and freezes typed column definitions."}],
   ["createRows(data, { getRowId? })", {tr:"Kararlı satır kimlikleri üretir; veriyi klonlamaz.", en:"Builds stable row identities; never clones caller data."}],
@@ -253,6 +254,27 @@ const visible = filterRows(sorted, columns, {
 
 const page = paginateRows(visible, { page: 1, pageSize: 25 });
 // page.rows, page.page, page.pageCount, page.totalRows`;
+
+const EX_TABLE =
+`import { createDataTable } from '@acunsoft/datatable-core';
+
+const table = createDataTable({
+  data: orders,
+  columns: [
+    { id: 'customer', header: 'Müşteri', accessorKey: 'customer', enableSorting: true, enableFiltering: true },
+    { id: 'total', header: 'Tutar', accessorKey: 'total', enableSorting: true, enableFiltering: true },
+  ],
+  locale: 'tr',
+  initialState: { pageSize: 25, sorting: [{ field: 'total', direction: 'desc' }] },
+});
+
+table.subscribe((state, event) => {
+  render(table.getPage()); // { rows, page, pageCount, totalRows }
+});
+
+table.setGlobalSearch('ayşe');
+table.setFilters([{ field: 'total', operator: 'gt', value: 100 }]);
+table.toggleRow(table.getPage().rows[0].id);`;
 
 const EX_STATE =
 `import { createTableState } from '@acunsoft/datatable-core';
@@ -458,13 +480,13 @@ function page(r) {
       `<h1>${t.h_title}</h1><p class="lead">${t.h_lead}</p><div class="meta"><span>${t.h_meta}</span><span>${t.updated}</span></div>` +
       sec('s1',1,t.h_s1,t.h_s1d,`<div class="cards">${cards}</div><p style="margin-top:18px">${t.h_core_install} <code>npm install @acunsoft/datatable-core</code></p>`) +
       sec('s2',2,t.h_s2,t.h_s2d,featCards()) +
-      sec('s3',3,t.h_s3,t.h_s3d,code(EX_SORT,'typescript')) };
+      sec('s3',3,t.h_s3,t.h_s3d,code(EX_TABLE,'typescript')) };
   }
   if (r === 'api') {
     return { toc:[['a1',t.a_s1],['a2',t.a_s2]], html:
       `<h1><span class="hi">${ICON.api}</span>${t.api_title}</h1><p class="lead">${t.api_lead}</p><div class="meta"><span>@acunsoft/datatable-core</span><span>${t.updated}</span></div>` +
       sec('a1',1,t.a_s1,t.a_s1d,apiList()) +
-      sec('a2',2,t.a_s2,t.a_s2d,code(EX_SORT,'typescript')+code(EX_STATE,'typescript')) };
+      sec('a2',2,t.a_s2,t.a_s2d,code(EX_TABLE,'typescript')+code(EX_SORT,'typescript')+code(EX_STATE,'typescript')) };
   }
   const f = FW[r];
   return { toc:[['install',t.s_install],['usage',t.s_usage],['features',t.s_features],['examples',t.s_examples],['api',t.s_api]], html:
