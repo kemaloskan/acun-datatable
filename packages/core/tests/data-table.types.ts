@@ -19,4 +19,13 @@ export function verifyDataTableTypes(): void {
   createDataTable({ data: [] as Order[], columns: [{ id: 'x', header: '', accessorKey: 'missing' }] });
   // @ts-expect-error state is readonly
   table.getState().page = 2;
+
+  // Server mode starts without data; rows arrive through setPageResult.
+  const remote = createDataTable<Order>({ mode: 'server', columns: [] });
+  expectTypeOf(remote.getTotalRows()).toEqualTypeOf<number | undefined>();
+  remote.setPageResult({ rows: [{ id: 1, customer: 'A' }], totalRows: 1 });
+  // @ts-expect-error rows must match the record type
+  remote.setPageResult({ rows: [{ id: 1, other: true }] });
+  // @ts-expect-error unknown mode
+  createDataTable<Order>({ mode: 'remote', columns: [] });
 }

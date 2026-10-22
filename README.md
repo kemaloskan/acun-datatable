@@ -106,8 +106,18 @@ subscribable state `{ page, pageSize, sorting, filters, globalSearch, selectedId
   sorted rows, filters and search, so re-rendering does not recompute.
 - After `destroy`, actions are ignored and the final state stays readable.
 
-This is local mode: all records are in memory. Large datasets belong to the
-remote DataSource (M2).
+### Server mode
+
+`createDataTable({ mode: 'server', columns, initialState })` keeps the same
+state, events and validation but runs no local transform: `getQuery()` returns
+the `TableQuery` for the current state and `setPageResult({ rows, totalRows? })`
+applies the server's answer (emitting a `result` event). The page is clamped to
+the server's `totalRows` once known; with an unknown total, `getPage()` reports a
+lower bound and one more page while the page is full. Selection IDs are not
+checked against the loaded page and are kept across pages; `getSelectedRows()`
+returns the selected rows that are loaded. `setData` is local-only and
+`setPageResult` server-only. `connectTable` in `@acunsoft/datatable-http` wires a
+server-mode table to the HTTP runner.
 
 ## Column schema and stable row IDs (M1)
 

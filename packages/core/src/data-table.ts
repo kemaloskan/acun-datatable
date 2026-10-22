@@ -5,6 +5,7 @@ import {
   createLocalRowModel, type LocalRowModelOptions, type NullPlacement, type SortComparator,
 } from './local-row-model';
 import { paginateRows, type PageView } from './pagination';
+import { createTableQuery, validatePageResult, type PageResult, type TableQuery } from './remote';
 import { createRows, type GetRowId, type Row, type RowId, type RowIdValue } from './rows';
 import {
   createRowSelection, type SelectionChange, type SelectionMode, type SelectionStatus,
@@ -19,16 +20,26 @@ export interface DataTableInitialState {
   readonly selectedIds?: readonly RowId[];
 }
 
+/** `'local'` transforms rows in memory; `'server'` lets the server do it. */
+export type DataTableMode = 'local' | 'server';
+
 interface DataTableBaseOptions<TData> {
-  /** Caller-owned records. They are wrapped, never cloned or mutated. */
-  readonly data: readonly TData[];
+  /** Default `'local'`. Fixed for the lifetime of the table. */
+  readonly mode?: DataTableMode;
+  /**
+   * Caller-owned records. They are wrapped, never cloned or mutated. Default `[]`.
+   * In server mode, the current page (or nothing until the first response).
+   */
+  readonly data?: readonly TData[];
   readonly columns: readonly ColumnDef<TData>[];
   readonly initialState?: DataTableInitialState;
   /** Default `'multiple'`. */
   readonly selectionMode?: SelectionMode;
   /** Used for sorting, filtering and search. Default `'en'`. */
   readonly locale?: string;
+  /** Local mode only. */
   readonly nulls?: NullPlacement;
+  /** Local mode only. */
   readonly comparators?: Readonly<Record<string, SortComparator>>;
 }
 
@@ -56,20 +67,33 @@ export type DataTableEvent =
   | { readonly type: 'filters'; readonly filters: readonly Readonly<FilterRule>[] }
   | { readonly type: 'globalSearch'; readonly globalSearch: string }
   | { readonly type: 'data'; readonly totalRows: number; readonly removedIds: readonly RowId[] }
+  /** Server mode: a page result was applied. `totalRows` is absent when unknown. */
+  | { readonly type: 'result'; readonly rows: number; readonly totalRows?: number }
   | { readonly type: 'selection'; readonly change: Readonly<SelectionChange> };
 
 export type DataTableListener = (state: Readonly<DataTableState>, event: Readonly<DataTableEvent>) => void;
 
 export interface DataTable<TData> {
   getState(): Readonly<DataTableState>;
+  getMode(): DataTableMode;
+  /** The query a server should answer for the current state. */
+  getQuery(): TableQuery;
+  /** Matching rows: local count, or the server's `totalRows` (undefined when unknown). */
+  getTotalRows(): number | undefined;
   getColumns(): readonly ColumnDef<TData>[];
   /** All rows in data order, before sorting and filtering. */
   getCoreRows(): readonly Row<TData>[];
-  /** Sorted and filtered rows across every page. */
+  /** Local: sorted and filtered rows across every page. Server: the current page as received. */
   getFilteredRows(): readonly Row<TData>[];
-  /** The current page of the filtered rows. */
+  /**
+   * The current page. In server mode with an unknown total, `totalRows` is a
+   * lower bound and `pageCount` adds one page while the page is full.
+   */
   getPage(): PageView<TData>;
+  /** Local mode only. */
   setData(data: readonly TData[]): void;
+  /** Server mode only: apply a response for the current query. */
+  setPageResult(result: PageResult<TData>): void;
   setPage(page: number): void;
   setPageSize(pageSize: number): void;
   setSorting(sorting: readonly SortRule[]): void;
@@ -78,7 +102,7 @@ export interface DataTable<TData> {
   isSelected(id: RowId): boolean;
   /** Defaults to the rows on the current page. */
   getSelectionStatus(ids?: readonly RowId[]): SelectionStatus;
-  /** Selected rows that exist in the data, in data order. */
+  /** Selected rows that exist in the loaded data, in data order. */
   getSelectedRows(): readonly Row<TData>[];
   selectRow(id: RowId): void;
   deselectRow(id: RowId): void;
@@ -102,17 +126,27 @@ function sameFilters(left: readonly FilterRule[], right: readonly FilterRule[]):
 }
 
 /**
- * Create a local, headless data table: rows → sort → filter/search → page, plus
- * row selection, behind one immutable, subscribable state.
+ * Create a headless data table behind one immutable, subscribable state.
  *
- * Changing sorting, filters, global search or page size returns to page 1, and
- * the page is always kept within the available pages. The selection only holds
- * IDs of rows in the table; `setData` drops IDs whose rows disappeared and
- * reports them in the `data` event. After `destroy`, actions are ignored,
- * `subscribe` returns a no-op and the final state stays readable.
+ * Local mode: rows → sort → filter/search → page, in memory. The selection only
+ * holds IDs of rows in the table; `setData` drops IDs whose rows disappeared and
+ * reports them in the `data` event.
+ *
+ * Server mode: the state is kept the same way, but no local transform runs; the
+ * caller sends `getQuery()` to a server and applies the answer with
+ * `setPageResult`. Selection IDs are not checked against the loaded page and are
+ * kept across pages.
+ *
+ * In both modes, changing sorting, filters, global search or page size returns
+ * to page 1, and the page is kept within the known pages. After `destroy`,
+ * actions are ignored, `subscribe` returns a no-op and the final state stays
+ * readable.
  */
 export function createDataTable<TData>(options: DataTableOptions<TData>): DataTable<TData> {
   if (!options || typeof options !== 'object') throw new TypeError('options must be an object');
+  const mode = options.mode ?? 'local';
+  if (mode !== 'local' && mode !== 'server') throw new TypeError('mode must be "local" or "server"');
+  const server = mode === 'server';
   const columns = createColumns(options.columns);
   const byId = new Map(columns.map(column => [column.id, column]));
   const getRowId = options.getRowId;
@@ -126,7 +160,8 @@ export function createDataTable<TData>(options: DataTableOptions<TData>): DataTa
     ...(options.nulls !== undefined ? { nulls: options.nulls } : {}),
     ...(options.comparators !== undefined ? { comparators: options.comparators } : {}),
   };
-  let coreRows = toRows(options.data);
+  let coreRows = toRows(options.data ?? []);
+  let serverTotal: number | undefined;
   let rowIds = new Set(coreRows.map(row => row.id));
   const model = createLocalRowModel(coreRows, columns, modelOptions);
 
@@ -151,6 +186,7 @@ export function createDataTable<TData>(options: DataTableOptions<TData>): DataTa
     return text;
   };
   const checkKnown = (ids: readonly RowId[]): void => {
+    if (server) return; // other pages' rows are not loaded
     for (const id of ids) if (typeof id === 'string' && !rowIds.has(id)) throw new Error(`unknown row ID: ${id}`);
   };
 
@@ -174,6 +210,7 @@ export function createDataTable<TData>(options: DataTableOptions<TData>): DataTa
 
   let filtered: { sorted: readonly Row<TData>[]; filters: unknown; search: string; rows: readonly Row<TData>[] } | undefined;
   const getFilteredRows = (): readonly Row<TData>[] => {
+    if (server) return coreRows;
     const sorted = model.getSortedRows(inner.getState().sorting);
     if (filtered && filtered.sorted === sorted && filtered.filters === filters && filtered.search === globalSearch) {
       return filtered.rows;
@@ -184,7 +221,8 @@ export function createDataTable<TData>(options: DataTableOptions<TData>): DataTa
   };
   const clampPage = (): void => {
     const { page, pageSize } = inner.getState();
-    const total = getFilteredRows().length;
+    const total = server ? serverTotal : getFilteredRows().length;
+    if (total === undefined) return;
     const pageCount = total === 0 ? 1 : Math.ceil(total / pageSize);
     if (page > pageCount) inner.setPage(pageCount);
   };
@@ -217,15 +255,44 @@ export function createDataTable<TData>(options: DataTableOptions<TData>): DataTa
     if (selection.getState() !== before) emit({ type: 'selection', change: lastChange! });
   };
 
-  return {
+  const table: DataTable<TData> = {
     getState: () => state,
     getColumns: () => columns,
     getCoreRows: () => coreRows,
     getFilteredRows,
-    getPage: () => paginateRows(getFilteredRows(), { page: state.page, pageSize: state.pageSize }),
+    getMode: () => mode,
+    getQuery: () => createTableQuery(state),
+    getTotalRows: () => (server ? serverTotal : getFilteredRows().length),
+    getPage: () => {
+      if (!server) return paginateRows(getFilteredRows(), { page: state.page, pageSize: state.pageSize });
+      const { page, pageSize } = state;
+      const known = serverTotal !== undefined;
+      const totalRows = known ? serverTotal! : (page - 1) * pageSize + coreRows.length;
+      const pageCount = known
+        ? Math.max(1, Math.ceil(totalRows / pageSize))
+        : page + (coreRows.length === pageSize ? 1 : 0);
+      return Object.freeze({ rows: coreRows, page, pageSize, totalRows, pageCount });
+    },
+
+    setPageResult: (result) => {
+      if (destroyed) return;
+      if (!server) throw new Error('setPageResult is only available in server mode; use setData');
+      const checked = validatePageResult(result, { pageSize: state.pageSize });
+      const rows = toRows(checked.rows as readonly TData[]);
+      coreRows = rows;
+      rowIds = new Set(rows.map(row => row.id));
+      serverTotal = checked.totalRows;
+      emit(serverTotal === undefined
+        ? { type: 'result', rows: rows.length }
+        : { type: 'result', rows: rows.length, totalRows: serverTotal });
+      const before = inner.getState().page;
+      clampPage();
+      if (inner.getState().page !== before) emit({ type: 'page', page: inner.getState().page });
+    },
 
     setData: (data) => {
       if (destroyed) return;
+      if (server) throw new Error('setData is not available in server mode; use setPageResult');
       const rows = toRows(data);
       coreRows = rows;
       rowIds = new Set(rows.map(row => row.id));
@@ -273,7 +340,7 @@ export function createDataTable<TData>(options: DataTableOptions<TData>): DataTa
     },
 
     isSelected: (id) => selection.isSelected(id),
-    getSelectionStatus: (ids) => selection.getStatus(ids ?? paginateRows(getFilteredRows(), state).rows.map(row => row.id)),
+    getSelectionStatus: (ids) => selection.getStatus(ids ?? table.getPage().rows.map(row => row.id)),
     getSelectedRows: () => Object.freeze(coreRows.filter(row => selection.isSelected(row.id))),
     selectRow: (id) => selecting(() => { selection.isSelected(id); checkKnown([id]); selection.select(id); }),
     deselectRow: (id) => selecting(() => selection.deselect(id)),
@@ -299,4 +366,5 @@ export function createDataTable<TData>(options: DataTableOptions<TData>): DataTa
       selection.destroy();
     },
   };
+  return table;
 }

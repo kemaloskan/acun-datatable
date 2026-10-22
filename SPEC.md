@@ -104,7 +104,8 @@ Deviations from the originally proposed example, decided during M1:
   (`page`, `pageSize`, `sorting`, `filters`, `globalSearch`, `data`,
   `selection`), to satisfy "each state action yields a documented event".
 
-Server mode (M2) will bypass the local transforms; it is not implemented yet.
+`mode: 'server'` bypasses the local transforms: the table exposes `getQuery()`
+and accepts `setPageResult()`; `@acunsoft/datatable-http` provides `connectTable`.
 
 ## API response example (M2 target)
 

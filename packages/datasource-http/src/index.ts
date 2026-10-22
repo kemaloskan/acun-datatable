@@ -1,3 +1,4 @@
+export { connectTable } from './connect';
 export {
   createHttpDataSource, fromLaravelPaginator, HttpError, serializeTableQuery,
   type HttpDataSourceOptions,

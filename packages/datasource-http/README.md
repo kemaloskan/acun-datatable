@@ -5,33 +5,37 @@ HTTP `DataSource` and a latest-request-wins query runner for
 paging); the browser only ever holds one page. Not tied to Laravel or any backend.
 
 ```ts
-import { createTableQuery } from '@acunsoft/datatable-core';
-import { createHttpDataSource, createQueryRunner, fromLaravelPaginator } from '@acunsoft/datatable-http';
+import { createDataTable } from '@acunsoft/datatable-core';
+import {
+  connectTable, createHttpDataSource, createQueryRunner, fromLaravelPaginator,
+} from '@acunsoft/datatable-http';
 
-const source = createHttpDataSource({
+const table = createDataTable<Order>({
+  mode: 'server',                        // no local sorting, filtering or paging
+  columns,
+  initialState: { pageSize: 25 },
+});
+const runner = createQueryRunner(createHttpDataSource({
   url: '/api/orders',
   headers: async () => ({ Authorization: `Bearer ${await getToken()}` }),
   parseResponse: fromLaravelPaginator,   // omit if the server returns { rows, totalRows }
   maxPageSize: 100,
-});
-const runner = createQueryRunner(source);
+}));
 
-runner.subscribe(({ status, result, error }) => {
-  // status: 'idle' | 'loading' | 'success' | 'error'
-  // result: last successful page, kept while the next one loads
-});
+const disconnect = connectTable(table, runner); // loads page 1
 
-let query = createTableQuery({ page: 1, pageSize: 25 });
-runner.run(query);
+table.subscribe(() => render(table.getPage()));  // { rows, page, pageCount, totalRows }
+runner.subscribe(({ status, error }) => renderStatus(status, error));
 
-// On user input (debounce search typing in the UI), build the next query:
-query = createTableQuery({ ...query, page: 1, globalSearch: text });
-runner.run(query);
+table.setGlobalSearch(text);             // debounce typing in the UI; re-queries page 1
+table.setPage(3);                        // re-queries page 3
 ```
 
-`createDataTable` is local-only for now: it filters and pages in memory, so do
-not feed it remote pages yet. A server mode that keeps the table state and
-takes rows and `totalRows` from this runner is the next M2 step.
+`connectTable` runs the table's query (`table.getQuery()`) whenever the page,
+page size, sorting, filters or search change, and applies a successful result
+with `table.setPageResult` only if it answers the table's current query. Loading
+and error states live on the runner. Without `connectTable`, call
+`runner.run(table.getQuery())` and `table.setPageResult(result)` yourself.
 
 ## Behaviour
 
