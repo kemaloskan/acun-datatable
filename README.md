@@ -52,9 +52,57 @@ new subscriptions are no-ops while the final snapshot remains readable.
 
 The existing `createPagination(page, pageSize)` helper remains available. Local
 multi-column sorting (`createLocalRowModel`), column filtering and global search
-(`filterRows`), pagination (`paginateRows`) and row selection
-(`createRowSelection`) are available (below). No renderer, HTTP DataSource or a
-composed full table API has been implemented yet. See `SPEC.md` for milestones.
+(`filterRows`), pagination (`paginateRows`), row selection
+(`createRowSelection`) and the composed `createDataTable` are available (below).
+No renderer or HTTP DataSource has been implemented yet. See `SPEC.md` for
+milestones.
+
+## Composed table (M1)
+
+```ts
+import { createDataTable } from '@acunsoft/datatable-core';
+
+const table = createDataTable({
+  data: orders,                       // records with an `id`, or pass getRowId
+  columns,
+  locale: 'tr',
+  initialState: { pageSize: 25, sorting: [{ field: 'total', direction: 'desc' }] },
+});
+
+table.subscribe((state, event) => {
+  render(table.getPage());            // { rows, page, pageSize, pageCount, totalRows }
+});
+
+table.setGlobalSearch('istanbul');
+table.setFilters([{ field: 'total', operator: 'gt', value: 100 }]);
+table.toggleRow(table.getPage().rows[0]!.id);
+table.getSelectionStatus();           // for the current page: 'none' | 'some' | 'all'
+```
+
+`createDataTable(options)` wires the pieces above into one local table:
+rows → sort → filter/search → page, plus selection, behind one immutable,
+subscribable state `{ page, pageSize, sorting, filters, globalSearch, selectedIds }`.
+
+- **One event per action:** listeners get the new state and an event whose `type`
+  is `page`, `pageSize`, `sorting`, `filters`, `globalSearch`, `data` or
+  `selection`. Actions that change nothing emit nothing.
+- **Page rules:** changing sorting, filters, global search or page size returns
+  to page 1. The page is always kept within `[1, pageCount]`, so `getState().page`
+  and `getPage().page` never disagree; `setPage(99)` lands on the last page.
+- **Selection rules:** only IDs of rows in the table can be selected (unknown IDs
+  throw). Filtering, sorting and paging keep the selection. `setData` drops IDs
+  whose rows disappeared and lists them in the `data` event's `removedIds`.
+  `getSelectionStatus()` defaults to the rows on the current page.
+- **Options:** `data`, `columns`, `getRowId` (required unless every record has an
+  `id`), `initialState`, `selectionMode`, `locale`, `nulls`, `comparators`.
+  Invalid input throws the same errors as the individual functions and leaves the
+  state unchanged.
+- **Caching:** sorting is cached by the row model and filtering by the current
+  sorted rows, filters and search, so re-rendering does not recompute.
+- After `destroy`, actions are ignored and the final state stays readable.
+
+This is local mode: all records are in memory. Large datasets belong to the
+remote DataSource (M2).
 
 ## Column schema and stable row IDs (M1)
 
@@ -292,6 +340,7 @@ selection.retain(reloadedRows.map((row) => row.id)); // drop rows that disappear
 `npm run check` checks source, runtime tests, and compile-only type assertions
 in `packages/core/tests/schema.types.ts`,
 `packages/core/tests/filtering.types.ts`,
-`packages/core/tests/selection.types.ts` and
+`packages/core/tests/selection.types.ts`,
+`packages/core/tests/data-table.types.ts` and
 `packages/core/tests/local-row-model.types.ts`; build declarations remain
 source-only.

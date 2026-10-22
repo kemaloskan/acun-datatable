@@ -78,23 +78,33 @@ Acceptance:
 - Report bundle size gzipped, memory, interactions and perceived latency.
 - All format adapters maintain core API parity and do not duplicate state owners.
 
-## Proposed public API (future target, not implemented yet)
+## Composed public API (implemented in M1, local mode)
 
 ```ts
 import { createDataTable } from '@acunsoft/datatable-core';
 
 const table = createDataTable<Order>({
-  rows: [],
-  getRowId: (row) => String(row.id),
-  columns: [{ id: 'customer', header: 'Customer', accessor: row => row.customer }],
+  data: orders,
+  getRowId: (row) => String(row.id), // optional when every record has an `id`
+  columns: [{ id: 'customer', header: 'Customer', accessorKey: 'customer', enableSorting: true }],
   initialState: { page: 1, pageSize: 25 },
 });
 
-// table.setSorting([{ field: 'customer', direction: 'asc' }]);
-// table.subscribe((state) => console.log(state));
+table.setSorting([{ field: 'customer', direction: 'asc' }]);
+table.subscribe((state, event) => console.log(event.type, state));
 ```
 
-The example documents an intended API. Do not present it as available before M1.
+Deviations from the originally proposed example, decided during M1:
+
+- `data` instead of `rows`: `Row<TData>` already names the identity wrapper that
+  `createRows` produces, so the raw records are called `data`.
+- `accessorKey` / `accessorFn` instead of `accessor`: fixed by the column schema
+  (exactly one accessor; keys are typed against the record).
+- Listeners receive `(state, event)`, where `event.type` names the action
+  (`page`, `pageSize`, `sorting`, `filters`, `globalSearch`, `data`,
+  `selection`), to satisfy "each state action yields a documented event".
+
+Server mode (M2) will bypass the local transforms; it is not implemented yet.
 
 ## API response example (M2 target)
 
