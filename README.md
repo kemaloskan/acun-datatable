@@ -124,8 +124,6 @@ stable. Creating rows performs one pass with a Set for duplicate detection and
 does not retain a global identity registry. No runtime dependency was added.
 
 `npm run check` checks source, runtime tests, and compile-only type assertions
-in `packages/core/tests/schema.types.ts`; build declarations remain source-only.
-
-## Open in Codex
-
-Open this repository directory as the workspace. Ask Codex: `Read AGENTS.md, ARCHITECTURE.md and SPEC.md. Execute the initial task in AGENTS.md. Run tests and report results.`
+in `packages/core/tests/schema.types.ts` and
+`packages/core/tests/local-row-model.types.ts`; build declarations remain
+source-only.
