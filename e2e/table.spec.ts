@@ -60,7 +60,7 @@ test.describe('keyboard only (SPEC M3)', () => {
   });
 
   test('select rows with Space and use the tri-state select-all', async ({ page }) => {
-    const row = page.getByRole('checkbox', { name: 'Select row 2' });
+    const row = page.getByRole('checkbox', { name: 'Select Ali' }); // row 2
     const all = page.getByRole('checkbox', { name: 'Select all rows on this page' });
     await tabTo(page, row);
     await page.keyboard.press('Space');
@@ -134,4 +134,33 @@ test.describe('XSS fixture in a real browser (SPEC M3)', () => {
     await expect.poll(() => page.evaluate(() => (window as unknown as TestWindow).__xss)).toBe(1);
     expect(dialogs).toEqual(['1']);
   });
+});
+
+test.describe('optional styles.css (second review: narrow screens)', () => {
+  test('stacks rows as cards on a phone and keeps the page from scrolling sideways', async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 800 });
+    await page.goto('/e2e/fixtures/table.html');
+    await expect(page.locator('body[data-ready=true]')).toBeAttached();
+    const cell = page.locator('#orders tbody tr').first().locator('td').nth(1);
+    expect(await cell.evaluate(td => getComputedStyle(td, '::before').content)).toBe('"Customer"');
+    expect(await cell.evaluate(td => getComputedStyle(td).display)).toBe('grid');
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
+  });
+
+  test('keeps a normal table on a wide screen', async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 800 });
+    const display = await page.locator('#orders table').evaluate(table => getComputedStyle(table).display);
+    expect(display).toBe('table');
+    expect(await page.locator('#orders tbody td').nth(1).evaluate(td => getComputedStyle(td, '::before').content)).toBe('none');
+  });
+});
+
+test('styles stay light on a light page even when the system is dark', async ({ page }) => {
+  await page.emulateMedia({ colorScheme: 'dark' });
+  await page.reload();
+  await expect(page.locator('body[data-ready=true]')).toBeAttached();
+  const label = page.locator('.adt-search span');
+  expect(await label.evaluate(el => getComputedStyle(el).color)).toBe('rgb(31, 36, 48)'); // --adt-fg (light)
+  await page.evaluate(() => document.documentElement.setAttribute('data-theme', 'dark'));
+  expect(await label.evaluate(el => getComputedStyle(el).color)).toBe('rgb(230, 232, 236)'); // dark on request
 });

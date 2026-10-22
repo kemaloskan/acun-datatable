@@ -44,7 +44,10 @@ export function renderPagination<TData>(
     const page = table.getPage();
     disabled(previous, page.page <= 1);
     disabled(next, page.page >= page.pageCount);
-    status.textContent = labels.pageStatus(page.page, page.pageCount, page.totalRows);
+    // With an unknown server total, page.totalRows is only a lower bound: don't present it as the total.
+    status.textContent = table.getTotalRows() === undefined
+      ? labels.pageStatusOpen(page.page)
+      : labels.pageStatus(page.page, page.pageCount, page.totalRows);
     const choices = sizes.includes(page.pageSize) ? sizes : [...sizes, page.pageSize].sort((a, b) => a - b);
     if (select.options.length !== choices.length || [...select.options].some((option, i) => option.value !== String(choices[i]))) {
       select.replaceChildren(...choices.map(size => element(doc, 'option', { value: String(size) }, String(size))));

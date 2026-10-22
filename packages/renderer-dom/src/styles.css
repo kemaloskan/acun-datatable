@@ -1,0 +1,97 @@
+/*
+ * Optional styles for @acunsoft/datatable-dom.
+ *   import '@acunsoft/datatable-dom/styles.css';
+ * Every colour and size is a --adt-* custom property, so themes override them
+ * without touching the selectors. Light by default. Dark when an ancestor has
+ * data-theme="dark" or the class "dark" (Tailwind); follow the system setting
+ * with data-theme="auto". The component cannot see the page background, so it
+ * never turns dark on its own.
+ */
+:where(.adt-table-wrap, .adt-pagination, .adt-search) {
+  --adt-bg: #ffffff;
+  --adt-fg: #1f2430;
+  --adt-muted: #5b6273;
+  --adt-line: #e3e6eb;
+  --adt-head-bg: #f7f8fa;
+  --adt-hover: #f1f3f6;
+  --adt-selected: #efeaff;
+  --adt-accent: #6d4aff;
+  --adt-danger: #c23c38;
+  --adt-radius: 6px;
+  --adt-font: inherit;
+  --adt-font-size: 0.9375rem;
+  --adt-cell-padding: 0.6rem 0.75rem;
+  --adt-stack-below: 640px; /* documentation only: media queries cannot read variables */
+  font-family: var(--adt-font);
+  font-size: var(--adt-font-size);
+  color: var(--adt-fg);
+}
+:where([data-theme="dark"], .dark) :where(.adt-table-wrap, .adt-pagination, .adt-search) {
+  --adt-bg: #0f1115; --adt-fg: #e6e8ec; --adt-muted: #a3a9b6; --adt-line: #2a2f38;
+  --adt-head-bg: #161a20; --adt-hover: #1c2129; --adt-selected: #241d3d; --adt-accent: #9d86ff; --adt-danger: #ff7771;
+}
+@media (prefers-color-scheme: dark) {
+  :where([data-theme="auto"]) :where(.adt-table-wrap, .adt-pagination, .adt-search) {
+    --adt-bg: #0f1115; --adt-fg: #e6e8ec; --adt-muted: #a3a9b6; --adt-line: #2a2f38;
+    --adt-head-bg: #161a20; --adt-hover: #1c2129; --adt-selected: #241d3d; --adt-accent: #9d86ff; --adt-danger: #ff7771;
+  }
+}
+
+/* Table */
+.adt-table-wrap { position: relative; }
+.adt-table-wrap *, .adt-pagination *, .adt-search * { box-sizing: border-box; }
+.adt-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; border: 1px solid var(--adt-line); border-radius: var(--adt-radius); background: var(--adt-bg); }
+.adt-table { width: 100%; border-collapse: collapse; }
+.adt-table caption { caption-side: top; text-align: left; padding: 0.75rem; font-weight: 600; }
+.adt-table th, .adt-table td { padding: var(--adt-cell-padding); text-align: left; border-bottom: 1px solid var(--adt-line); vertical-align: top; }
+.adt-table thead th { background: var(--adt-head-bg); font-weight: 600; white-space: nowrap; }
+.adt-table tbody tr:last-child td { border-bottom: 0; }
+.adt-row:hover { background: var(--adt-hover); }
+.adt-row--selected, .adt-row--selected:hover { background: var(--adt-selected); }
+.adt-select { width: 2.5rem; }
+.adt-empty td { text-align: center; color: var(--adt-muted); padding: 2rem 1rem; }
+
+.adt-sort { all: unset; cursor: pointer; display: inline-flex; align-items: center; gap: 0.35rem; font-weight: 600; border-radius: 4px; }
+.adt-sort-mark { font-size: 0.75em; color: var(--adt-accent); min-width: 1ch; }
+.adt-sort:hover { color: var(--adt-accent); }
+
+/* Keyboard focus is always visible */
+.adt-table-wrap :focus-visible, .adt-pagination :focus-visible, .adt-search :focus-visible {
+  outline: 2px solid var(--adt-accent);
+  outline-offset: 2px;
+}
+
+/* Server-mode states */
+.adt-notice:empty { display: none; }
+.adt-notice { display: flex; align-items: center; gap: 0.75rem; padding: 0.5rem 0.75rem; margin-bottom: 0.5rem; color: var(--adt-muted); }
+.adt-notice[role="alert"] { color: var(--adt-danger); border: 1px solid currentColor; border-radius: var(--adt-radius); }
+.adt-loading .adt-scroll { opacity: 0.6; transition: opacity 0.15s; }
+.adt-retry, .adt-pagination button, .adt-pagination select, .adt-search input {
+  font: inherit; color: inherit; background: var(--adt-bg); border: 1px solid var(--adt-line);
+  border-radius: var(--adt-radius); padding: 0.35rem 0.7rem;
+}
+.adt-retry, .adt-pagination button { cursor: pointer; }
+.adt-pagination button[aria-disabled="true"] { opacity: 0.45; cursor: not-allowed; }
+
+/* Pagination and search */
+.adt-pagination { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem 0.75rem; margin-top: 0.75rem; }
+.adt-status { color: var(--adt-muted); }
+.adt-page-size, .adt-search { display: inline-flex; align-items: center; gap: 0.5rem; }
+.adt-page-size { margin-left: auto; }
+.adt-search { margin-bottom: 0.75rem; }
+.adt-search input { min-width: 14rem; }
+
+/* Narrow screens: each row becomes a card, each cell shows its header. */
+@media (max-width: 640px) {
+  .adt-scroll { border: 0; background: transparent; overflow: visible; }
+  .adt-table, .adt-table tbody, .adt-table tr, .adt-table td { display: block; width: 100%; }
+  .adt-table thead tr { display: flex; flex-wrap: wrap; gap: 0.25rem 0.75rem; padding: 0.5rem 0; }
+  .adt-table thead th { display: inline-block; padding: 0.25rem 0; border: 0; background: transparent; }
+  .adt-row, .adt-empty { border: 1px solid var(--adt-line); border-radius: var(--adt-radius); margin-bottom: 0.75rem; background: var(--adt-bg); }
+  .adt-table td { display: grid; grid-template-columns: minmax(7rem, 40%) 1fr; gap: 0.75rem; border-bottom: 1px solid var(--adt-line); overflow-wrap: anywhere; }
+  .adt-table td::before { content: attr(data-label); font-weight: 600; color: var(--adt-muted); }
+  .adt-table td.adt-select, .adt-empty td { display: block; }
+  .adt-table td.adt-select::before, .adt-empty td::before { content: none; }
+  .adt-search input { min-width: 0; width: 100%; }
+  .adt-page-size { margin-left: 0; }
+}

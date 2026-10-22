@@ -4,7 +4,9 @@
   "license": "MIT",
   "private": true,
   "type": "module",
-  "sideEffects": false,
+  "sideEffects": [
+    "*.css"
+  ],
   "main": "./dist/index.js",
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -12,7 +14,8 @@
     ".": {
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
-    }
+    },
+    "./styles.css": "./dist/styles.css"
   },
   "files": [
     "dist"
@@ -20,7 +23,7 @@
   "scripts": {
     "check": "tsc -p tsconfig.check.json",
     "test": "vitest run",
-    "build": "tsup src/index.ts --format esm --dts --clean --external @acunsoft/datatable-core"
+    "build": "tsup src/index.ts --format esm --dts --clean --external @acunsoft/datatable-core && node -e \"require('node:fs').copyFileSync('src/styles.css','dist/styles.css')\""
   },
   "dependencies": {
     "@acunsoft/datatable-core": "0.0.0"

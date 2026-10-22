@@ -124,7 +124,7 @@ describe('renderTable selection', () => {
     const all = () => host.querySelector<HTMLInputElement>('thead input[type=checkbox]')!;
     const row = (index: number) => host.querySelectorAll<HTMLInputElement>('tbody input[type=checkbox]')[index]!;
     expect(all().getAttribute('aria-label')).toBe('Select all rows on this page');
-    expect(row(0).getAttribute('aria-label')).toBe('Select row 1');
+    expect(row(0).getAttribute('aria-label')).toBe('Select Ayşe'); // the row's name, not its raw ID
 
     row(0).click();
     expect(table.getState().selectedIds).toEqual(['1']);
@@ -211,5 +211,51 @@ describe('renderTable date and datetime columns', () => {
     });
     renderTable(host, table, { locale: 'tr' });
     expect(cells(0)).toEqual(['23 Eki 2026', '23 Eki 2026 14:05']);
+  });
+});
+
+describe('renderTable second-review additions', () => {
+  it('updates checkboxes in place instead of re-rendering the table', () => {
+    const table = make();
+    renderTable(host, table, { selectable: true });
+    const tableEl = host.querySelector('table');
+    const firstRow = host.querySelector('tbody tr');
+    host.querySelector<HTMLInputElement>('tbody input')!.click();
+    expect(host.querySelector('table')).toBe(tableEl); // same elements
+    expect(host.querySelector('tbody tr')).toBe(firstRow);
+    expect(firstRow!.classList.contains('adt-row--selected')).toBe(true);
+    table.setGlobalSearch('ali'); // a view change still re-renders
+    expect(host.querySelector('table')).not.toBe(tableEl);
+  });
+
+  it('labels row checkboxes with rowLabel and gives cells their header as data-label', () => {
+    renderTable(host, make(), { selectable: true, rowLabel: row => `#${row.id} ${row.original.customer}`, labels: labelsTr });
+    expect(host.querySelector('tbody input')!.getAttribute('aria-label')).toBe('#1 Ayşe satırını seç');
+    expect([...host.querySelectorAll('tbody tr:first-child td:not(.adt-select)')].map(td => td.getAttribute('data-label')))
+      .toEqual(['Customer', 'Total', 'Note']);
+    expect(() => renderTable(host, make(), { rowLabel: 'x' as never })).toThrow('rowLabel must be a function');
+  });
+
+  it('shows loading with aria-busy and an error with a retry button', () => {
+    let state: { status: 'idle' | 'loading' | 'success' | 'error'; error?: unknown } = { status: 'loading' };
+    const listeners = new Set<(s: typeof state) => void>();
+    const retry = vi.fn();
+    const status = { getState: () => state, subscribe: (l: (s: typeof state) => void) => { listeners.add(l); return () => listeners.delete(l); }, retry };
+    const set = (next: typeof state) => { state = next; listeners.forEach(l => l(state)); };
+    const rendered = renderTable(host, make(), { status, labels: labelsTr });
+    const wrap = host.querySelector('.adt-table-wrap')!;
+    const notice = host.querySelector('.adt-notice')!;
+    expect(wrap.getAttribute('aria-busy')).toBe('true');
+    expect(notice.textContent).toBe('Yükleniyor…');
+    set({ status: 'error', error: new Error('500') });
+    expect(wrap.getAttribute('aria-busy')).toBe('false');
+    expect(notice.getAttribute('role')).toBe('alert');
+    host.querySelector<HTMLButtonElement>('.adt-retry')!.click();
+    expect(retry).toHaveBeenCalledTimes(1);
+    set({ status: 'success' });
+    expect(notice.textContent).toBe('');
+    rendered.destroy();
+    expect(listeners.size).toBe(0);
+    expect(() => renderTable(host, make(), { status: {} as never })).toThrow('status must have getState and subscribe');
   });
 });

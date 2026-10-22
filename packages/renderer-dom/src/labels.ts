@@ -2,42 +2,57 @@
 export interface DataTableLabels {
   readonly empty: string;
   readonly selectAll: string;
-  readonly selectRow: (id: string) => string;
+  /** Receives the row's name (see `rowLabel`), not its raw ID. */
+  readonly selectRow: (name: string) => string;
   readonly pagination: string;
   readonly previous: string;
   readonly next: string;
   readonly pageStatus: (page: number, pageCount: number, totalRows: number) => string;
+  /** Server mode when the server does not report a total: only the page is known. */
+  readonly pageStatusOpen: (page: number) => string;
   readonly pageSize: string;
   readonly search: string;
   /** Text for `true` / `false` cells. */
   readonly yes: string;
   readonly no: string;
+  /** Server mode states (with the `status` option of `renderTable`). */
+  readonly loading: string;
+  readonly error: string;
+  readonly retry: string;
 }
 
 export const labelsEn: DataTableLabels = Object.freeze({
   empty: 'No matching rows',
   selectAll: 'Select all rows on this page',
-  selectRow: (id: string) => `Select row ${id}`,
+  selectRow: (name: string) => `Select ${name}`,
   pagination: 'Pagination',
   previous: 'Previous',
   next: 'Next',
   pageStatus: (page: number, pageCount: number, totalRows: number) => `Page ${page} of ${pageCount} · ${totalRows} rows`,
+  pageStatusOpen: (page: number) => `Page ${page}`,
   pageSize: 'Rows per page',
   search: 'Search',
   yes: 'Yes',
   no: 'No',
+  loading: 'Loading…',
+  error: 'The data could not be loaded.',
+  retry: 'Try again',
 });
 
 export const labelsTr: DataTableLabels = Object.freeze({
   empty: 'Eşleşen kayıt yok',
   selectAll: 'Bu sayfadaki tüm satırları seç',
-  selectRow: (id: string) => `${id} numaralı satırı seç`,
+  selectRow: (name: string) => `${name} satırını seç`,
   pagination: 'Sayfalama',
   previous: 'Önceki',
   next: 'Sonraki',
   pageStatus: (page: number, pageCount: number, totalRows: number) => `Sayfa ${page} / ${pageCount} · ${totalRows} kayıt`,
+  pageStatusOpen: (page: number) => `Sayfa ${page}`,
   pageSize: 'Sayfa başına satır',
   search: 'Ara',
   yes: 'Evet',
   no: 'Hayır',
+  loading: 'Yükleniyor…',
+  error: 'Veriler yüklenemedi.',
+  retry: 'Tekrar dene',
 });

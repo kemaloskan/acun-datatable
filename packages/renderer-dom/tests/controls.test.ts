@@ -132,3 +132,15 @@ describe('renderSearch', () => {
     expect(host.children).toHaveLength(0);
   });
 });
+
+describe('renderPagination with an unknown server total', () => {
+  it('shows only the page instead of a lower bound as the total', () => {
+    const table = createDataTable<Item>({ mode: 'server', columns, initialState: { pageSize: 2 } });
+    renderPagination(host, table, { labels: labelsTr });
+    table.setPageResult({ rows: [{ id: 1, name: 'A' }, { id: 2, name: 'B' }] }); // full page, no total
+    expect(host.querySelector('.adt-status')!.textContent).toBe('Sayfa 1');
+    expect(host.querySelector('.adt-next')!.hasAttribute('aria-disabled')).toBe(false); // more may follow
+    table.setPageResult({ rows: [{ id: 1, name: 'A' }], totalRows: 1 });
+    expect(host.querySelector('.adt-status')!.textContent).toBe('Sayfa 1 / 1 · 1 kayıt');
+  });
+});

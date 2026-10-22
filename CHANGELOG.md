@@ -47,6 +47,13 @@ will start at `0.1.0` (see SPEC "Planned release approach").
 - **Search speed:** `createFilterCache` keeps each cell's typed value and folded
   search text per `Row` wrapper; `createDataTable` uses it. 100k rows: about
   330–400 ms → 40–50 ms per search once warm (Apple M2, Node 22).
+- **DOM renderer (second review):** optional `styles.css` (light/dark tokens,
+  focus rings, card layout on phones); `status` option for loading
+  (`aria-busy`) and error/retry states in server mode; selection updates
+  checkboxes in place instead of re-rendering the table; an unknown server total
+  is shown as `Page N`, not as a total; row checkboxes are labelled with the
+  row's name (`rowLabel`) instead of its raw ID. New labels: `pageStatusOpen`,
+  `loading`, `error`, `retry`; `selectRow` now receives the row name.
 - **Smaller fixes:** `fromLaravelPaginator` also reads `meta.total` (API resource
   collections); query parameters are inserted before a `#fragment` in the URL;
   the 1000 page-size limit is one exported constant (`MAX_PAGE_SIZE`) used by
