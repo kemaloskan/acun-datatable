@@ -1,6 +1,7 @@
 {
   "name": "@acunsoft/datatable-http",
   "version": "0.0.0",
+  "license": "MIT",
   "private": true,
   "type": "module",
   "sideEffects": false,
@@ -28,5 +29,8 @@
     "tsup": "^8.0.0",
     "typescript": "^5.0.0",
     "vitest": "^5.0.5"
+  },
+  "engines": {
+    "node": ">=22"
   }
 }

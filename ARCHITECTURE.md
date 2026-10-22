@@ -36,7 +36,7 @@ Consumer (HTML / Laravel / Livewire / React / Vue / Next.js)
 - Renders semantic `<table>` by default; keyboard and screen reader support.
 - Does not own business state. Subscribes to core and invokes core actions.
 - HTML/DOM text must be escaped or assigned via `textContent` by default; never directly inject untrusted cell HTML.
-- Published as `@acunsoft/datatable-dom`: `renderTable`, `renderPagination`, `renderSearch`. It uses no HTML-parsing DOM API at all (enforced by a test); formatters must return strings. Unit tests run in jsdom (dev dependency `jsdom@^28`, chosen because it still supports Node 20); Playwright browser tests are the next step.
+- Published as `@acunsoft/datatable-dom`: `renderTable`, `renderPagination`, `renderSearch`. It uses no HTML-parsing DOM API at all (enforced by a test); formatters must return strings. Unit tests run in jsdom (dev dependency); Playwright tests run the renderer in Chromium, Firefox and WebKit.
 
 ### DataSource implementations (`packages/datasource-http`, M2 in progress)
 - `local`: in-memory records suitable for small/medium datasets (`createDataTable`).
@@ -121,7 +121,7 @@ The package names are reservations for roadmap planning, not a claim that those 
 
 ## 5. Toolchain and packaging
 
-- Node.js: development standard is Node.js 24 LTS (pinned in `.nvmrc`); `package.json` `engines` allows `>=20`. CI runs the suite on Node 20, 22 and 24 so support is not limited to one version.
+- Node.js: development standard is Node.js 24 LTS (pinned in `.nvmrc`); `package.json` `engines` allows `>=22`. CI runs the suite on Node 22 and 24 (every supported LTS line); Node 20 was dropped after its end of life in April 2026.
 - Dependency updates are controlled: the committed lockfile is authoritative (`npm ci`), and upgrades land only via a PR that passes the full CI matrix — no automatic or unattended updates.
 - Package manager: npm workspaces for low setup friction; lockfile committed.
 - TypeScript strict mode, ESM first; generate declarations and `exports` map.

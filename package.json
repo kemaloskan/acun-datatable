@@ -2,6 +2,7 @@
   "name": "acun-datatable-workspace",
   "private": true,
   "version": "0.0.0",
+  "license": "MIT",
   "workspaces": [
     "packages/*"
   ],
@@ -13,7 +14,7 @@
     "e2e:chromium": "npm run build && playwright test --project=chromium"
   },
   "engines": {
-    "node": ">=20"
+    "node": ">=22"
   },
   "devDependencies": {
     "@playwright/test": "^1.64.1"

@@ -5,8 +5,9 @@ Framework-independent TypeScript data table engine (early development scaffold).
 ## Setup
 
 The development standard is **Node.js 24 LTS**, pinned in [`.nvmrc`](.nvmrc).
-The package supports **Node.js 20+** (`engines`), and CI runs the full suite on
-Node **20, 22 and 24** so consumers are not limited to a single version.
+The packages support **Node.js 22+** (`engines`), and CI runs the full suite on
+Node **22 and 24**, every supported LTS line, so consumers are not limited to a
+single version. Node 20 reached end of life in April 2026 and is not supported.
 Dependencies are pinned by the committed lockfile; updates land only through a PR
 that passes the CI matrix, never unattended. With [nvm](https://github.com/nvm-sh/nvm):
 
@@ -388,3 +389,7 @@ in `packages/core/tests/schema.types.ts`,
 `packages/core/tests/data-table.types.ts` and
 `packages/core/tests/local-row-model.types.ts`; build declarations remain
 source-only.
+
+## License
+
+[MIT](LICENSE) © 2026 Acunsoft.

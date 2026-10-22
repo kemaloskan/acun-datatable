@@ -10,9 +10,10 @@ jobs:
       # Report every supported version; one failure must not hide the others.
       fail-fast: false
       matrix:
-        # Node 24 is the development standard (see .nvmrc). The other active
-        # LTS lines are tested for consumer compatibility, not just Node 24.
-        node-version: ['20', '22', '24']
+        # Node 24 is the development standard (see .nvmrc). Every supported LTS
+        # line is tested for consumer compatibility; Node 20 reached end of
+        # life in April 2026 and is no longer supported.
+        node-version: ['22', '24']
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4

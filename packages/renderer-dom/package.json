@@ -1,6 +1,7 @@
 {
   "name": "@acunsoft/datatable-dom",
   "version": "0.0.0",
+  "license": "MIT",
   "private": true,
   "type": "module",
   "sideEffects": false,
@@ -25,9 +26,12 @@
     "@acunsoft/datatable-core": "0.0.0"
   },
   "devDependencies": {
-    "jsdom": "^28.1.0",
+    "jsdom": "^30.1.3",
     "tsup": "^8.0.0",
     "typescript": "^5.0.0",
     "vitest": "^5.0.5"
+  },
+  "engines": {
+    "node": ">=22"
   }
 }
