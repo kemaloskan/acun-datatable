@@ -175,3 +175,21 @@ describe('createQueryRunner — retry, cancel, lifecycle', () => {
     expect(() => createQueryRunner({} as never)).toThrow('source must be a DataSource');
   });
 });
+
+describe('createQueryRunner — listener errors (second review)', () => {
+  it('keeps a successful response successful when a listener throws', async () => {
+    const errors: unknown[] = [];
+    const runner = createQueryRunner<Item>({ getPage: async () => ({ rows: [{ id: 1 }], totalRows: 1 }) }, { onListenerError: e => errors.push(e) });
+    runner.subscribe(state => { if (state.status === 'success') throw new Error('ui bug'); });
+    await runner.run(q(1));
+    expect(runner.getState()).toMatchObject({ status: 'success', result: { rows: [{ id: 1 }] } });
+    expect(errors).toEqual([new Error('ui bug')]);
+  });
+
+  it('rejects run() only for an invalid query', async () => {
+    const runner = createQueryRunner<Item>({ getPage: async () => { throw new Error('network'); } });
+    await expect(runner.run(q(1))).resolves.toBeUndefined();
+    expect(runner.getState().status).toBe('error');
+    await expect(runner.run({ page: 0, pageSize: 1 })).rejects.toThrow('page must be');
+  });
+});

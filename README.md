@@ -69,9 +69,12 @@ an accessible table, pagination and search; see its
 Every subscribable object (`createTableState`, `createRowSelection`,
 `createDataTable`, the HTTP runner) delivers events **in order**: an action taken
 inside a listener is delivered after the current event has reached every
-listener, each event with its own snapshot. A listener that throws does not stop
-the others; the error is rethrown after delivery (an `AggregateError` if several
-threw). `createEmitter()` exposes the same behaviour for adapters.
+listener, each event with its own snapshot. As with the DOM's `EventTarget`, a
+listener that throws neither stops the other listeners nor makes the action
+fail: the state change still happens and the error goes to `onListenerError`
+(an option of each factory; by default `reportError`, or an unhandled rejection
+where that does not exist). `createEmitter()` exposes the same behaviour for
+adapters.
 
 ## Composed table (M1)
 

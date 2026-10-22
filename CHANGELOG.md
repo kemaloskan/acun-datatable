@@ -27,8 +27,19 @@ will start at `0.1.0` (see SPEC "Planned release approach").
   `DROP`) and invalid values, and leaves out empty `contains` filters, which
   Laravel validation rejected with HTTP 422.
 
+### Fixed (second review)
+
+- **Server-mode page clamp:** `setPageResult` corrects the page before it emits,
+  so listeners never see page 5 of 2, and the correction no longer depends on
+  listeners succeeding.
+- **Listener errors no longer leak into results:** setters do not throw when a
+  listener throws, and the HTTP runner keeps a successful response successful.
+  Errors go to `onListenerError` (default `reportListenerError`).
+
 ### Changed behaviour
 
+- A throwing listener is reported through `onListenerError` instead of being
+  rethrown from the action (previously an error or `AggregateError`).
 - Global search with several words now requires each word, in any column,
   instead of the whole text as one substring (`ali ankara`).
 - Node 20 (end of life April 2026) is no longer supported; `engines >=22`.

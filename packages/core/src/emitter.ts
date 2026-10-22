@@ -1,12 +1,27 @@
+/** Receives an error thrown by a listener. */
+export type ListenerErrorHandler = (error: unknown) => void;
+
 /**
- * Ordered, re-entrancy-safe event delivery shared by every subscribable object.
+ * Default handler: report the error the way the platform reports uncaught
+ * errors (`reportError` in browsers, an unhandled rejection elsewhere), without
+ * affecting the action that triggered the event.
+ */
+export function reportListenerError(error: unknown): void {
+  const report = (globalThis as { reportError?: (error: unknown) => void }).reportError;
+  if (typeof report === 'function') report(error);
+  else void Promise.reject(error);
+}
+
+/**
+ * Ordered, re-entrancy-safe event delivery shared by every subscribable object,
+ * with the same error semantics as the DOM's `EventTarget`.
  *
  * - Events are delivered in the order they happened: an event raised by a
  *   listener is queued and delivered after the current one has reached every
  *   listener, so no listener ever sees events out of order.
- * - A listener that throws does not stop the others. After the queue is drained
- *   the error is rethrown (an `AggregateError` if several listeners threw), so
- *   failures stay visible to the caller.
+ * - A listener that throws does not stop the others and never turns a
+ *   successful action into a failure: `emit` does not throw. The error goes to
+ *   `onListenerError` (default `reportListenerError`).
  * - Each delivery uses the listeners subscribed at that moment.
  */
 export interface Emitter<Args extends unknown[]> {
@@ -15,10 +30,20 @@ export interface Emitter<Args extends unknown[]> {
   clear(): void;
 }
 
-export function createEmitter<Args extends unknown[]>(): Emitter<Args> {
+export function createEmitter<Args extends unknown[]>(
+  onListenerError: ListenerErrorHandler = reportListenerError,
+): Emitter<Args> {
+  if (typeof onListenerError !== 'function') throw new TypeError('onListenerError must be a function');
   const listeners = new Set<(...args: Args) => void>();
   const queue: Args[] = [];
   let dispatching = false;
+  const fail = (error: unknown): void => {
+    try {
+      onListenerError(error);
+    } catch (handlerError) {
+      reportListenerError(handlerError);
+    }
+  };
 
   return {
     subscribe(listener) {
@@ -30,7 +55,6 @@ export function createEmitter<Args extends unknown[]>(): Emitter<Args> {
       queue.push(args);
       if (dispatching) return;
       dispatching = true;
-      const errors: unknown[] = [];
       try {
         while (queue.length > 0) {
           const event = queue.shift()!;
@@ -38,15 +62,13 @@ export function createEmitter<Args extends unknown[]>(): Emitter<Args> {
             try {
               listener(...event);
             } catch (error) {
-              errors.push(error);
+              fail(error);
             }
           }
         }
       } finally {
         dispatching = false;
       }
-      if (errors.length === 1) throw errors[0];
-      if (errors.length > 1) throw new AggregateError(errors, `${errors.length} listeners threw`);
     },
     clear() {
       listeners.clear();

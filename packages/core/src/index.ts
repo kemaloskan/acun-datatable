@@ -1,7 +1,7 @@
-import { createEmitter } from './emitter';
+import { createEmitter, type ListenerErrorHandler } from './emitter';
 
 export { createColumns, type ColumnDef } from './columns';
-export { createEmitter, type Emitter } from './emitter';
+export { createEmitter, reportListenerError, type Emitter, type ListenerErrorHandler } from './emitter';
 export {
   createDataTable, type DataTable, type DataTableEvent, type DataTableInitialState,
   type DataTableListener, type DataTableMode, type DataTableOptions, type DataTableState,
@@ -47,6 +47,8 @@ export interface TableStateOptions {
   readonly page?: number;
   readonly pageSize?: number;
   readonly sorting?: readonly SortRule[];
+  /** Receives errors thrown by listeners; default `reportListenerError`. Actions never fail because of a listener. */
+  readonly onListenerError?: ListenerErrorHandler;
 }
 
 /** Receives a new snapshot after a successful, distinct state transition. */
@@ -158,7 +160,7 @@ export function createTableState(
     pageSize,
     copyAndFreezeSorting(options.sorting ?? []),
   );
-  const emitter = createEmitter<[Readonly<TableState>]>();
+  const emitter = createEmitter<[Readonly<TableState>]>(options.onListenerError);
   let destroyed = false;
 
   const publish = (nextState: Readonly<TableState>): void => {

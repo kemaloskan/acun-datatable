@@ -1,7 +1,12 @@
 import {
   createEmitter, createTableQuery, validatePageResult,
-  type DataSource, type PageResult, type TableQuery, type TableQueryInput,
+  type DataSource, type ListenerErrorHandler, type PageResult, type TableQuery, type TableQueryInput,
 } from '@acunsoft/datatable-core';
+
+export interface QueryRunnerOptions {
+  /** Receives errors thrown by listeners; they never change the query state. */
+  readonly onListenerError?: ListenerErrorHandler;
+}
 
 export type QueryStatus = 'idle' | 'loading' | 'success' | 'error';
 
@@ -22,8 +27,10 @@ export interface QueryRunner<TData> {
   getState(): Readonly<QueryState<TData>>;
   /**
    * Request a page. Aborts the request in flight; only the latest request may
-   * update the state. Resolves when this request settles or is superseded and
-   * never rejects: failures are reported as `status: 'error'`.
+   * update the state. Rejects only when `query` itself is invalid (nothing is
+   * sent then). Otherwise it resolves when the request settles or is
+   * superseded, and request or response failures are reported as
+   * `status: 'error'`.
    */
   run(query: TableQueryInput): Promise<void>;
   /** Re-run the last query. Explicit only: the runner never retries on its own. */
@@ -41,7 +48,7 @@ export interface QueryRunner<TData> {
  * error that arrives after a newer run started is dropped, even if the data
  * source ignores the abort signal, so stale data can never overwrite newer data.
  */
-export function createQueryRunner<TData>(source: DataSource<TData>): QueryRunner<TData> {
+export function createQueryRunner<TData>(source: DataSource<TData>, options: QueryRunnerOptions = {}): QueryRunner<TData> {
   if (!source || typeof source.getPage !== 'function') throw new TypeError('source must be a DataSource with getPage');
 
   let state: Readonly<QueryState<TData>> = Object.freeze({ status: 'idle', query: undefined, result: undefined, error: undefined });
@@ -49,7 +56,7 @@ export function createQueryRunner<TData>(source: DataSource<TData>): QueryRunner
   let sequence = 0;
   let controller: AbortController | undefined;
   let destroyed = false;
-  const emitter = createEmitter<[Readonly<QueryState<TData>>]>();
+  const emitter = createEmitter<[Readonly<QueryState<TData>>]>(options.onListenerError);
 
   const set = (next: QueryState<TData>): void => {
     state = Object.freeze({ ...next });
@@ -69,17 +76,20 @@ export function createQueryRunner<TData>(source: DataSource<TData>): QueryRunner
     const own = new AbortController();
     controller = own;
     set({ status: 'loading', query, result: state.result, error: undefined });
+    let result: PageResult<TData>;
     try {
       const raw = await source.getPage(query, { signal: own.signal });
       if (current !== sequence || destroyed) return; // superseded or cancelled
-      const result = validatePageResult(raw, { pageSize: query.pageSize }) as PageResult<TData>;
-      controller = undefined;
-      set({ status: 'success', query, result, error: undefined });
+      result = validatePageResult(raw, { pageSize: query.pageSize }) as PageResult<TData>;
     } catch (error) {
       if (current !== sequence || destroyed) return;
       controller = undefined;
       set({ status: 'error', query, result: state.result, error });
+      return;
     }
+    // Outside the try: a listener error must never turn a good response into 'error'.
+    controller = undefined;
+    set({ status: 'success', query, result, error: undefined });
   };
 
   return {

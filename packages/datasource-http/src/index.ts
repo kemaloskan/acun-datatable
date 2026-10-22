@@ -5,5 +5,5 @@ export {
 } from './http';
 export {
   createQueryRunner,
-  type QueryListener, type QueryRunner, type QueryState, type QueryStatus,
+  type QueryListener, type QueryRunner, type QueryRunnerOptions, type QueryState, type QueryStatus,
 } from './runner';

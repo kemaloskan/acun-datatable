@@ -100,26 +100,63 @@ describe('1e · event order and failing listeners', () => {
     expect(seen).toEqual(['A:globalSearch', 'B:globalSearch/5', 'A:pageSize', 'B:pageSize/10']);
   });
 
-  it('keeps notifying other listeners when one throws, then reports the error', () => {
+  it('keeps notifying other listeners when one throws, and the action still succeeds', () => {
     for (const make of [
-      () => { const t = createDataTable({ data: [{ id: 1 }], columns: [] }); return { sub: t.subscribe, act: () => t.setGlobalSearch('y') }; },
-      () => { const s = createTableState(); return { sub: s.subscribe, act: () => s.setPage(2) }; },
-      () => { const s = createRowSelection(); return { sub: s.subscribe, act: () => s.select('1') }; },
+      (onListenerError: (e: unknown) => void) => { const t = createDataTable({ data: [{ id: 1 }], columns: [], onListenerError }); return { sub: t.subscribe, act: () => t.setGlobalSearch('y'), done: () => t.getState().globalSearch === 'y' }; },
+      (onListenerError: (e: unknown) => void) => { const s = createTableState({ onListenerError }); return { sub: s.subscribe, act: () => s.setPage(2), done: () => s.getState().page === 2 }; },
+      (onListenerError: (e: unknown) => void) => { const s = createRowSelection({ onListenerError }); return { sub: s.subscribe, act: () => s.select('1'), done: () => s.isSelected('1') }; },
     ]) {
-      const { sub, act } = make();
+      const errors: unknown[] = [];
+      const { sub, act, done } = make(error => errors.push(error));
       const reached = vi.fn();
       sub(() => { throw new Error('boom'); });
       sub(reached);
-      expect(act).toThrow('boom');
+      expect(act).not.toThrow();
+      expect(done()).toBe(true);
       expect(reached).toHaveBeenCalledTimes(1);
+      expect(errors).toEqual([new Error('boom')]);
     }
   });
 
-  it('reports several failures together', () => {
-    const emitter = createEmitter<[number]>();
-    emitter.subscribe(() => { throw new Error('a'); });
-    emitter.subscribe(() => { throw new Error('b'); });
-    expect(() => emitter.emit(1)).toThrow(AggregateError);
+  it('reports each failure through the platform by default', () => {
+    const original = (globalThis as { reportError?: unknown }).reportError;
+    const report = vi.fn();
+    (globalThis as { reportError?: unknown }).reportError = report;
+    try {
+      const emitter = createEmitter<[number]>();
+      emitter.subscribe(() => { throw new Error('a'); });
+      emitter.subscribe(() => { throw new Error('b'); });
+      expect(() => emitter.emit(1)).not.toThrow();
+      expect(report.mock.calls.map(([error]) => (error as Error).message)).toEqual(['a', 'b']);
+    } finally {
+      (globalThis as { reportError?: unknown }).reportError = original;
+    }
+  });
+});
+
+describe('second review · server mode and listener errors', () => {
+  it('clamps the page before listeners hear about a result', () => {
+    const table = createDataTable<{ id: number }>({ mode: 'server', columns: [], initialState: { page: 5, pageSize: 10 } });
+    const seen: string[] = [];
+    table.subscribe((state, event) => seen.push(`${event.type}:${state.page}/${table.getPage().pageCount}`));
+    table.setPageResult({ rows: [], totalRows: 15 });
+    expect(seen).toEqual(['result:2/2', 'page:2/2']);
+  });
+
+  it('still clamps and emits the page event when a listener throws', () => {
+    const errors: unknown[] = [];
+    const table = createDataTable<{ id: number }>({ mode: 'server', columns: [], initialState: { page: 5, pageSize: 10 }, onListenerError: e => errors.push(e) });
+    const events: string[] = [];
+    table.subscribe(() => { throw new Error('ui bug'); });
+    table.subscribe((_, event) => events.push(event.type));
+    expect(() => table.setPageResult({ rows: [], totalRows: 15 })).not.toThrow();
+    expect(table.getState().page).toBe(2);
+    expect(events).toEqual(['result', 'page']);
+    expect(errors).toHaveLength(2);
+  });
+
+  it('rejects an invalid onListenerError option', () => {
+    expect(() => createTableState({ onListenerError: 'x' as never })).toThrow('onListenerError must be a function');
   });
 });
 

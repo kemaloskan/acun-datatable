@@ -1,5 +1,5 @@
 import { createColumns, type ColumnDef } from './columns';
-import { createEmitter } from './emitter';
+import { createEmitter, type ListenerErrorHandler } from './emitter';
 import { copyRuleValue } from './filter-rules';
 import { filterRows, type FilterRule } from './filtering';
 import { createTableState, type SortRule } from './index';
@@ -43,6 +43,8 @@ interface DataTableBaseOptions<TData> {
   readonly nulls?: NullPlacement;
   /** Local mode only. */
   readonly comparators?: Readonly<Record<string, SortComparator>>;
+  /** Receives errors thrown by listeners; default `reportListenerError`. Actions never fail because of a listener. */
+  readonly onListenerError?: ListenerErrorHandler;
 }
 
 /** `getRowId` is optional only when every record has a required string/number `id`. */
@@ -247,7 +249,7 @@ export function createDataTable<TData>(options: DataTableOptions<TData>): DataTa
     });
   };
   let state = snapshot();
-  const emitter = createEmitter<[Readonly<DataTableState>, Readonly<DataTableEvent>]>();
+  const emitter = createEmitter<[Readonly<DataTableState>, Readonly<DataTableEvent>]>(options.onListenerError);
   let destroyed = false;
   const emit = (event: DataTableEvent): void => {
     state = snapshot();
@@ -295,12 +297,15 @@ export function createDataTable<TData>(options: DataTableOptions<TData>): DataTa
       coreRows = rows;
       rowIds = new Set(rows.map(row => row.id));
       serverTotal = checked.totalRows;
+      // Make the state consistent first (page within the new total), then tell
+      // listeners: every event they receive already has the corrected page.
+      const before = inner.getState().page;
+      clampPage();
+      const after = inner.getState().page;
       emit(serverTotal === undefined
         ? { type: 'result', rows: rows.length }
         : { type: 'result', rows: rows.length, totalRows: serverTotal });
-      const before = inner.getState().page;
-      clampPage();
-      if (inner.getState().page !== before) emit({ type: 'page', page: inner.getState().page });
+      if (after !== before) emit({ type: 'page', page: after });
     },
 
     setData: (data) => {

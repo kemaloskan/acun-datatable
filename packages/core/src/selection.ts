@@ -1,4 +1,4 @@
-import { createEmitter } from './emitter';
+import { createEmitter, type ListenerErrorHandler } from './emitter';
 import type { RowId } from './rows';
 
 export type SelectionMode = 'single' | 'multiple';
@@ -26,6 +26,8 @@ export interface RowSelectionOptions {
   /** Default `'multiple'`. Fixed for the lifetime of the selection. */
   readonly mode?: SelectionMode;
   readonly selectedIds?: readonly RowId[];
+  /** Receives errors thrown by listeners; default `reportListenerError`. Actions never fail because of a listener. */
+  readonly onListenerError?: ListenerErrorHandler;
 }
 
 export interface RowSelection {
@@ -88,7 +90,7 @@ export function createRowSelection(options: RowSelectionOptions = {}): RowSelect
 
   let state: Readonly<SelectionState> = Object.freeze({ mode, selectedIds: Object.freeze([...initial]) });
   let members = new Set(state.selectedIds);
-  const emitter = createEmitter<[Readonly<SelectionState>, Readonly<SelectionChange>]>();
+  const emitter = createEmitter<[Readonly<SelectionState>, Readonly<SelectionChange>]>(options.onListenerError);
   let destroyed = false;
 
   const commit = (next: readonly RowId[], action: SelectionAction): void => {
