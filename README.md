@@ -52,9 +52,9 @@ new subscriptions are no-ops while the final snapshot remains readable.
 
 The existing `createPagination(page, pageSize)` helper remains available. Local
 multi-column sorting (`createLocalRowModel`), column filtering and global search
-(`filterRows`) and pagination (`paginateRows`) are available (below). No renderer,
-HTTP DataSource, selection or a composed full table API has been implemented
-yet. See `SPEC.md` for milestones.
+(`filterRows`), pagination (`paginateRows`) and row selection
+(`createRowSelection`) are available (below). No renderer, HTTP DataSource or a
+composed full table API has been implemented yet. See `SPEC.md` for milestones.
 
 ## Column schema and stable row IDs (M1)
 
@@ -247,8 +247,51 @@ reported as `view.page`. Empty input yields `pageCount` 1 and an empty slice. Th
 input array is not mutated and the same `Row` wrappers are reused in a frozen
 result.
 
+## Row selection (M1)
+
+```ts
+import { createRowSelection } from '@acunsoft/datatable-core';
+
+const selection = createRowSelection({ mode: 'multiple' }); // or 'single'
+
+selection.subscribe((state, change) => {
+  // state:  { mode, selectedIds }            (frozen snapshot)
+  // change: { action, added, removed }       (what this action changed)
+});
+
+selection.toggle(row.id);
+selection.selectAll(page.rows.map((row) => row.id));
+selection.getStatus(page.rows.map((row) => row.id)); // 'none' | 'some' | 'all'
+selection.retain(reloadedRows.map((row) => row.id)); // drop rows that disappeared
+```
+
+`createRowSelection({ mode?, selectedIds? })` keeps a set of selected row IDs
+(`Row.id` strings). The mode is fixed at creation and defaults to `'multiple'`.
+
+| Action | Multiple mode | Single mode |
+|---|---|---|
+| `select(id)` | adds the ID | replaces the selection with the ID |
+| `deselect(id)` / `toggle(id)` | removes / flips the ID | same |
+| `setSelected(ids)` | replaces the selection | at most one ID, otherwise throws |
+| `selectAll(ids)` | adds every ID | throws |
+| `clear()` | empties the selection | same |
+| `retain(ids)` | keeps only selected IDs found in `ids` | same |
+
+- **Events:** every action that changes the selection notifies listeners with the
+  new frozen snapshot and a frozen `{ action, added, removed }` change. Actions
+  that change nothing (selecting a selected row, `setSelected` with the same IDs
+  in another order) do not notify.
+- **Order:** `selectedIds` lists IDs in the order they were first selected.
+- **Independent of the view:** filtering, sorting and paging never change the
+  selection; a hidden row stays selected. Use `retain` after reloading data to
+  drop rows that no longer exist.
+- **Validation:** IDs must be non-blank strings; duplicate IDs in a list and
+  invalid modes throw. After `destroy`, actions are ignored, `subscribe` returns a
+  no-op and the final snapshot remains readable.
+
 `npm run check` checks source, runtime tests, and compile-only type assertions
 in `packages/core/tests/schema.types.ts`,
-`packages/core/tests/filtering.types.ts` and
+`packages/core/tests/filtering.types.ts`,
+`packages/core/tests/selection.types.ts` and
 `packages/core/tests/local-row-model.types.ts`; build declarations remain
 source-only.

@@ -3,6 +3,10 @@ export { filterRows, type FilterOperator, type FilterRule, type FilterQuery, typ
 export { createLocalRowModel, type LocalRowModel, type LocalRowModelOptions, type SortComparator, type NullPlacement } from './local-row-model';
 export { paginateRows, type PageView } from './pagination';
 export { createRows, type Row, type RowId, type RowIdValue, type GetRowId, type RowOptions } from './rows';
+export {
+  createRowSelection, type RowSelection, type RowSelectionOptions, type SelectionAction,
+  type SelectionChange, type SelectionListener, type SelectionMode, type SelectionState, type SelectionStatus,
+} from './selection';
 
 /** One-based page numbering. */
 export interface Pagination {
