@@ -32,10 +32,11 @@ Consumer (HTML / Laravel / Livewire / React / Vue / Next.js)
 - Immutable state snapshots; controlled state update operations; stable row IDs.
 - Initial release: local data, sorting, filtering, pagination and selection. Remote capability uses an explicit query/result contract.
 
-### DOM renderer (`packages/renderer-dom`, future)
+### DOM renderer (`packages/renderer-dom`, M3 in progress)
 - Renders semantic `<table>` by default; keyboard and screen reader support.
 - Does not own business state. Subscribes to core and invokes core actions.
 - HTML/DOM text must be escaped or assigned via `textContent` by default; never directly inject untrusted cell HTML.
+- Published as `@acunsoft/datatable-dom`: `renderTable`, `renderPagination`, `renderSearch`. It uses no HTML-parsing DOM API at all (enforced by a test); formatters must return strings. Unit tests run in jsdom (dev dependency `jsdom@^28`, chosen because it still supports Node 20); Playwright browser tests are the next step.
 
 ### DataSource implementations (`packages/datasource-http`, M2 in progress)
 - `local`: in-memory records suitable for small/medium datasets (`createDataTable`).
