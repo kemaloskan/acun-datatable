@@ -97,27 +97,29 @@ export interface DataSource<Row> {
 
 ```text
 acun-datatable/
-  AGENTS.md              # Codex instructions
   ARCHITECTURE.md        # Decisions and boundaries
   SPEC.md                # Milestones / acceptance tests
+  CHANGELOG.md, LICENSE  # MIT
   package.json           # npm workspaces (no framework deps)
   tsconfig.base.json
-  packages/
-    core/                 # first milestone, implemented minimally
-    renderer-dom/         # later
-    datasource-http/      # later
-    adapter-react/        # later
-    adapter-vue/          # later
-    adapter-livewire/     # later
+  packages/               # directory          → published name
+    core/                 # implemented        → @acunsoft/datatable-core
+    datasource-http/      # implemented        → @acunsoft/datatable-http
+    renderer-dom/         # implemented        → @acunsoft/datatable-dom
+    adapter-react/        # planned            → @acunsoft/datatable-react
+    adapter-vue/          # planned            → @acunsoft/datatable-vue
+    adapter-livewire/     # planned (PHP)      → acunsoft/datatable-livewire (Composer)
+    adapter-laravel/      # planned (PHP)      → acunsoft/datatable-laravel (Composer)
     plugin-virtual/       # later
     plugin-export-csv/    # later
     plugin-export-excel/  # later
     plugin-export-pdf/    # later
-  examples/               # later
+  e2e/                    # Playwright browser tests
+  site/                   # documentation site (datatable.acunsoft.test)
   .github/workflows/
 ```
 
-The package names are reservations for roadmap planning, not a claim that those packages are implemented.
+Directories are named by role (`renderer-dom`, `datasource-http`); published names use the `datatable-` prefix. Planned entries are reservations for roadmap planning, not a claim that those packages exist. Nothing is published yet. Blade/Livewire components use the `acun:datatable-*` prefix (e.g. `<x-acun-datatable::table>`), because Acun Pro already has a different `acun:data-table` component.
 
 ## 5. Toolchain and packaging
 

@@ -3,8 +3,9 @@
 <head>
 <meta charset="utf-8">
 <title>Acun DataTable</title>
-<meta http-equiv="refresh" content="0; url=./">
-<script>location.replace('./');</script>
+<!-- Old address: keep the #/page part so deep links such as #/livewire still work. -->
+<script>location.replace('./' + location.hash);</script>
+<noscript><meta http-equiv="refresh" content="0; url=./"></noscript>
 </head>
 <body><a href="./">Acun DataTable</a></body>
 </html>
