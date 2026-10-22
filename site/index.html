@@ -228,7 +228,8 @@ const API = [
   ["createRows(data, { getRowId? })", {tr:"Kararlı satır kimlikleri üretir; veriyi klonlamaz.", en:"Builds stable row identities; never clones caller data."}],
   ["createLocalRowModel(rows, columns)", {tr:"Yerel çok-kolonlu, stable sıralama + önbellek.", en:"Local multi-column stable sorting with caching."}],
   ["filterRows(rows, columns, { filters, globalSearch })", {tr:"Kolon filtreleri (contains, eq, gt, lt) ve global arama; sırayı korur.", en:"Column filters (contains, eq, gt, lt) and global search; keeps order."}],
-  ["paginateRows(rows, { page, pageSize })", {tr:"1-tabanlı sayfa dilimi ve sayfa bilgisi; clamp'li.", en:"1-based page slice plus page metadata; clamped."}]
+  ["paginateRows(rows, { page, pageSize })", {tr:"1-tabanlı sayfa dilimi ve sayfa bilgisi; clamp'li.", en:"1-based page slice plus page metadata; clamped."}],
+  ["createRowSelection({ mode })", {tr:"Kararlı ID'lerle tekli/çoklu seçim; değişiklik olayı ve none/some/all durumu.", en:"Single/multiple selection by stable IDs; change events and none/some/all status."}]
 ];
 
 const EX_SORT =
