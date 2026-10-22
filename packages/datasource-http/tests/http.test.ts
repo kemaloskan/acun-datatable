@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { createTableQuery } from '@acunsoft/datatable-core';
 import {
-  createHttpDataSource, createQueryRunner, fromLaravelPaginator, HttpError, serializeTableQuery,
+  createHttpDataSource, createQueryRunner, formatLocalDate, fromLaravelPaginator, HttpError, serializeTableQuery,
 } from '../src/index';
 
 const json = (body: unknown, init: ResponseInit = {}) =>
@@ -19,7 +19,7 @@ describe('serializeTableQuery', () => {
       filters: [
         { field: 'total', operator: 'gt', value: 100 },
         { field: 'total', operator: 'lt', value: 500 },
-        { field: 'createdAt', operator: 'gt', value: new Date('2025-01-01T00:00:00Z') },
+        { field: 'createdAt', operator: 'gt', value: new Date(2025, 0, 1) }, // a date picker's local midnight
         { field: 'active', operator: 'eq', value: true },
       ],
       globalSearch: ' Ayşe & co ',
@@ -28,7 +28,7 @@ describe('serializeTableQuery', () => {
       page: '2', pageSize: '25', sort: 'total:desc,customer:asc',
       'filters[0][field]': 'total', 'filters[0][op]': 'gt', 'filters[0][value]': '100',
       'filters[1][field]': 'total', 'filters[1][op]': 'lt', 'filters[1][value]': '500',
-      'filters[2][field]': 'createdAt', 'filters[2][op]': 'gt', 'filters[2][value]': '2025-01-01T00:00:00.000Z',
+      'filters[2][field]': 'createdAt', 'filters[2][op]': 'gt', 'filters[2][value]': '2025-01-01',
       'filters[3][field]': 'active', 'filters[3][op]': 'eq', 'filters[3][value]': 'true',
       search: 'Ayşe & co',
     });
@@ -40,8 +40,26 @@ describe('serializeTableQuery', () => {
   });
 
   it('refuses values it cannot represent', () => {
-    expect(() => serializeTableQuery(createTableQuery({ page: 2, pageSize: 25, filters: [{ field: 'x', operator: 'eq', value: {} }] })))
-      .toThrow('filter "x" value cannot be sent');
+    // createTableQuery already rejects them; a hand-built query is caught by the serializer.
+    expect(() => createTableQuery({ page: 2, pageSize: 25, filters: [{ field: 'x', operator: 'eq', value: {} }] }))
+      .toThrow('eq value must be a string, number, boolean or valid Date');
+    const handMade = { page: 1, pageSize: 10, sorting: [], filters: [{ field: 'x', operator: 'eq' as const, value: {} }] };
+    expect(() => serializeTableQuery(handMade)).toThrow('filter "x" value cannot be sent');
+  });
+
+  it('sends dates in local time so the calendar day never shifts', () => {
+    expect(formatLocalDate(new Date(2026, 9, 23))).toBe('2026-10-23');
+    const withTime = new Date(2026, 9, 23, 14, 5, 9, 7);
+    const sent = formatLocalDate(withTime);
+    expect(sent).toMatch(/^2026-10-23T14:05:09\.007[+-]\d{2}:\d{2}$/);
+    expect(new Date(sent).getTime()).toBe(withTime.getTime()); // same instant
+  });
+
+  it('leaves out empty contains filters, which Laravel would reject with 422', () => {
+    const params = serializeTableQuery(createTableQuery({
+      page: 1, pageSize: 10, filters: [{ field: 'name', operator: 'contains', value: '  ' }], globalSearch: '  ',
+    }));
+    expect(params.toString()).toBe('page=1&pageSize=10');
   });
 });
 

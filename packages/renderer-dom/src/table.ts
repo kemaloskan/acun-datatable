@@ -1,4 +1,4 @@
-import type { ColumnDef, DataTable, Row, SortRule } from '@acunsoft/datatable-core';
+import { isDecimal, normalizeValue, type ColumnDef, type DataTable, type Row, type SortRule } from '@acunsoft/datatable-core';
 import { checkTarget, element, keepFocus, type RenderedComponent } from './dom';
 import { labelsEn, type DataTableLabels } from './labels';
 
@@ -52,19 +52,33 @@ export function renderTable<TData>(
     if (typeof formatter !== 'function') throw new TypeError(`format for column "${id}" must be a function`);
   }
 
+  const scaled = new Map<number, Intl.NumberFormat>();
+  const decimalFormat = (scale: number): Intl.NumberFormat => {
+    let format = scaled.get(scale);
+    if (!format) {
+      format = new Intl.NumberFormat(locale, { minimumFractionDigits: scale, maximumFractionDigits: scale });
+      scaled.set(scale, format);
+    }
+    return format;
+  };
   const text = (column: ColumnDef<TData>, row: Row<TData>): string => {
-    const value = column.accessorFn
+    const raw = column.accessorFn
       ? column.accessorFn(row.original)
       : (row.original as Record<PropertyKey, unknown>)[column.accessorKey as PropertyKey];
     const formatter = options.format?.[column.id];
     if (formatter) {
-      const output = formatter(value, row);
+      const output = formatter(raw, row);
       if (typeof output !== 'string') throw new TypeError(`format for column "${column.id}" must return a string`);
       return output;
     }
+    // Typed columns read text values ("1250.50", "2026-10-23") as their type;
+    // an unreadable value is shown as written rather than hidden.
+    const value = column.type === undefined ? raw : normalizeValue(raw, column.type) ?? raw;
     if (value == null) return '';
     if (typeof value === 'number') return Number.isNaN(value) ? '' : numbers.format(value);
+    if (isDecimal(value)) return decimalFormat(value.scale).format(Number(value.text));
     if (value instanceof Date) return Number.isNaN(value.getTime()) ? '' : dates.format(value);
+    if (typeof value === 'boolean') return value ? labels.yes : labels.no;
     return String(value);
   };
 

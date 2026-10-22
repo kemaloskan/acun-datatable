@@ -31,11 +31,27 @@ export interface HttpDataSourceOptions {
   readonly credentials?: RequestCredentials;
 }
 
+const pad = (value: number, size = 2): string => String(Math.abs(value)).padStart(size, '0');
+
+/**
+ * Dates are sent in the user's local time so the calendar day never shifts:
+ * a local midnight (a date picker's value) becomes `2026-10-23`, any other time
+ * `2026-10-23T14:05:00.000+03:00`. `toISOString()` would turn a Turkish
+ * 23 October midnight into `2026-10-22T21:00:00Z`.
+ */
+export function formatLocalDate(date: Date): string {
+  const day = `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+  if (date.getHours() === 0 && date.getMinutes() === 0 && date.getSeconds() === 0 && date.getMilliseconds() === 0) return day;
+  const offset = -date.getTimezoneOffset();
+  const zone = `${offset >= 0 ? '+' : '-'}${pad(Math.trunc(offset / 60))}:${pad(offset % 60)}`;
+  return `${day}T${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}.${pad(date.getMilliseconds(), 3)}${zone}`;
+}
+
 function encodeValue(value: unknown, field: string): string {
   if (typeof value === 'string') return value;
   if (typeof value === 'number' && Number.isFinite(value)) return String(value);
   if (typeof value === 'boolean') return value ? 'true' : 'false';
-  if (value instanceof Date && !Number.isNaN(value.getTime())) return value.toISOString();
+  if (value instanceof Date && !Number.isNaN(value.getTime())) return formatLocalDate(value);
   throw new TypeError(`filter "${field}" value cannot be sent as a query parameter`);
 }
 
@@ -43,7 +59,7 @@ function encodeValue(value: unknown, field: string): string {
  * Default wire format, readable by PHP/Laravel and Node `qs` as nested arrays:
  * `page=2&pageSize=25&sort=total:desc,customer:asc`
  * `&filters[0][field]=total&filters[0][op]=gt&filters[0][value]=100&search=ayşe`.
- * Dates are sent as ISO 8601 strings. The server must re-validate everything.
+ * Dates are sent in local time (`formatLocalDate`). The server must re-validate everything.
  */
 export function serializeTableQuery(query: TableQuery): URLSearchParams {
   const params = new URLSearchParams();

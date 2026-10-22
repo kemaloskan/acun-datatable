@@ -74,9 +74,9 @@ describe('local sorting', () => {
     expect(sorted([early, late], desc)).toEqual([late, early]);
     expect(early.toISOString()).toBe('2020-01-01T00:00:00.000Z');
   });
-  it('orders mixed types without coercion', () => {
+  it('orders mixed types without coercion, text in natural order', () => {
     const date = new Date(0);
-    expect(sorted([date, '2', 10, true, false, '10', 2])).toEqual([false, true, 2, 10, '10', '2', date]);
+    expect(sorted([date, '2', 10, true, false, '10', 2])).toEqual([false, true, 2, 10, '2', '10', date]);
     expect(sorted([date, '2', 10, true, false], desc)).toEqual([date, '2', 10, true, false]);
   });
   it('uses custom value comparison and still manages nulls/direction', () => {

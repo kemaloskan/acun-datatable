@@ -1,4 +1,5 @@
 import { createColumns, type ColumnDef } from './columns';
+import { compareNormalized, isMissing, normalizeValue } from './values';
 import type { SortRule } from './index';
 import type { Row } from './rows';
 
@@ -8,8 +9,16 @@ export type NullPlacement = 'first' | 'last';
 
 export interface LocalRowModelOptions {
   readonly locale?: string;
+  /**
+   * Natural order for text: digits compare as numbers, so "Ürün 2" sorts before
+   * "Ürün 10". Default `true`; `false` compares text character by character.
+   */
+  readonly numeric?: boolean;
   readonly nulls?: NullPlacement;
-  /** Keys are column IDs. Custom comparators bypass default type ordering. */
+  /**
+   * Keys are column IDs. Custom comparators bypass default type ordering and
+   * receive values already read for the column's `type`.
+   */
   readonly comparators?: Readonly<Record<string, SortComparator>>;
 }
 
@@ -20,11 +29,6 @@ export interface LocalRowModel<TData> {
   setRows(rows: readonly Row<TData>[]): void;
   /** Call after changing shared originals or state captured by a callback. */
   invalidate(): void;
-}
-
-function missing(value: unknown): boolean {
-  return value == null || (typeof value === 'number' && Number.isNaN(value)) ||
-    (value instanceof Date && Number.isNaN(value.getTime()));
 }
 
 function rank(value: unknown, field: string): number {
@@ -61,7 +65,9 @@ export function createLocalRowModel<TData>(
   if (nulls !== 'first' && nulls !== 'last') throw new TypeError('nulls must be "first" or "last"');
   const locale = options.locale ?? 'en';
   if (typeof locale !== 'string' || locale.length === 0) throw new TypeError('locale must be a non-empty string');
-  const collator = new Intl.Collator(locale, { usage: 'sort' });
+  const numeric = options.numeric ?? true;
+  if (typeof numeric !== 'boolean') throw new TypeError('numeric must be a boolean');
+  const collator = new Intl.Collator(locale, { usage: 'sort', numeric });
   const comparators = new Map<string, SortComparator>();
   if (options.comparators !== undefined) {
     if (!options.comparators || typeof options.comparators !== 'object' || Array.isArray(options.comparators)) {
@@ -109,24 +115,31 @@ export function createLocalRowModel<TData>(
         const decorated = coreRows.map((row, index) => ({
           row, index,
           values: criteria.map(({ column, comparator, field }) => {
-            const value = column.accessorFn
+            const raw = column.accessorFn
               ? column.accessorFn(row.original)
               : row.original[column.accessorKey!];
-            if (missing(value)) return undefined;
-            if (!comparator) rank(value, field); // Validate even singleton inputs.
+            // Typed columns read text such as "9.50" or "2026-10-23" as their type;
+            // values that cannot be read sort like missing values.
+            const value = normalizeValue(raw, column.type);
+            if (value === undefined || isMissing(value)) return undefined;
+            if (!comparator && column.type === undefined) rank(value, field); // Validate even singleton inputs.
             return value;
           }),
         }));
         decorated.sort((left, right) => {
           for (let i = 0; i < criteria.length; i++) {
-            const { comparator, direction, field } = criteria[i]!;
+            const { comparator, direction, field, column } = criteria[i]!;
             const a = left.values[i];
             const b = right.values[i];
             if (a === undefined || b === undefined) {
               if (a === b) continue;
               return (a === undefined ? -1 : 1) * (nulls === 'first' ? 1 : -1);
             }
-            const compared = comparator ? comparator(a, b) : compareDefault(a, b, collator, field);
+            const compared = comparator
+              ? comparator(a, b)
+              : column.type !== undefined
+                ? compareNormalized(a, b, column.type, collator)
+                : compareDefault(a, b, collator, field);
             if (typeof compared !== 'number' || !Number.isFinite(compared)) {
               throw new TypeError(`comparator for "${field}" must return a finite number`);
             }

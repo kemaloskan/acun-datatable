@@ -63,6 +63,15 @@ contract: `TableQuery`, `PageResult`, `DataSource`, `createTableQuery` and
 an accessible table, pagination and search; see its
 [README](packages/renderer-dom/README.md). See `SPEC.md` for milestones.
 
+## Events
+
+Every subscribable object (`createTableState`, `createRowSelection`,
+`createDataTable`, the HTTP runner) delivers events **in order**: an action taken
+inside a listener is delivered after the current event has reached every
+listener, each event with its own snapshot. A listener that throws does not stop
+the others; the error is rethrown after delivery (an `AggregateError` if several
+threw). `createEmitter()` exposes the same behaviour for adapters.
+
 ## Composed table (M1)
 
 ```ts
@@ -231,12 +240,21 @@ from `createColumns`); the model re-validates and copies the definitions.
 - **Precedence** follows the `sorting` array order; `direction` is per column.
 - **Stable:** equal rows keep their input order; row ID order is never used as a
   tie-breaker.
-- **Default ordering without coercion:** values are grouped by type in the order
-  boolean &lt; number &lt; string &lt; `Date`, then compared within a type. Strings use
-  an `Intl.Collator` for the configured `locale` (default `'en'`; e.g. `'tr'` for
-  Turkish). Numbers compare relationally so `Infinity`/`-0` are safe. Unsupported
-  types (objects, `bigint`, `symbol`, functions) throw unless a custom comparator
-  is supplied for that column.
+- **Column types:** give a column `type: 'number' | 'decimal' | 'date' | 'boolean' |
+  'text'` when its values arrive as text. Laravel sends decimals as `"1250.50"`:
+  with `type: 'decimal'` they sort and filter as exact numbers (compared digit by
+  digit, never through floating point); `'date'` reads ISO text (a bare
+  `2026-10-23` is local midnight); `'boolean'` reads `true/false/1/0`. Values a
+  typed column cannot read are treated as missing.
+- **Untyped columns, no coercion:** values are grouped by type in the order
+  boolean &lt; number &lt; string &lt; `Date`, then compared within a type. Numbers
+  compare relationally so `Infinity`/`-0` are safe. Unsupported types (objects,
+  `bigint`, `symbol`, functions) throw unless a custom comparator is supplied.
+- **Text order:** an `Intl.Collator` for the configured `locale` (default `'en'`;
+  `'tr'` gives c &lt; ç &lt; g &lt; ğ &lt; ı &lt; i &lt; s &lt; ş) in **natural order** by default, so
+  "Ürün 2" comes before "Ürün 10". Pass `numeric: false` for character order.
+  Natural order does not make fractions numeric (`"1.5"` vs `"1.25"`); use
+  `type: 'decimal'` for those.
 - **Missing values** (`null`, `undefined`, `NaN`, invalid `Date`) are placed by the
   `nulls` option (`'last'` default, or `'first'`), independently of direction, and
   fall through to the next criterion when tied.
@@ -272,17 +290,27 @@ IDs, blank fields, unknown operators and invalid values throw explicit errors.
 
 | Operator | Matches | Accepted `value` |
 |---|---|---|
-| `contains` | case-insensitive substring of a string, or of a finite number's text | string (`''` = no constraint) |
-| `eq` | exact, same-type equality; `Date` by time | string, number, boolean, valid `Date` |
-| `gt` / `lt` | strictly greater / less than a value of the same type; strings by collation | string, number, valid `Date` |
+| `contains` | the cell's text contains the value, ignoring case and accents (see below) | string (blank = no constraint) |
+| `eq` | equal values of the same type; `Date` by time; text is exact | string, number, boolean, valid `Date` |
+| `gt` / `lt` | strictly greater / less than a value of the same type; text by collation | string, number, valid `Date` |
 
-- **No coercion:** `28` never equals `'28'`, and values of different types never
-  compare. Missing values (`null`, `undefined`, `NaN`, invalid `Date`) never match.
-- **Global search** trims the text and matches if any filterable column
-  `contains` it. Empty or whitespace-only search is no constraint; it is combined
-  with the column filters by AND.
-- **Locale:** case folding and string ordering use `locale` (default `'en'`). With
-  `'tr'`, `İ`/`i` and `I`/`ı` are matched as Turkish letter pairs.
+- **Search text is folded** for `contains` and global search, in every locale:
+  case- and accent-insensitive and Turkish-aware. `isparta` finds `ISPARTA`,
+  `istanbul` finds `İSTANBUL`, `ayse` finds `Ayşe`, `igdir` finds `Iğdır`. Sorting is
+  not folded; it keeps the locale's alphabet.
+- **Search sees what people see:** numbers match as written in the locale
+  (`1234,5`, `1.234,5` and `1234.5` all find 1234.5 with `'tr'`; decimals keep their
+  scale, `1.250,50`), dates as `2026-10-23` and the locale's short and medium date,
+  booleans as `true`/`false` and `booleanLabels` (Evet/Hayır for `tr*`, Yes/No
+  otherwise).
+- **Typed columns** read cells and filter values as their type first, so
+  `gt 50` matches `"100.00"` in a `decimal` column. A filter value the type cannot
+  read throws; `gt`/`lt` on a boolean column throws.
+- **Untyped columns, no coercion:** `28` never equals `'28'`, and values of
+  different types never compare. Missing values (`null`, `undefined`, `NaN`,
+  invalid `Date`, unreadable typed values) never match.
+- **Global search** matches if any filterable column contains the folded text;
+  blank search is no constraint; it is combined with the column filters by AND.
 - **Order and immutability:** input order is preserved and the same `Row` wrappers
   are returned in a frozen array; the input is never mutated. With no active rule
   a frozen input is returned as is. Each needed accessor runs at most once per row.

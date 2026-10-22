@@ -1,3 +1,4 @@
+import { createEmitter } from './emitter';
 import type { RowId } from './rows';
 
 export type SelectionMode = 'single' | 'multiple';
@@ -87,7 +88,7 @@ export function createRowSelection(options: RowSelectionOptions = {}): RowSelect
 
   let state: Readonly<SelectionState> = Object.freeze({ mode, selectedIds: Object.freeze([...initial]) });
   let members = new Set(state.selectedIds);
-  const listeners = new Set<SelectionListener>();
+  const emitter = createEmitter<[Readonly<SelectionState>, Readonly<SelectionChange>]>();
   let destroyed = false;
 
   const commit = (next: readonly RowId[], action: SelectionAction): void => {
@@ -98,7 +99,7 @@ export function createRowSelection(options: RowSelectionOptions = {}): RowSelect
     state = Object.freeze({ mode, selectedIds: Object.freeze([...next]) });
     members = nextSet;
     const change = Object.freeze({ action, added: Object.freeze(added), removed: Object.freeze(removed) });
-    for (const listener of [...listeners]) listener(state, change);
+    emitter.emit(state, change);
   };
   const withId = (id: RowId): readonly RowId[] =>
     mode === 'single' ? [id] : members.has(id) ? state.selectedIds : [...state.selectedIds, id];
@@ -139,14 +140,12 @@ export function createRowSelection(options: RowSelectionOptions = {}): RowSelect
     },
     subscribe: (listener) => {
       if (destroyed) return () => undefined;
-      if (typeof listener !== 'function') throw new TypeError('listener must be a function');
-      listeners.add(listener);
-      return () => { listeners.delete(listener); };
+      return emitter.subscribe(listener);
     },
     destroy: () => {
       if (destroyed) return;
       destroyed = true;
-      listeners.clear();
+      emitter.clear();
     },
   };
 }

@@ -1,9 +1,17 @@
+import { COLUMN_TYPES, type ColumnType } from './values';
+
 interface ColumnBase {
   readonly id: string;
   /** Plain text; rendering belongs to a renderer. */
   readonly header: string;
   readonly enableSorting?: boolean;
   readonly enableFiltering?: boolean;
+  /**
+   * How to read this column's values for sorting, filtering, search and display,
+   * e.g. `'decimal'` for Laravel decimals sent as `"1250.50"`. Omit to use values
+   * as they are.
+   */
+  readonly type?: ColumnType;
 }
 
 type ValueKey<TData, TValue> = {
@@ -27,7 +35,7 @@ export function createColumns<TData>(
     if (!definition || typeof definition !== 'object') {
       throw new TypeError(`column[${index}] must be an object`);
     }
-    const { id, header, accessorKey, accessorFn, enableSorting, enableFiltering } = definition;
+    const { id, header, accessorKey, accessorFn, enableSorting, enableFiltering, type } = definition;
     if (typeof id !== 'string' || id.trim().length === 0) {
       throw new TypeError(`column[${index}].id must be a non-empty string`);
     }
@@ -50,8 +58,14 @@ export function createColumns<TData>(
         throw new TypeError(`column "${id}".${flag} must be a boolean`);
       }
     }
+    if (type !== undefined && !COLUMN_TYPES.includes(type)) {
+      throw new TypeError(`column "${id}".type must be one of ${COLUMN_TYPES.join(', ')}`);
+    }
     ids.add(id);
-    const base = { id, header, enableSorting: enableSorting ?? false, enableFiltering: enableFiltering ?? false };
+    const base = {
+      id, header, enableSorting: enableSorting ?? false, enableFiltering: enableFiltering ?? false,
+      ...(type !== undefined ? { type } : {}),
+    };
     // Validation above establishes the exclusive accessor branch at runtime.
     const copy = 'accessorKey' in definition
       ? { ...base, accessorKey }

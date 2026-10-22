@@ -9,6 +9,9 @@ export interface DataTableLabels {
   readonly pageStatus: (page: number, pageCount: number, totalRows: number) => string;
   readonly pageSize: string;
   readonly search: string;
+  /** Text for `true` / `false` cells. */
+  readonly yes: string;
+  readonly no: string;
 }
 
 export const labelsEn: DataTableLabels = Object.freeze({
@@ -21,6 +24,8 @@ export const labelsEn: DataTableLabels = Object.freeze({
   pageStatus: (page: number, pageCount: number, totalRows: number) => `Page ${page} of ${pageCount} · ${totalRows} rows`,
   pageSize: 'Rows per page',
   search: 'Search',
+  yes: 'Yes',
+  no: 'No',
 });
 
 export const labelsTr: DataTableLabels = Object.freeze({
@@ -33,4 +38,6 @@ export const labelsTr: DataTableLabels = Object.freeze({
   pageStatus: (page: number, pageCount: number, totalRows: number) => `Sayfa ${page} / ${pageCount} · ${totalRows} kayıt`,
   pageSize: 'Sayfa başına satır',
   search: 'Ara',
+  yes: 'Evet',
+  no: 'Hayır',
 });

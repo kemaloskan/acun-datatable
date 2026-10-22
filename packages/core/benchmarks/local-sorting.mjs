@@ -27,7 +27,7 @@ const measure = fn => {
   return { value, ms: performance.now() - start };
 };
 const median = values => [...values].sort((a, b) => a - b)[Math.floor(values.length / 2)];
-const collator = new Intl.Collator('tr', { usage: 'sort' });
+const collator = new Intl.Collator('tr', { usage: 'sort', numeric: true }); // matches the model's natural order
 console.log(JSON.stringify({ node: process.version, v8: process.versions.v8, icu: process.versions.icu,
   os: `${platform()} ${release()} ${arch()}`, cpu: cpus()[0]?.model,
   seed: 42, locale: 'tr', criteria: 3, warmups: 2, samples: 5,

@@ -23,24 +23,32 @@ const run = (query: FilterQuery, locale?: string) =>
   ids(filterRows(people, columns, query, locale === undefined ? {} : { locale }));
 
 describe('filterRows operators', () => {
-  it('contains is case-insensitive and locale-aware', () => {
+  it('contains is case-, accent- and Turkish-insensitive in every locale', () => {
     expect(run({ filters: [{ field: 'name', operator: 'contains', value: 'AY' }] })).toEqual(['1']);
-    // Turkish: İ ↔ i and I ↔ ı are distinct letter pairs.
+    // İ, I, ı and i all match each other, so users find "İzmir" and "ızmit" by typing "iz".
     expect(run({ filters: [{ field: 'city', operator: 'contains', value: 'istanbul' }] }, 'tr')).toEqual(['1']);
     expect(run({ filters: [{ field: 'city', operator: 'contains', value: 'ız' }] }, 'tr')).toEqual(['2', '3']);
-    expect(run({ filters: [{ field: 'city', operator: 'contains', value: 'iz' }] }, 'tr')).toEqual([]);
+    expect(run({ filters: [{ field: 'city', operator: 'contains', value: 'iz' }] }, 'tr')).toEqual(['2', '3']);
+    expect(run({ filters: [{ field: 'city', operator: 'contains', value: 'IZ' }] })).toEqual(['2', '3']);
   });
 
-  it('contains matches finite numbers by their text and ignores other types', () => {
+  it('contains matches the text of numbers, dates and booleans, but not objects or infinities', () => {
     expect(run({ filters: [{ field: 'age', operator: 'contains', value: '4' }] })).toEqual(['1', '3']);
-    const rows = createRows([{ id: 1, v: true }, { id: 2, v: new Date(0) }, { id: 3, v: Infinity }, { id: 4, v: 'true' }]);
+    const rows = createRows([{ id: 1, v: true }, { id: 2, v: new Date(2026, 9, 23) }, { id: 3, v: Infinity }, { id: 4, v: 'true' }, { id: 5, v: {} }]);
     const cols: ColumnDef<{ id: number; v: unknown }>[] = [{ id: 'v', header: '', accessorKey: 'v', enableFiltering: true }];
-    expect(ids(filterRows(rows, cols, { filters: [{ field: 'v', operator: 'contains', value: 'tru' }] }))).toEqual(['4']);
-    expect(ids(filterRows(rows, cols, { filters: [{ field: 'v', operator: 'contains', value: 'Inf' }] }))).toEqual([]);
+    const q = (value: string, locale = 'en') => ids(filterRows(rows, cols, { filters: [{ field: 'v', operator: 'contains', value }] }, { locale }));
+    expect(q('tru')).toEqual(['1', '4']);
+    expect(q('yes')).toEqual(['1']);
+    expect(q('evet', 'tr')).toEqual(['1']);
+    expect(q('2026-10-23')).toEqual(['2']);
+    expect(q('23.10.2026', 'tr')).toEqual(['2']);
+    expect(q('Inf')).toEqual([]);
+    expect(q('object')).toEqual([]);
   });
 
-  it('an empty contains value is no constraint', () => {
+  it('an empty or blank contains value is no constraint', () => {
     expect(run({ filters: [{ field: 'city', operator: 'contains', value: '' }] })).toEqual(['1', '2', '3', '4', '5']);
+    expect(run({ filters: [{ field: 'city', operator: 'contains', value: '   ' }] })).toEqual(['1', '2', '3', '4', '5']);
   });
 
   it('eq compares without coercion, and Dates by time', () => {

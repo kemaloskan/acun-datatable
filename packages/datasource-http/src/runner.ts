@@ -1,5 +1,5 @@
 import {
-  createTableQuery, validatePageResult,
+  createEmitter, createTableQuery, validatePageResult,
   type DataSource, type PageResult, type TableQuery, type TableQueryInput,
 } from '@acunsoft/datatable-core';
 
@@ -49,12 +49,12 @@ export function createQueryRunner<TData>(source: DataSource<TData>): QueryRunner
   let sequence = 0;
   let controller: AbortController | undefined;
   let destroyed = false;
-  const listeners = new Set<QueryListener<TData>>();
+  const emitter = createEmitter<[Readonly<QueryState<TData>>]>();
 
   const set = (next: QueryState<TData>): void => {
     state = Object.freeze({ ...next });
     if (state.status !== 'loading') settled = state;
-    for (const listener of [...listeners]) listener(state);
+    emitter.emit(state);
   };
   const abortCurrent = (): void => {
     controller?.abort();
@@ -98,16 +98,14 @@ export function createQueryRunner<TData>(source: DataSource<TData>): QueryRunner
     },
     subscribe: (listener) => {
       if (destroyed) return () => undefined;
-      if (typeof listener !== 'function') throw new TypeError('listener must be a function');
-      listeners.add(listener);
-      return () => { listeners.delete(listener); };
+      return emitter.subscribe(listener);
     },
     destroy: () => {
       if (destroyed) return;
       destroyed = true;
       abortCurrent();
       sequence++;
-      listeners.clear();
+      emitter.clear();
     },
   };
 }

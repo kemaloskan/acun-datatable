@@ -181,3 +181,20 @@ describe('renderTable lifecycle and validation', () => {
     expect(accessor).toHaveBeenCalledTimes(1);
   });
 });
+
+describe('renderTable typed columns', () => {
+  it('shows decimals with their scale, date text as dates and booleans as labels', () => {
+    type Product = { id: number; price: string; added: string; active: unknown; code: string };
+    const table = createDataTable<Product>({
+      data: [{ id: 1, price: '1250.50', added: '2026-10-23', active: true, code: 'x' }, { id: 2, price: 'n/a', added: 'soon', active: 'false', code: 'y' }],
+      columns: [
+        { id: 'price', header: 'Price', accessorKey: 'price', type: 'decimal' },
+        { id: 'added', header: 'Added', accessorKey: 'added', type: 'date' },
+        { id: 'active', header: 'Active', accessorKey: 'active', type: 'boolean' },
+      ],
+    });
+    renderTable(host, table, { locale: 'tr', labels: labelsTr });
+    expect(cells(0)).toEqual(['1.250,50', '23 Eki 2026', 'Evet']);
+    expect(cells(1)).toEqual(['n/a', 'soon', 'Hayır']); // unreadable values are shown as written
+  });
+});

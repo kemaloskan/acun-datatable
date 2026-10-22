@@ -1,4 +1,5 @@
 import { createColumns, type ColumnDef } from './columns';
+import { createEmitter } from './emitter';
 import { filterRows, type FilterRule } from './filtering';
 import { createTableState, type SortRule } from './index';
 import {
@@ -237,12 +238,13 @@ export function createDataTable<TData>(options: DataTableOptions<TData>): DataTa
     });
   };
   let state = snapshot();
-  const listeners = new Set<DataTableListener>();
+  const emitter = createEmitter<[Readonly<DataTableState>, Readonly<DataTableEvent>]>();
   let destroyed = false;
   const emit = (event: DataTableEvent): void => {
     state = snapshot();
-    const frozen = Object.freeze(event);
-    for (const listener of [...listeners]) listener(state, frozen);
+    // Ordered delivery: an action taken inside a listener is delivered after
+    // this event has reached every listener, each with its own snapshot.
+    emitter.emit(state, Object.freeze(event));
   };
   const viewChanged = (apply: () => void, event: () => DataTableEvent): void => {
     apply();
@@ -356,14 +358,12 @@ export function createDataTable<TData>(options: DataTableOptions<TData>): DataTa
 
     subscribe: (listener) => {
       if (destroyed) return () => undefined;
-      if (typeof listener !== 'function') throw new TypeError('listener must be a function');
-      listeners.add(listener);
-      return () => { listeners.delete(listener); };
+      return emitter.subscribe(listener);
     },
     destroy: () => {
       if (destroyed) return;
       destroyed = true;
-      listeners.clear();
+      emitter.clear();
       inner.destroy();
       selection.destroy();
     },

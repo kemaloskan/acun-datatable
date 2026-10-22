@@ -42,7 +42,10 @@ describe('createTableQuery', () => {
     [{ page: 1, pageSize: 10, sorting: [{ field: 'a', direction: 'up' }] }, 'must be "asc" or "desc"'],
     [{ page: 1, pageSize: 10, sorting: [{ field: 'a', direction: 'asc' }, { field: 'a', direction: 'desc' }] }, 'duplicate sort field'],
     [{ page: 1, pageSize: 10, filters: 'x' }, 'filters must be an array'],
-    [{ page: 1, pageSize: 10, filters: [{ field: '', operator: 'eq' }] }, 'filters[0] must have'],
+    [{ page: 1, pageSize: 10, filters: [{ field: '', operator: 'eq' }] }, 'filters[0] field must be a non-empty column ID'],
+    [{ page: 1, pageSize: 10, filters: [{ field: 'x', operator: 'DROP', value: 1 }] }, 'must be one of contains, eq, gt, lt'],
+    [{ page: 1, pageSize: 10, filters: [{ field: 'x', operator: 'gt', value: {} }] }, 'gt value must be a string, number or valid Date'],
+    [{ page: 1, pageSize: 10, filters: [{ field: 'x', operator: 'contains', value: 5 }] }, 'contains value must be a string'],
     [{ page: 1, pageSize: 10, globalSearch: 1 }, 'globalSearch must be a string'],
     [null, 'query input must be an object'],
   ])('rejects invalid input %#', (input, message) => {

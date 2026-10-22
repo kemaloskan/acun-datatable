@@ -69,7 +69,10 @@ GET /api/orders?page=2&pageSize=25
   &search=ayşe
 ```
 
-Dates are sent as ISO 8601 strings, booleans as `true`/`false`. The server
+Dates are sent in the user's local time so the day never shifts (`formatLocalDate`):
+a local midnight becomes `2026-10-23`, other times `2026-10-23T14:05:00.000+03:00`.
+Booleans are sent as `true`/`false`. `createTableQuery` rejects unknown operators
+and invalid values and leaves out empty `contains` filters and empty search. The server
 answers `{ "rows": [...], "totalRows": 185920 }` (`totalRows` may be omitted when
 unknown), or Laravel's paginator JSON with `parseResponse: fromLaravelPaginator`.
 

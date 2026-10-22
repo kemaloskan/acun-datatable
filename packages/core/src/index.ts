@@ -1,9 +1,12 @@
+import { createEmitter } from './emitter';
+
 export { createColumns, type ColumnDef } from './columns';
+export { createEmitter, type Emitter } from './emitter';
 export {
   createDataTable, type DataTable, type DataTableEvent, type DataTableInitialState,
   type DataTableListener, type DataTableMode, type DataTableOptions, type DataTableState,
 } from './data-table';
-export { filterRows, type FilterOperator, type FilterRule, type FilterQuery, type FilterOptions } from './filtering';
+export { FILTER_OPERATORS, filterRows, type FilterOperator, type FilterRule, type FilterQuery, type FilterOptions } from './filtering';
 export { createLocalRowModel, type LocalRowModel, type LocalRowModelOptions, type SortComparator, type NullPlacement } from './local-row-model';
 export { paginateRows, type PageView } from './pagination';
 export {
@@ -15,6 +18,9 @@ export {
   createRowSelection, type RowSelection, type RowSelectionOptions, type SelectionAction,
   type SelectionChange, type SelectionListener, type SelectionMode, type SelectionState, type SelectionStatus,
 } from './selection';
+export {
+  COLUMN_TYPES, foldText, isDecimal, normalizeValue, type ColumnType, type DecimalValue,
+} from './values';
 
 /** One-based page numbering. */
 export interface Pagination {
@@ -152,14 +158,12 @@ export function createTableState(
     pageSize,
     copyAndFreezeSorting(options.sorting ?? []),
   );
-  const listeners = new Set<TableStateListener>();
+  const emitter = createEmitter<[Readonly<TableState>]>();
   let destroyed = false;
 
   const publish = (nextState: Readonly<TableState>): void => {
     state = nextState;
-    for (const listener of [...listeners]) {
-      listener(state);
-    }
+    emitter.emit(state);
   };
 
   return {
@@ -188,16 +192,13 @@ export function createTableState(
 
     subscribe: (listener) => {
       if (destroyed) return () => undefined;
-      listeners.add(listener);
-      return () => {
-        listeners.delete(listener);
-      };
+      return emitter.subscribe(listener);
     },
 
     destroy: () => {
       if (destroyed) return;
       destroyed = true;
-      listeners.clear();
+      emitter.clear();
     },
   };
 }

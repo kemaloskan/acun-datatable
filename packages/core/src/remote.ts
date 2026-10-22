@@ -1,4 +1,4 @@
-import type { FilterRule } from './filtering';
+import { checkFilterRule, isNoOpRule, type FilterRule } from './filter-rules';
 import { createPagination, createTableState, type SortRule } from './index';
 
 /** Query a remote data source answers. Pages are 1-based. */
@@ -50,8 +50,12 @@ export interface TableQueryInput {
 
 /**
  * Build a frozen, validated `TableQuery`, e.g. from `createDataTable().getState()`.
- * Search text is trimmed and omitted when empty. Filter values are passed through
- * unchanged; the server must validate them against its own allowlist.
+ *
+ * Filter rules get the same checks as local filtering (known operator, value of
+ * an allowed type), so an invalid rule such as `operator: 'DROP'` is rejected
+ * here instead of reaching a server. `contains` rules with empty text constrain
+ * nothing and are left out, as is empty search text. The server must still
+ * validate everything against its own allowlist.
  */
 export function createTableQuery(input: TableQueryInput): TableQuery {
   if (!input || typeof input !== 'object') throw new TypeError('query input must be an object');
@@ -59,12 +63,12 @@ export function createTableQuery(input: TableQueryInput): TableQuery {
   const sorting = createTableState({ sorting: input.sorting ?? [] }).getState().sorting;
   const filters = input.filters ?? [];
   if (!Array.isArray(filters)) throw new TypeError('filters must be an array');
-  const copied = Object.freeze(filters.map((rule, index) => {
-    if (!rule || typeof rule.field !== 'string' || rule.field.trim().length === 0 || typeof rule.operator !== 'string') {
-      throw new TypeError(`filters[${index}] must have a non-empty field and an operator`);
-    }
-    return Object.freeze({ field: rule.field, operator: rule.operator, value: rule.value });
-  }));
+  const copied = Object.freeze(filters
+    .map((rule, index) => {
+      checkFilterRule(rule, `filters[${index}]`);
+      return Object.freeze({ field: rule.field, operator: rule.operator, value: rule.value });
+    })
+    .filter(rule => !isNoOpRule(rule)));
   const search = input.globalSearch ?? '';
   if (typeof search !== 'string') throw new TypeError('globalSearch must be a string');
   const trimmed = search.trim();
