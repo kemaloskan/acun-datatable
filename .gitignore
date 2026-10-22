@@ -20,3 +20,8 @@ temp/
 test-results/
 playwright-report/
 blob-report/
+# Composer (PHP packages)
+vendor/
+packages/*/composer.lock
+.phpunit.cache/
+.phpunit.result.cache
