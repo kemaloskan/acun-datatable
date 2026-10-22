@@ -5,7 +5,7 @@ HTTP `DataSource` and a latest-request-wins query runner for
 paging); the browser only ever holds one page. Not tied to Laravel or any backend.
 
 ```ts
-import { createDataTable, createTableQuery } from '@acunsoft/datatable-core';
+import { createTableQuery } from '@acunsoft/datatable-core';
 import { createHttpDataSource, createQueryRunner, fromLaravelPaginator } from '@acunsoft/datatable-http';
 
 const source = createHttpDataSource({
@@ -21,9 +21,17 @@ runner.subscribe(({ status, result, error }) => {
   // result: last successful page, kept while the next one loads
 });
 
-// Re-query whenever the table state changes (debounce search input in the UI).
-table.subscribe((state) => runner.run(createTableQuery(state)));
+let query = createTableQuery({ page: 1, pageSize: 25 });
+runner.run(query);
+
+// On user input (debounce search typing in the UI), build the next query:
+query = createTableQuery({ ...query, page: 1, globalSearch: text });
+runner.run(query);
 ```
+
+`createDataTable` is local-only for now: it filters and pages in memory, so do
+not feed it remote pages yet. A server mode that keeps the table state and
+takes rows and `totalRows` from this runner is the next M2 step.
 
 ## Behaviour
 
