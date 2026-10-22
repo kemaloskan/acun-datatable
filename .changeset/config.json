@@ -1,0 +1,12 @@
+{
+  "$schema": "../node_modules/@changesets/config/schema.json",
+  "baseBranch": "main",
+  "access": "public",
+  "changelog": "@changesets/cli/changelog",
+  "commit": false,
+  "fixed": [["@acunsoft/datatable-core", "@acunsoft/datatable-http", "@acunsoft/datatable-dom"]],
+  "linked": [],
+  "updateInternalDependencies": "patch",
+  "ignore": [],
+  "format": false
+}

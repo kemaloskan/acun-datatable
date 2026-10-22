@@ -5,6 +5,15 @@ will start at `0.1.0` (see SPEC "Planned release approach").
 
 ## Unreleased
 
+### Added (release preparation)
+
+- The npm packages are publishable: `private` removed, `publishConfig.access`
+  public, descriptions, keywords and a README for the core package.
+- Changesets (dev dependency) for versioning: the three npm packages share one
+  version; `npm run version-packages`, `npm run release`. A first changeset
+  bumps them to `0.1.0`. A manual **Release** workflow publishes with npm
+  provenance. See `RELEASING.md`.
+
 ### Added (Livewire)
 
 - **`acunsoft/datatable-laravel` Livewire table:** `WithDataTable` trait with

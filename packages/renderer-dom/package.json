@@ -1,8 +1,17 @@
 {
   "name": "@acunsoft/datatable-dom",
   "version": "0.0.0",
+  "description": "Accessible DOM renderer for @acunsoft/datatable-core: semantic table, pagination and search without a framework.",
+  "keywords": [
+    "datatable",
+    "data-table",
+    "table",
+    "accessible",
+    "a11y",
+    "dom",
+    "vanilla"
+  ],
   "license": "MIT",
-  "private": true,
   "type": "module",
   "sideEffects": [
     "*.css"
@@ -36,5 +45,8 @@
   },
   "engines": {
     "node": ">=22"
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }

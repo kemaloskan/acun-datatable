@@ -11,12 +11,16 @@
     "test": "npm run test --workspaces --if-present",
     "build": "npm run build --workspaces --if-present",
     "e2e": "npm run build && playwright test",
-    "e2e:chromium": "npm run build && playwright test --project=chromium"
+    "e2e:chromium": "npm run build && playwright test --project=chromium",
+    "changeset": "changeset",
+    "version-packages": "changeset version && npm install --package-lock-only",
+    "release": "npm run check && npm run test && npm run build && changeset publish"
   },
   "engines": {
     "node": ">=22"
   },
   "devDependencies": {
+    "@changesets/cli": "^3.0.3",
     "@playwright/test": "^1.64.1"
   }
 }

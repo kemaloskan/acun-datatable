@@ -1,8 +1,16 @@
 {
   "name": "@acunsoft/datatable-http",
   "version": "0.0.0",
+  "description": "HTTP data source for @acunsoft/datatable-core: server-side paging, sorting and filtering with abort and latest-request-wins.",
+  "keywords": [
+    "datatable",
+    "data-table",
+    "server-side",
+    "pagination",
+    "fetch",
+    "laravel"
+  ],
   "license": "MIT",
-  "private": true,
   "type": "module",
   "sideEffects": false,
   "main": "./dist/index.js",
@@ -32,5 +40,8 @@
   },
   "engines": {
     "node": ">=22"
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }

@@ -1,0 +1,44 @@
+name: Release
+# Publishes the npm packages. Never runs on its own: start it by hand from the
+# Actions tab, on main, after the version commit (`npm run version-packages`)
+# has been reviewed and merged. See RELEASING.md.
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+permissions:
+  contents: write # push the release tags
+  id-token: write # npm provenance
+
+jobs:
+  publish:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: '.nvmrc'
+          registry-url: 'https://registry.npmjs.org'
+          cache: 'npm'
+      - run: npm ci
+      # Unversioned changesets mean the version commit is missing: stop
+      # instead of publishing the old version numbers.
+      - name: Require versioned changesets
+        run: |
+          pending=$(find .changeset -name '*.md' ! -name 'README.md')
+          if [ -n "$pending" ]; then echo "Run 'npm run version-packages' first:"; echo "$pending"; exit 1; fi
+      - run: npx playwright install --with-deps chromium
+      - run: npm run e2e:chromium
+      # check + test + build + changeset publish (only versions not yet on npm).
+      - run: npm run release
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          NPM_CONFIG_PROVENANCE: 'true'
+      - name: Push release tags
+        run: git push --tags
