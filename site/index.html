@@ -337,24 +337,28 @@ export function Orders({ rows }: { rows: Order[] }) {
   });
   return <DataTable table={table} />;
 }` },
-  html:{ name:"HTML", pkg:"@acunsoft/datatable-dom",
-    lead:{tr:"Framework olmadan: çekirdek + DOM renderer ile erişilebilir, semantik bir <code>&lt;table&gt;</code>.",
-          en:"No framework: the core + DOM renderer produce an accessible, semantic <code>&lt;table&gt;</code>."},
+  html:{ name:"HTML", pkg:"@acunsoft/datatable-dom", ready:true,
+    lead:{tr:"Framework olmadan: çekirdek + DOM renderer ile erişilebilir, semantik bir <code>&lt;table&gt;</code>, sayfalama ve arama.",
+          en:"No framework: the core + DOM renderer give an accessible, semantic <code>&lt;table&gt;</code>, pagination and search."},
     install:"npm install @acunsoft/datatable-core @acunsoft/datatable-dom",
-    note:{tr:"Hücre içeriği varsayılan olarak <code>textContent</code> ile yazılır; güvenilmeyen HTML asla enjekte edilmez.",
-          en:"Cell content is written via <code>textContent</code> by default; untrusted HTML is never injected."},
+    note:{tr:"Hücre içeriği <code>textContent</code> ile yazılır; güvenilmeyen HTML asla yorumlanmaz. Kontroller yerel <code>&lt;button&gt;</code>, <code>&lt;input&gt;</code> ve <code>&lt;select&gt;</code> olduğu için klavyeyle kullanılabilir.",
+          en:"Cell content is written with <code>textContent</code>; untrusted HTML is never interpreted. Controls are native <code>&lt;button&gt;</code>, <code>&lt;input&gt;</code> and <code>&lt;select&gt;</code>, so they work from the keyboard."},
     lang:"typescript", code:
-`import { createColumns, createRows, createLocalRowModel, paginateRows } from '@acunsoft/datatable-core';
-import { renderTable } from '@acunsoft/datatable-dom';
+`import { createDataTable } from '@acunsoft/datatable-core';
+import { labelsTr, renderPagination, renderSearch, renderTable } from '@acunsoft/datatable-dom';
 
-const columns = createColumns([
-  { id: 'customer', header: 'Müşteri', accessorKey: 'customer', enableSorting: true },
-  { id: 'total', header: 'Tutar', accessorKey: 'total', enableSorting: true },
-]);
-const model = createLocalRowModel(createRows(orders), columns, { locale: 'tr' });
-const page = paginateRows(model.getSortedRows([]), { page: 1, pageSize: 25 });
+const table = createDataTable({
+  data: orders,
+  columns: [
+    { id: 'customer', header: 'Müşteri', accessorKey: 'customer', enableSorting: true, enableFiltering: true },
+    { id: 'total', header: 'Tutar', accessorKey: 'total', enableSorting: true },
+  ],
+  locale: 'tr',
+});
 
-renderTable(document.querySelector('#orders'), { columns, rows: page.rows });` },
+renderSearch(document.querySelector('#search'), table, { labels: labelsTr });
+renderTable(document.querySelector('#orders'), table, { caption: 'Siparişler', selectable: true, locale: 'tr', labels: labelsTr });
+renderPagination(document.querySelector('#pages'), table, { labels: labelsTr });` },
   livewire:{ name:"Livewire", pkg:"acunsoft/datatable-livewire",
     lead:{tr:"Laravel Livewire için: sayfalama, sıralama ve filtreleme sunucuda, çekirdeğin sorgu kontratıyla.",
           en:"For Laravel Livewire: paging, sorting and filtering run on the server via the core query contract."},
@@ -490,8 +494,8 @@ function page(r) {
   }
   const f = FW[r];
   return { toc:[['install',t.s_install],['usage',t.s_usage],['features',t.s_features],['examples',t.s_examples],['api',t.s_api]], html:
-    `<h1><span class="hi">${ICON[r]}</span>${f.name} <span class="pill">${t.preview}</span></h1><p class="lead">${f.lead[lang]}</p><div class="meta"><span>${esc(f.pkg)}</span><span>${t.updated}</span></div>` +
-    `<div class="note warn" style="margin-top:22px">${t.prevNote}</div>` +
+    `<h1><span class="hi">${ICON[r]}</span>${f.name}${f.ready ? '' : ` <span class="pill">${t.preview}</span>`}</h1><p class="lead">${f.lead[lang]}</p><div class="meta"><span>${esc(f.pkg)}</span><span>${t.updated}</span></div>` +
+    (f.ready ? '' : `<div class="note warn" style="margin-top:22px">${t.prevNote}</div>`) +
     sec('install',1,t.s_install,t.d_install,code(f.install,'bash')+`<div class="note">${f.note[lang]}</div>`) +
     sec('usage',2,t.s_usage,t.d_usage,code(f.code,f.lang)) +
     sec('features',3,t.s_features,t.d_features,`<p>${esc(t.feat_for(f.name))}</p>`+featCards()) +
