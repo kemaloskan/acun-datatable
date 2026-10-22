@@ -211,13 +211,13 @@ const FEATURES = {
   tr:[["Headless çekirdek","DOM ve framework'ten bağımsız saf TypeScript; istediğin renderer veya adapter ile kullan."],
       ["Değişmez state","Her değişim donmuş bir snapshot üretir; çağıranın verisi asla mutasyona uğramaz."],
       ["Kararlı sıralama","Çok kolonlu, locale-duyarlı (ör. Türkçe), stable sıralama; eşitlikte giriş sırası korunur."],
-      ["Sayfalama","1-tabanlı dilimleme; sınır-dışı sayfa hata yerine son sayfaya clamp edilir."],
+      ["Filtre, arama, sayfalama","contains/eq/gt/lt filtreleri ve global arama; 1-tabanlı sayfalar, sınır-dışı sayfa son sayfaya clamp edilir."],
       ["Güvenli varsayılan","Hücre içeriği metin olarak basılır; güvenilmeyen HTML enjekte edilmez."],
       ["Tip-güvenli","Kolon tanımları ve satır kimlikleri TypeScript ile tam tiplenir."]],
   en:[["Headless core","Pure TypeScript, free of DOM and frameworks; use it with any renderer or adapter."],
       ["Immutable state","Every change yields a frozen snapshot; caller-owned data is never mutated."],
       ["Stable sorting","Multi-column, locale-aware (e.g. Turkish), stable sorting; ties keep input order."],
-      ["Pagination","1-based slicing; an out-of-range page clamps to the last page instead of throwing."],
+      ["Filter, search, paginate","contains/eq/gt/lt filters and global search; 1-based pages, an out-of-range page clamps to the last one."],
       ["Secure by default","Cell content renders as text; untrusted HTML is never injected."],
       ["Type-safe","Column definitions and row IDs are fully typed with TypeScript."]]
 };
@@ -227,15 +227,16 @@ const API = [
   ["createColumns(definitions)", {tr:"Tipli kolon tanımlarını doğrular, kopyalar ve dondurur.", en:"Validates, copies and freezes typed column definitions."}],
   ["createRows(data, { getRowId? })", {tr:"Kararlı satır kimlikleri üretir; veriyi klonlamaz.", en:"Builds stable row identities; never clones caller data."}],
   ["createLocalRowModel(rows, columns)", {tr:"Yerel çok-kolonlu, stable sıralama + önbellek.", en:"Local multi-column stable sorting with caching."}],
+  ["filterRows(rows, columns, { filters, globalSearch })", {tr:"Kolon filtreleri (contains, eq, gt, lt) ve global arama; sırayı korur.", en:"Column filters (contains, eq, gt, lt) and global search; keeps order."}],
   ["paginateRows(rows, { page, pageSize })", {tr:"1-tabanlı sayfa dilimi ve sayfa bilgisi; clamp'li.", en:"1-based page slice plus page metadata; clamped."}]
 ];
 
 const EX_SORT =
-`import { createColumns, createRows, createLocalRowModel, paginateRows } from '@acunsoft/datatable-core';
+`import { createColumns, createRows, createLocalRowModel, filterRows, paginateRows } from '@acunsoft/datatable-core';
 
 const columns = createColumns([
-  { id: 'customer', header: 'Müşteri', accessorKey: 'customer', enableSorting: true },
-  { id: 'total', header: 'Tutar', accessorKey: 'total', enableSorting: true },
+  { id: 'customer', header: 'Müşteri', accessorKey: 'customer', enableSorting: true, enableFiltering: true },
+  { id: 'total', header: 'Tutar', accessorKey: 'total', enableSorting: true, enableFiltering: true },
 ]);
 
 const model = createLocalRowModel(createRows(orders), columns, { locale: 'tr' });
@@ -244,7 +245,12 @@ const sorted = model.getSortedRows([
   { field: 'total', direction: 'desc' },
   { field: 'customer', direction: 'asc' },
 ]);
-const page = paginateRows(sorted, { page: 1, pageSize: 25 });
+const visible = filterRows(sorted, columns, {
+  filters: [{ field: 'total', operator: 'gt', value: 100 }],
+  globalSearch: 'ayşe',
+}, { locale: 'tr' });
+
+const page = paginateRows(visible, { page: 1, pageSize: 25 });
 // page.rows, page.page, page.pageCount, page.totalRows`;
 
 const EX_STATE =
