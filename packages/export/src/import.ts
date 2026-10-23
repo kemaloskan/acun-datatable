@@ -1,6 +1,7 @@
 import {
   foldText, isDecimal, normalizeValue, type ColumnDef, type ColumnType,
 } from '@acunsoft/datatable-core';
+import { resolveImportMessages, type ImportIssueCode, type ImportMessages } from './messages';
 import { checkSheet, type Sheet, type SheetCell } from './sheet';
 
 export interface ImportOptions {
@@ -18,6 +19,10 @@ export interface ImportOptions {
   readonly dateOrder?: 'dmy' | 'mdy';
   /** Stop collecting errors after this many. Default 1,000. */
   readonly maxErrors?: number;
+  /** Language of the messages (`'tr'`, `'de-AT'` …); English by default. */
+  readonly locale?: string;
+  /** Change single message texts. */
+  readonly messages?: Partial<ImportMessages>;
 }
 
 export interface ImportedRow {
@@ -35,6 +40,11 @@ export interface ImportIssue {
   readonly line: number;
   readonly column: string;
   readonly value: string;
+  /** Why it was rejected, for your own texts. */
+  readonly code: ImportIssueCode;
+  /** The column type, for `invalid`. */
+  readonly type?: ColumnType;
+  /** A ready text in `options.locale`. */
   readonly message: string;
 }
 
@@ -135,6 +145,7 @@ export function importRows<TData>(
 ): ImportResult {
   checkSheet(sheet);
   const maxErrors = options.maxErrors ?? 1_000;
+  const text = resolveImportMessages(options.locale, options.messages);
   const required = new Set(options.required ?? []);
   const ids = new Set(columns.map(column => column.id));
   for (const id of [...required, ...Object.keys(options.headers ?? {})]) {
@@ -164,7 +175,7 @@ export function importRows<TData>(
       if (header.trim() !== '') ignoredHeaders.push(header);
       mapping.push(undefined);
     } else if (seen.has(column.id)) {
-      report({ line: 1, column: column.id, value: header, message: 'column appears twice; the first one is used' });
+      report({ line: 1, column: column.id, value: header, code: 'duplicate-column', message: text.duplicateColumn });
       mapping.push(undefined);
     } else {
       seen.add(column.id);
@@ -172,9 +183,9 @@ export function importRows<TData>(
     }
   });
   for (const id of required) {
-    if (!seen.has(id)) report({ line: 1, column: id, value: '', message: 'required column is missing' });
+    if (!seen.has(id)) report({ line: 1, column: id, value: '', code: 'missing-column', message: text.missingColumn });
   }
-  if (errors.some(error => error.line === 1 && error.message === 'required column is missing')) {
+  if (errors.some(error => error.code === 'missing-column')) {
     return Object.freeze({ rows: Object.freeze([]), errors: Object.freeze(errors), ignoredHeaders: Object.freeze(ignoredHeaders), truncated });
   }
 
@@ -189,10 +200,11 @@ export function importRows<TData>(
       const value = convert(cell, column.type, options);
       if (value === undefined) {
         valid = false;
-        report({ line, column: column.id, value: describe(cell), message: `not a valid ${column.type ?? 'text'} value` });
+        const type = column.type ?? 'text';
+        report({ line, column: column.id, value: describe(cell), code: 'invalid', type, message: text.invalid(type) });
       } else if (value === null && required.has(column.id)) {
         valid = false;
-        report({ line, column: column.id, value: '', message: 'required value is empty' });
+        report({ line, column: column.id, value: '', code: 'required', message: text.required });
       } else {
         values[column.id] = value;
       }

@@ -1,5 +1,7 @@
 export type { RenderedComponent } from './dom';
-export { labelsEn, labelsTr, type DataTableLabels } from './labels';
+export {
+  LABELS, labelsDe, labelsEn, labelsEs, labelsFr, labelsTr, resolveLabels, type DataTableLabels,
+} from './labels';
 export { renderTable, type CellFormatter, type RenderTableOptions, type StatusSource } from './table';
 export {
   renderPagination, renderSearch, type RenderPaginationOptions, type RenderSearchOptions,

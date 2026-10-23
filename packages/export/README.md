@@ -72,6 +72,20 @@ result.errors;  // [{ line: 4, column: 'total', value: '1,5', message: 'not a va
   Only valid rows are returned; nothing is saved: validate further and store
   them yourself.
 
+### Problem messages in your language
+
+Every problem has a stable `code` (`invalid`, `required`, `missing-column`,
+`duplicate-column`), the column `type` for `invalid`, and a ready `message` in
+English, Turkish, German, French or Spanish:
+
+```ts
+importRows(sheet, columns, { locale: 'tr', messages: { required: 'Bu alan zorunlu' } });
+// → { line: 3, column: 'total', code: 'invalid', type: 'decimal', message: 'geçerli bir ondalık sayı değeri değil' }
+```
+
+Use the `code` to write your own texts; `resolveImportMessages(locale)` gives
+the built-in set.
+
 ### Limits and safety
 
 Imports are meant for files users upload, so everything is bounded: at most

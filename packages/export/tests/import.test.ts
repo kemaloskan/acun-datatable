@@ -45,15 +45,15 @@ describe('importRows', () => {
   it('checks required columns and values, aliases and duplicate headers', () => {
     const missing = importRows(parseCsv('Tutar\n5'), columns, { required: ['customer'] });
     expect(missing.rows).toEqual([]);
-    expect(missing.errors).toEqual([{ line: 1, column: 'customer', value: '', message: 'required column is missing' }]);
+    expect(missing.errors).toEqual([{ line: 1, column: 'customer', value: '', code: 'missing-column', message: 'required column is missing' }]);
 
     const result = importRows(parseCsv('Name,Amount,amount\nAyşe,5,6\n,7,8'), columns, {
       headers: { customer: 'Name', total: ['Amount'] }, required: ['customer'],
     });
     expect(result.rows).toEqual([{ line: 2, values: { customer: 'Ayşe', total: '5' } }]);
     expect(result.errors).toEqual([
-      { line: 1, column: 'total', value: 'amount', message: 'column appears twice; the first one is used' },
-      { line: 3, column: 'customer', value: '', message: 'required value is empty' },
+      { line: 1, column: 'total', value: 'amount', code: 'duplicate-column', message: 'column appears twice; the first one is used' },
+      { line: 3, column: 'customer', value: '', code: 'required', message: 'required value is empty' },
     ]);
     expect(() => importRows(parseCsv('a\n1'), columns, { required: ['nope'] })).toThrow('unknown column ID: nope');
   });
@@ -64,6 +64,18 @@ describe('importRows', () => {
     expect(result.rows).toEqual([{ line: 2, values: { total: '1250.5', day: new Date(2026, 9, 23), active: true } }]);
     expect(result.errors).toHaveLength(4);
     expect(result.truncated).toBe(true);
+  });
+
+  it('reports stable codes and messages in the chosen language', () => {
+    const sheet = parseCsv('Müşteri,Tutar,Tarih\nAyşe,abc,\n');
+    const tr = importRows(sheet, columns, { locale: 'tr-TR', required: ['day'] }).errors;
+    expect(tr.map(error => [error.code, error.type, error.message])).toEqual([
+      ['invalid', 'decimal', 'geçerli bir ondalık sayı değeri değil'],
+      ['required', undefined, 'zorunlu değer boş'],
+    ]);
+    const de = importRows(sheet, columns, { locale: 'de', required: ['day'], messages: { required: 'Bitte ausfüllen' } }).errors;
+    expect(de.map(error => error.message)).toEqual(['kein gültiger Wert (Dezimalzahl)', 'Bitte ausfüllen']);
+    expect(importRows(sheet, columns, { locale: 'pt-BR' }).errors[0]!.message).toBe('not a valid decimal value');
   });
 
   it('never mutates the sheet and returns frozen results', () => {

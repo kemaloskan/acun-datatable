@@ -7,6 +7,15 @@ All notable changes to this repository. Each npm package also has its own
 
 ### Added
 
+- **Languages:** built-in German, French and Spanish texts next to English and
+  Turkish, without any i18n library: `labelsDe`, `labelsFr`, `labelsEs`,
+  `resolveLabels('de-AT')` (falls back to English); import problems with a
+  stable `code`, the column `type` and messages in all five languages
+  (`importRows(…, { locale })`); Laravel `lang/{de,fr,es}`. Arabic and
+  right-to-left layouts are not planned.
+- **Fixed:** counts use singular and plural forms and the locale's digit
+  grouping: "Page 1 of 1 · 1 row" instead of "1 rows", "16,000 rows",
+  "1.600 kayıt" (browser packages and Livewire views).
 - **React adapter** (new package `@acunsoft/datatable-react`, peer
   `react >=18.2`, marked `"use client"`): `useDataTable` (Strict-Mode safe;
   a new `data` array replaces the rows), `useTable` (`useSyncExternalStore`),

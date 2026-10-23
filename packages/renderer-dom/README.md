@@ -124,8 +124,19 @@ Offers a string or bytes as a download (type from the extension: `.csv`,
 
 ## Labels and styling
 
-`labelsEn` (default) and `labelsTr` cover every visible and screen-reader text;
-pass `labels` to override any of them.
+Built-in texts, no i18n library needed: `labelsEn` (default), `labelsTr`,
+`labelsDe`, `labelsFr`, `labelsEs` cover every visible and screen-reader text.
+Counts use the language's singular and plural forms and digit grouping
+(`1 row`, `16,000 rows`, `1.600 kayıt`, `1 600 lignes`).
+
+```ts
+renderTable(el, table, { locale: 'de', labels: resolveLabels('de-AT') }); // de-AT → German, unknown → English
+renderSearch(el, table, { labels: resolveLabels(navigator.language, { search: 'Filtern' }) });
+```
+
+Pass `labels` to override single texts, or build them from your own i18n
+library (`{ ...labelsEn, search: t('search') }`). The German, French and
+Spanish texts are new; corrections from native speakers are welcome.
 
 `@acunsoft/datatable-dom/styles.css` is optional: a neutral look built on
 `--adt-*` custom properties, visible focus rings, loading and error states, a

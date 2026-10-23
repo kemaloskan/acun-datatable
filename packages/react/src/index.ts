@@ -4,5 +4,5 @@ export {
   type BulkActionsProps, type CellRenderProps, type ColumnToggleProps, type DataTableProps, type PaginationProps, type SearchProps,
 } from './components.js';
 export {
-  labelsEn, labelsTr, type BulkAction, type BulkSelection, type CellFormatter, type DataTableLabels, type RowAction,
+  LABELS, labelsDe, labelsEn, labelsEs, labelsFr, labelsTr, resolveLabels, type BulkAction, type BulkSelection, type CellFormatter, type DataTableLabels, type RowAction,
 } from '@acunsoft/datatable-dom';
