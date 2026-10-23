@@ -4,3 +4,6 @@ export { renderTable, type CellFormatter, type RenderTableOptions, type StatusSo
 export {
   renderPagination, renderSearch, type RenderPaginationOptions, type RenderSearchOptions,
 } from './controls';
+export {
+  renderBulkActions, type BulkAction, type BulkSelection, type RenderBulkActionsOptions, type RowAction,
+} from './actions';

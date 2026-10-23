@@ -1,4 +1,5 @@
 import { isDecimal, normalizeValue, type ColumnDef, type DataTable, type Row, type SortRule } from '@acunsoft/datatable-core';
+import { actionCell, checkActions, type RowAction } from './actions';
 import { checkTarget, element, keepFocus, type RenderedComponent } from './dom';
 import { labelsEn, type DataTableLabels } from './labels';
 
@@ -33,6 +34,12 @@ export interface RenderTableOptions<TData> {
   readonly rowLabel?: (row: Row<TData>) => string;
   /** Server mode: shows loading (`aria-busy`) and error states from a runner. */
   readonly status?: StatusSource;
+  /**
+   * Buttons in a last "Actions" column. Each button's accessible name includes
+   * the row's name ("Edit: Ayşe Yılmaz"), so screen-reader users know which
+   * row it acts on.
+   */
+  readonly rowActions?: readonly RowAction<TData>[];
 }
 
 function nextSorting(current: readonly Readonly<SortRule>[], field: string, additive: boolean): SortRule[] {
@@ -76,6 +83,9 @@ export function renderTable<TData>(
   if (options.rowLabel !== undefined && typeof options.rowLabel !== 'function') {
     throw new TypeError('rowLabel must be a function');
   }
+  const rowActions = options.rowActions === undefined
+    ? []
+    : checkActions<RowAction<TData>>(options.rowActions, 'rowActions', ['hidden', 'disabled']);
   const status = options.status;
   if (status !== undefined && (typeof status.getState !== 'function' || typeof status.subscribe !== 'function')) {
     throw new TypeError('status must have getState and subscribe');
@@ -194,13 +204,15 @@ export function renderTable<TData>(
       }
       headRow.append(th);
     }
+    if (rowActions.length > 0) headRow.append(element(doc, 'th', { scope: 'col', class: 'adt-th adt-actions' }, labels.actions));
     const head = element(doc, 'thead');
     head.append(headRow);
 
     const body = element(doc, 'tbody');
     if (page.rows.length === 0) {
       const tr = element(doc, 'tr', { class: 'adt-empty' });
-      tr.append(element(doc, 'td', { colspan: String(columns.length + (selectable ? 1 : 0)) }, labels.empty));
+      const span = columns.length + (selectable ? 1 : 0) + (rowActions.length > 0 ? 1 : 0);
+      tr.append(element(doc, 'td', { colspan: String(span) }, labels.empty));
       body.append(tr);
     }
     for (const row of page.rows) {
@@ -217,6 +229,7 @@ export function renderTable<TData>(
         tr.append(td);
       }
       columns.forEach((column, index) => tr.append(element(doc, 'td', { 'data-label': column.header }, cells[index])));
+      if (rowActions.length > 0) tr.append(actionCell(doc, rowActions, row, nameOf(row, cells), labels));
       rowParts.push({ id: row.id, tr, box });
       body.append(tr);
     }

@@ -19,6 +19,14 @@ export interface DataTableLabels {
   readonly loading: string;
   readonly error: string;
   readonly retry: string;
+  /** Header of the row-actions column. */
+  readonly actions: string;
+  /** Accessible name of a row-action button: the action and the row's name. */
+  readonly rowAction: (action: string, name: string) => string;
+  /** Bulk-actions bar. */
+  readonly bulkActions: string;
+  readonly selectedCount: (count: number) => string;
+  readonly clearSelection: string;
 }
 
 export const labelsEn: DataTableLabels = Object.freeze({
@@ -37,6 +45,11 @@ export const labelsEn: DataTableLabels = Object.freeze({
   loading: 'Loading…',
   error: 'The data could not be loaded.',
   retry: 'Try again',
+  actions: 'Actions',
+  rowAction: (action: string, name: string) => `${action}: ${name}`,
+  bulkActions: 'Selected rows',
+  selectedCount: (count: number) => `${count} selected`,
+  clearSelection: 'Clear selection',
 });
 
 export const labelsTr: DataTableLabels = Object.freeze({
@@ -55,4 +68,9 @@ export const labelsTr: DataTableLabels = Object.freeze({
   loading: 'Yükleniyor…',
   error: 'Veriler yüklenemedi.',
   retry: 'Tekrar dene',
+  actions: 'İşlemler',
+  rowAction: (action: string, name: string) => `${name}: ${action}`,
+  bulkActions: 'Seçili satırlar',
+  selectedCount: (count: number) => `${count} seçili`,
+  clearSelection: 'Seçimi temizle',
 });

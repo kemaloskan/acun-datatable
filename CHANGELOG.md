@@ -5,6 +5,16 @@ All notable changes to this repository. Each npm package also has its own
 
 ## Unreleased
 
+### Added
+
+- **Row and bulk actions.** `renderTable(…, { rowActions })` adds an
+  accessible "Actions" column (buttons named with the row, `hidden` and
+  `disabled` per row); `renderBulkActions` shows a bar for the selected rows.
+  Livewire: `rowActions()` / `bulkActions()` with `Action::make()->label()
+  ->confirm()->visible()->handle()`; rows are looked up inside `query()` and
+  visibility is checked again before running. New labels: `actions`,
+  `rowAction`, `bulkActions`, `selectedCount`, `clearSelection`.
+
 ## 0.1.0 (not published yet)
 
 Version prepared on 2026-10-23; npm publishing is on hold. First release of `@acunsoft/datatable-core`, `@acunsoft/datatable-http` and

@@ -61,6 +61,34 @@ renderTable(el, table, { status: runner, labels: labelsTr });
 - **Narrow screens:** every cell has `data-label` with its header, used by the
   optional stylesheet's card layout.
 
+## Row and bulk actions
+
+```ts
+renderTable(el, table, {
+  selectable: true,
+  rowActions: [
+    { id: 'edit', label: 'Düzenle', onSelect: (row) => openEditor(row.original) },
+    { id: 'delete', label: 'Sil', onSelect: (row) => remove(row.id), disabled: (row) => row.original.locked },
+  ],
+});
+renderBulkActions(document.querySelector('#bulk')!, table, {
+  labels: labelsTr,
+  actions: [{ id: 'archive', label: 'Arşivle', onSelect: ({ ids }) => archive(ids) }],
+});
+```
+
+- **Row actions** add a last "Actions" column with one `<button>` per action.
+  Each button's accessible name includes the row's name (`Edit: Ayşe`), so
+  screen-reader users know which row it acts on. `hidden(row)` leaves a button
+  out; `disabled(row)` keeps it focusable with `aria-disabled` and ignores
+  clicks. Focus returns to the same button after a re-render.
+- **`renderBulkActions`** shows a bar while rows are selected: a polite
+  "3 selected" status, the action buttons and "Clear selection". `onSelect`
+  receives `{ ids, rows }`: every selected ID (also on other pages in server
+  mode) and the selected rows the table holds.
+- Asking for confirmation, authorization and the actual change are up to your
+  handler; the renderer never deletes anything itself.
+
 ## `renderPagination(container, table, options?)`
 
 A `<nav>` with Previous/Next buttons, a `aria-live="polite"` status
@@ -92,7 +120,8 @@ never turns dark on its own). Or skip it and style the stable class names: `adt-
 `adt-sort--desc`, `adt-sort-mark`, `adt-select`, `adt-row`, `adt-row--selected`,
 `adt-empty`, `adt-pagination`, `adt-previous`, `adt-next`, `adt-status`,
 `adt-page-size`, `adt-search`, `adt-scroll`, `adt-notice`, `adt-retry`,
-`adt-loading`.
+`adt-loading`, `adt-actions`, `adt-action`, `adt-selection`,
+`adt-selection-count`, `adt-bulk-action`, `adt-clear-selection`.
 
 ## Security and accessibility notes
 
