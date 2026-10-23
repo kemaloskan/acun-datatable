@@ -1,9 +1,15 @@
 # Changelog
 
-All notable changes to this repository. Packages are not published yet; versions
-will start at `0.1.0` (see SPEC "Planned release approach").
+All notable changes to this repository. Each npm package also has its own
+`CHANGELOG.md`, written by Changesets.
 
 ## Unreleased
+
+## 0.1.0 (2026-10-23)
+
+First release of `@acunsoft/datatable-core`, `@acunsoft/datatable-http` and
+`@acunsoft/datatable-dom`. The Laravel package (`acunsoft/datatable-laravel`)
+is released separately through Packagist.
 
 ### Added (release preparation)
 
