@@ -1,5 +1,14 @@
 # @acunsoft/datatable-react
 
+## 0.2.1
+
+### Patch Changes
+
+- Published from GitHub Actions through npm trusted publishing, with provenance attestations that link each package to its source commit. No code changes.
+- Updated dependencies
+  - @acunsoft/datatable-core@0.2.1
+  - @acunsoft/datatable-dom@0.2.1
+
 ## 0.2.0
 
 ### Minor Changes

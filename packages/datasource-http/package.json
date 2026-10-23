@@ -1,6 +1,6 @@
 {
   "name": "@acunsoft/datatable-http",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "HTTP data source for @acunsoft/datatable-core: server-side paging, sorting and filtering with abort and latest-request-wins.",
   "keywords": [
     "datatable",
@@ -41,7 +41,7 @@
     "build": "tsup src/index.ts --format esm --dts --clean --external @acunsoft/datatable-core"
   },
   "dependencies": {
-    "@acunsoft/datatable-core": "0.2.0"
+    "@acunsoft/datatable-core": "0.2.1"
   },
   "devDependencies": {
     "tsup": "^8.0.0",

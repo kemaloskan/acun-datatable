@@ -5,6 +5,11 @@ All notable changes to this repository. Each npm package also has its own
 
 ## Unreleased
 
+## 0.2.1 (2026-10-23)
+
+No code changes: the first release published from GitHub Actions through npm
+trusted publishing (no npm token), with provenance attestations.
+
 ## 0.2.0 (2026-10-23)
 
 First release published to npm: `@acunsoft/datatable-core`, `-http`, `-dom`,
