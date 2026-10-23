@@ -78,9 +78,10 @@ Packagist reads as the version.
 - [x] First release from a machine: 0.2.0 on 2026-10-23. With a security key,
       `npm run release` opens a browser approval for the first package; tick
       "skip 2FA for 5 minutes" and the rest follow.
-- [ ] Trusted publishers on npmjs.com for all six packages (see "First
-      release" above). No `NPM_TOKEN` secret: tokens that bypass 2FA are being
-      restricted by npm.
+- [x] Trusted publishers on npmjs.com for all six packages ("Allow npm
+      publish" on; publishing access: 2FA required, bypass tokens disallowed).
+      Validated by 0.2.1, the first release from the Release workflow, with
+      provenance. No `NPM_TOKEN` secret.
 - [ ] `SPLIT_TOKEN` repository secret: a fine-grained GitHub token with
       "Contents: read and write" on `kemaloskan/datatable-laravel` only.
 - [ ] Submit `https://github.com/kemaloskan/datatable-laravel` on
