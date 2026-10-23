@@ -82,8 +82,9 @@ Packagist reads as the version.
       publish" on; publishing access: 2FA required, bypass tokens disallowed).
       Validated by 0.2.1, the first release from the Release workflow, with
       provenance. No `NPM_TOKEN` secret.
-- [ ] `SPLIT_TOKEN` repository secret: a fine-grained GitHub token with
-      "Contents: read and write" on `kemaloskan/datatable-laravel` only.
-- [ ] Submit `https://github.com/kemaloskan/datatable-laravel` on
-      [packagist.org](https://packagist.org/packages/submit) and enable its
-      GitHub auto-update hook.
+- [x] `SPLIT_TOKEN` repository secret: a fine-grained GitHub token ("Acun
+      DataTable") with "Contents: read and write" on
+      `kemaloskan/datatable-laravel` only; expires 2027-10-23, regenerate then.
+- [x] `acunsoft/datatable-laravel` on Packagist, auto-updated from
+      `kemaloskan/datatable-laravel`; first version v0.2.0 (tag
+      `laravel-v0.2.0`) on 2026-10-23.
