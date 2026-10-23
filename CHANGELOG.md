@@ -5,6 +5,29 @@ All notable changes to this repository. Each npm package also has its own
 
 ## Unreleased
 
+### Changed (large tables, `acunsoft/datatable-laravel` 0.3.0)
+
+Measured on 5,000,000 rows in PostgreSQL 17; see the Laravel README's
+"Large tables" guide.
+
+- **Bounded counts:** at most 10,000 matches are counted (`countLimit`).
+  Beyond that Livewire shows "10,000+" (en, tr, de, fr, es), the JSON
+  endpoint sends `totalRowsAtLeast` instead of `totalRows`, and "next page"
+  comes from one extra row. First page: 53 ms → 5.5 ms. `QueryApplier::paginate()`
+  returns a `TablePage` (a `LengthAwarePaginator` with `totalIsExact()`).
+- **Result window:** pages starting past 100,000 rows are refused (422) or
+  clamped in Livewire (`maxResultWindow`); page 100,000 took 4.1 s.
+- **Dates use the column's index:** a whole day is a range `[00:00, next
+  day 00:00)` instead of `DATE(column)`; one month of orders: 373 ms → 1.9 ms.
+  This also stops the database session timezone from moving day edges.
+- **Sorting uses the index:** the primary-key tie-breaker follows the last
+  sort direction (`total desc, id desc`), 27× faster deep pages.
+- **Search only where a word can be:** words with letters skip number, date
+  and yes/no columns; numbers and dates are compared without folding.
+- **`FoldsSearchColumns`** model trait keeps `searchUsing()` copies up to date.
+  With those copies and a trigram index, search on 5M rows takes 0.4–68 ms
+  (was 2.4–3.7 s).
+
 ### Fixed
 
 - **Laravel search was case-sensitive for Turkish letters** on columns without
