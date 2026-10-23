@@ -32,6 +32,10 @@ jobs:
         if: env.SPLIT_TOKEN != ''
         with:
           fetch-depth: 0
+          # Otherwise checkout's stored GITHUB_TOKEN header wins over
+          # SPLIT_TOKEN in the push URL, and that token cannot write to
+          # another repository (403 for github-actions[bot]).
+          persist-credentials: false
       - name: Mirror packages/adapter-laravel
         if: env.SPLIT_TOKEN != ''
         run: |
