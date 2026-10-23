@@ -426,6 +426,23 @@ in `packages/core/tests/schema.types.ts`,
 `packages/core/tests/local-row-model.types.ts`; build declarations remain
 source-only.
 
+## Column visibility
+
+```ts
+const table = createDataTable({
+  data, columns, // { id: 'customer', …, enableHiding: false } keeps a column visible
+  initialState: { hiddenColumns: ['note'] },
+});
+table.setColumnVisibility('city', false); // one 'columnVisibility' event
+table.getVisibleColumns();                 // what a renderer shows, in column order
+table.setHiddenColumns([]);                // show everything again
+```
+
+Hiding is presentation only: hidden columns still sort, filter and search (as
+in DataTables), the page stays the same and `getQuery()` does not change. At
+least one column always stays visible; unknown IDs, duplicates and columns
+with `enableHiding: false` are rejected.
+
 ## License and disclaimer
 
 [MIT](LICENSE) © 2026 Acunsoft. Free to use, change and distribute, also in

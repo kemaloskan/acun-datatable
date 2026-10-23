@@ -7,6 +7,12 @@ All notable changes to this repository. Each npm package also has its own
 
 ### Added
 
+- **Column visibility.** Core: `hiddenColumns` state, `setColumnVisibility`,
+  `setHiddenColumns`, `getVisibleColumns`, a `columnVisibility` event and the
+  column option `enableHiding`. Hidden columns still sort, filter and search;
+  the query is unchanged. DOM: `renderColumnToggle` and `renderTable` shows
+  only visible columns. Livewire: a "Columns" menu, `Column::hideable()` /
+  `hidden()`, hidden IDs in the URL.
 - **Row and bulk actions.** `renderTable(…, { rowActions })` adds an
   accessible "Actions" column (buttons named with the row, `hidden` and
   `disabled` per row); `renderBulkActions` shows a bar for the selected rows.

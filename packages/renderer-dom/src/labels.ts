@@ -27,6 +27,9 @@ export interface DataTableLabels {
   readonly bulkActions: string;
   readonly selectedCount: (count: number) => string;
   readonly clearSelection: string;
+  /** Column visibility menu. */
+  readonly columns: string;
+  readonly showColumns: string;
 }
 
 export const labelsEn: DataTableLabels = Object.freeze({
@@ -50,6 +53,8 @@ export const labelsEn: DataTableLabels = Object.freeze({
   bulkActions: 'Selected rows',
   selectedCount: (count: number) => `${count} selected`,
   clearSelection: 'Clear selection',
+  columns: 'Columns',
+  showColumns: 'Show columns',
 });
 
 export const labelsTr: DataTableLabels = Object.freeze({
@@ -73,4 +78,6 @@ export const labelsTr: DataTableLabels = Object.freeze({
   bulkActions: 'Seçili satırlar',
   selectedCount: (count: number) => `${count} seçili`,
   clearSelection: 'Seçimi temizle',
+  columns: 'Kolonlar',
+  showColumns: 'Gösterilecek kolonlar',
 });

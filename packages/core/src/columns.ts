@@ -6,6 +6,8 @@ interface ColumnBase {
   readonly header: string;
   readonly enableSorting?: boolean;
   readonly enableFiltering?: boolean;
+  /** Whether users may hide the column. Default `true`. */
+  readonly enableHiding?: boolean;
   /**
    * How to read this column's values for sorting, filtering, search and display,
    * e.g. `'decimal'` for Laravel decimals sent as `"1250.50"`. Omit to use values
@@ -35,7 +37,7 @@ export function createColumns<TData>(
     if (!definition || typeof definition !== 'object') {
       throw new TypeError(`column[${index}] must be an object`);
     }
-    const { id, header, accessorKey, accessorFn, enableSorting, enableFiltering, type } = definition;
+    const { id, header, accessorKey, accessorFn, enableSorting, enableFiltering, enableHiding, type } = definition;
     if (typeof id !== 'string' || id.trim().length === 0) {
       throw new TypeError(`column[${index}].id must be a non-empty string`);
     }
@@ -53,7 +55,7 @@ export function createColumns<TData>(
     } else if (typeof accessorFn !== 'function') {
       throw new TypeError(`column "${id}".accessorFn must be a function`);
     }
-    for (const flag of ['enableSorting', 'enableFiltering'] as const) {
+    for (const flag of ['enableSorting', 'enableFiltering', 'enableHiding'] as const) {
       if (definition[flag] !== undefined && typeof definition[flag] !== 'boolean') {
         throw new TypeError(`column "${id}".${flag} must be a boolean`);
       }
@@ -64,6 +66,7 @@ export function createColumns<TData>(
     ids.add(id);
     const base = {
       id, header, enableSorting: enableSorting ?? false, enableFiltering: enableFiltering ?? false,
+      ...(enableHiding !== undefined ? { enableHiding } : {}),
       ...(type !== undefined ? { type } : {}),
     };
     // Validation above establishes the exclusive accessor branch at runtime.

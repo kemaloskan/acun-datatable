@@ -74,8 +74,7 @@ export function renderTable<TData>(
   const numbers = new Intl.NumberFormat(locale);
   const dates = new Intl.DateTimeFormat(locale, { dateStyle: 'medium' });
   const dateTimes = new Intl.DateTimeFormat(locale, { dateStyle: 'medium', timeStyle: 'short' });
-  const columns = table.getColumns();
-  const ids = new Set(columns.map(column => column.id));
+  const ids = new Set(table.getColumns().map(column => column.id));
   for (const [id, formatter] of Object.entries(options.format ?? {})) {
     if (!ids.has(id)) throw new Error(`unknown format column ID: ${id}`);
     if (typeof formatter !== 'function') throw new TypeError(`format for column "${id}" must be a function`);
@@ -157,6 +156,7 @@ export function renderTable<TData>(
     const state = table.getState();
     const page = table.getPage();
     const selectable = options.selectable === true;
+    const columns = table.getVisibleColumns();
     pageIds = page.rows.map(row => row.id);
     selectAll = undefined;
     rowParts = [];

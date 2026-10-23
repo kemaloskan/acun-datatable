@@ -20,6 +20,8 @@ export interface DataTableInitialState {
   readonly filters?: readonly FilterRule[];
   readonly globalSearch?: string;
   readonly selectedIds?: readonly RowId[];
+  /** Column IDs to hide at first. */
+  readonly hiddenColumns?: readonly string[];
 }
 
 /** `'local'` transforms rows in memory; `'server'` lets the server do it. */
@@ -61,6 +63,8 @@ export interface DataTableState {
   readonly filters: readonly Readonly<FilterRule>[];
   readonly globalSearch: string;
   readonly selectedIds: readonly RowId[];
+  /** Hidden column IDs, in column order. Presentation only: not part of the query. */
+  readonly hiddenColumns: readonly string[];
 }
 
 /** One event per effective action; the snapshot passed alongside is the result. */
@@ -73,7 +77,8 @@ export type DataTableEvent =
   | { readonly type: 'data'; readonly totalRows: number; readonly removedIds: readonly RowId[] }
   /** Server mode: a page result was applied. `totalRows` is absent when unknown. */
   | { readonly type: 'result'; readonly rows: number; readonly totalRows?: number }
-  | { readonly type: 'selection'; readonly change: Readonly<SelectionChange> };
+  | { readonly type: 'selection'; readonly change: Readonly<SelectionChange> }
+  | { readonly type: 'columnVisibility'; readonly hiddenColumns: readonly string[] };
 
 export type DataTableListener = (state: Readonly<DataTableState>, event: Readonly<DataTableEvent>) => void;
 
@@ -86,6 +91,11 @@ export interface DataTable<TData> {
   /** Matching rows: local count, or the server's `totalRows` (undefined when unknown). */
   getTotalRows(): number | undefined;
   getColumns(): readonly ColumnDef<TData>[];
+  /**
+   * The columns to show, in definition order. Hidden columns still sort,
+   * filter and search (as in DataTables); hide them from the view only.
+   */
+  getVisibleColumns(): readonly ColumnDef<TData>[];
   /** All rows in data order, before sorting and filtering. */
   getCoreRows(): readonly Row<TData>[];
   /** Local: sorted and filtered rows across every page. Server: the current page as received. */
@@ -104,6 +114,10 @@ export interface DataTable<TData> {
   setSorting(sorting: readonly SortRule[]): void;
   setFilters(filters: readonly FilterRule[]): void;
   setGlobalSearch(text: string): void;
+  /** Show or hide one column. The page and the query do not change. */
+  setColumnVisibility(id: string, visible: boolean): void;
+  /** Replace the hidden columns. At least one column stays visible. */
+  setHiddenColumns(ids: readonly string[]): void;
   isSelected(id: RowId): boolean;
   /** Defaults to the rows on the current page. */
   getSelectionStatus(ids?: readonly RowId[]): SelectionStatus;
@@ -198,6 +212,20 @@ export function createDataTable<TData>(options: DataTableOptions<TData>): DataTa
     if (typeof text !== 'string') throw new TypeError('globalSearch must be a string');
     return text;
   };
+  const checkHidden = (ids: readonly string[]): readonly string[] => {
+    if (!Array.isArray(ids)) throw new TypeError('hiddenColumns must be an array');
+    const wanted = new Set<string>();
+    for (const id of ids) {
+      if (typeof id !== 'string') throw new TypeError('hiddenColumns must contain column IDs');
+      const column = byId.get(id);
+      if (!column) throw new Error(`unknown column ID: ${id}`);
+      if (column.enableHiding === false) throw new Error(`hiding is disabled for column "${id}"`);
+      if (wanted.has(id)) throw new Error(`duplicate hidden column ID: ${id}`);
+      wanted.add(id);
+    }
+    if (columns.length > 0 && wanted.size === columns.length) throw new RangeError('at least one column must stay visible');
+    return Object.freeze(columns.filter(column => wanted.has(column.id)).map(column => column.id));
+  };
   const checkKnown = (ids: readonly RowId[]): void => {
     if (server) return; // other pages' rows are not loaded
     for (const id of ids) if (typeof id === 'string' && !rowIds.has(id)) throw new Error(`unknown row ID: ${id}`);
@@ -213,6 +241,12 @@ export function createDataTable<TData>(options: DataTableOptions<TData>): DataTa
   });
   let filters = copyFilters(init.filters ?? []);
   let globalSearch = checkSearch(init.globalSearch ?? '');
+  let hiddenColumns = checkHidden(init.hiddenColumns ?? []);
+  let visibleColumns = columns;
+  const updateVisible = (): void => {
+    visibleColumns = Object.freeze(columns.filter(column => !hiddenColumns.includes(column.id)));
+  };
+  updateVisible();
   const selection = createRowSelection({
     selectedIds: init.selectedIds ?? [],
     ...(options.selectionMode !== undefined ? { mode: options.selectionMode } : {}),
@@ -248,6 +282,7 @@ export function createDataTable<TData>(options: DataTableOptions<TData>): DataTa
     return Object.freeze({
       page, pageSize, sorting: currentSorting, filters, globalSearch,
       selectedIds: selection.getState().selectedIds,
+      hiddenColumns,
     });
   };
   let state = snapshot();
@@ -274,6 +309,7 @@ export function createDataTable<TData>(options: DataTableOptions<TData>): DataTa
   const table: DataTable<TData> = {
     getState: () => state,
     getColumns: () => columns,
+    getVisibleColumns: () => visibleColumns,
     getCoreRows: () => coreRows,
     getFilteredRows,
     getMode: () => mode,
@@ -357,6 +393,22 @@ export function createDataTable<TData>(options: DataTableOptions<TData>): DataTa
       const next = checkSearch(text);
       if (next === globalSearch) return;
       viewChanged(() => { globalSearch = next; }, () => ({ type: 'globalSearch', globalSearch }));
+    },
+
+    setColumnVisibility: (id, visible) => {
+      if (destroyed) return;
+      if (typeof visible !== 'boolean') throw new TypeError('visible must be a boolean');
+      if (typeof id !== 'string' || !byId.has(id)) throw new Error(`unknown column ID: ${String(id)}`);
+      const others = hiddenColumns.filter(hidden => hidden !== id);
+      table.setHiddenColumns(visible ? others : [...others, id]);
+    },
+    setHiddenColumns: (ids) => {
+      if (destroyed) return;
+      const next = checkHidden(ids);
+      if (next.length === hiddenColumns.length && next.every((id, index) => id === hiddenColumns[index])) return;
+      hiddenColumns = next;
+      updateVisible();
+      emit({ type: 'columnVisibility', hiddenColumns });
     },
 
     isSelected: (id) => selection.isSelected(id),

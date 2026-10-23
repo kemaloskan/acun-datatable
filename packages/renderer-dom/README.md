@@ -89,6 +89,17 @@ renderBulkActions(document.querySelector('#bulk')!, table, {
 - Asking for confirmation, authorization and the actual change are up to your
   handler; the renderer never deletes anything itself.
 
+## `renderColumnToggle(container, table, options?)`
+
+A "Columns" menu built from a native `<details>` with one labelled checkbox per
+column, inside a `<fieldset>`. Columns with `enableHiding: false` and the last
+visible column cannot be unchecked. `renderTable` shows only
+`table.getVisibleColumns()`.
+
+```ts
+renderColumnToggle(document.querySelector('#columns')!, table, { labels: labelsTr });
+```
+
 ## `renderPagination(container, table, options?)`
 
 A `<nav>` with Previous/Next buttons, a `aria-live="polite"` status
@@ -121,7 +132,7 @@ never turns dark on its own). Or skip it and style the stable class names: `adt-
 `adt-empty`, `adt-pagination`, `adt-previous`, `adt-next`, `adt-status`,
 `adt-page-size`, `adt-search`, `adt-scroll`, `adt-notice`, `adt-retry`,
 `adt-loading`, `adt-actions`, `adt-action`, `adt-selection`,
-`adt-selection-count`, `adt-bulk-action`, `adt-clear-selection`.
+`adt-selection-count`, `adt-bulk-action`, `adt-clear-selection`, `adt-columns`.
 
 ## Security and accessibility notes
 

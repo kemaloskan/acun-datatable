@@ -37,6 +37,8 @@ table.setFilters([{ field: 'total', operator: 'between', value: ['100', '500'] }
   phrases stay together), case-, accent- and Turkish-insensitive (`ayse` finds
   `Ayşe`, `istanbul` finds `İSTANBUL`); operators `contains`, `startsWith`, `eq`,
   `gt`, `lt`, `between`, `in`, `empty`, `notEmpty`.
+- **Column visibility:** `setColumnVisibility`, `getVisibleColumns`; hidden
+  columns still sort, filter and search.
 - **Pagination and selection,** local or server mode (`mode: 'server'` with
   `setPageResult`).
 - **Immutable:** frozen snapshots; your data is never mutated or cloned.

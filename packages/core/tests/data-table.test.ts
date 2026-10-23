@@ -25,7 +25,7 @@ const events = (listener: ReturnType<typeof vi.fn<Listener>>) => listener.mock.c
 describe('createDataTable — view', () => {
   it('starts with defaults and a frozen state', () => {
     const t = table();
-    expect(t.getState()).toEqual({ page: 1, pageSize: 25, sorting: [], filters: [], globalSearch: '', selectedIds: [] });
+    expect(t.getState()).toEqual({ page: 1, pageSize: 25, sorting: [], filters: [], globalSearch: '', selectedIds: [], hiddenColumns: [] });
     expect(Object.isFrozen(t.getState())).toBe(true);
     expect(ids(t.getCoreRows())).toEqual(['1', '2', '3', '4', '5']);
     expect(t.getPage()).toMatchObject({ page: 1, pageCount: 1, totalRows: 5 });
