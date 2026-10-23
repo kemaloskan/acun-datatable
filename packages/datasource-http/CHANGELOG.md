@@ -1,5 +1,12 @@
 # @acunsoft/datatable-http
 
+## 0.2.0
+
+### Patch Changes
+
+- Updated dependencies [60e548c]
+  - @acunsoft/datatable-core@0.2.0
+
 ## 0.1.0
 
 ### Minor Changes

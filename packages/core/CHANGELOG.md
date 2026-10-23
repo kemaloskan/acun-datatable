@@ -1,5 +1,11 @@
 # @acunsoft/datatable-core
 
+## 0.2.0
+
+### Minor Changes
+
+- 60e548c: Row and bulk actions (`rowActions` option of `renderTable`, `renderBulkActions`) and column visibility (core `setColumnVisibility`, `setHiddenColumns`, `getVisibleColumns`, `enableHiding`; DOM `renderColumnToggle`). Hidden columns still sort, filter and search.
+
 ## 0.1.0
 
 ### Minor Changes

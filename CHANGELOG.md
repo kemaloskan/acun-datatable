@@ -5,6 +5,12 @@ All notable changes to this repository. Each npm package also has its own
 
 ## Unreleased
 
+## 0.2.0 (2026-10-23)
+
+First release published to npm: `@acunsoft/datatable-core`, `-http`, `-dom`,
+`-export`, `-vue` and `-react`, all at 0.2.0. It includes everything listed
+under 0.1.0 below, which was prepared but never published.
+
 ### Added
 
 - **Languages:** built-in German, French and Spanish texts next to English and
@@ -58,9 +64,9 @@ All notable changes to this repository. Each npm package also has its own
   visibility is checked again before running. New labels: `actions`,
   `rowAction`, `bulkActions`, `selectedCount`, `clearSelection`.
 
-## 0.1.0 (not published yet)
+## 0.1.0 (never published)
 
-Version prepared on 2026-10-23; npm publishing is on hold. First release of `@acunsoft/datatable-core`, `@acunsoft/datatable-http` and
+Prepared on 2026-10-23 and superseded by 0.2.0. The first version of `@acunsoft/datatable-core`, `@acunsoft/datatable-http` and
 `@acunsoft/datatable-dom`. The Laravel package (`acunsoft/datatable-laravel`)
 is released separately through Packagist.
 
