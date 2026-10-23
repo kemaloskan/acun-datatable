@@ -75,7 +75,9 @@ an accessible table, pagination and search; see its
 `packages/export`) writes CSV and real `.xlsx` files and imports them with
 typed validation; see its [README](packages/export/README.md).
 `@acunsoft/datatable-vue` (in `packages/vue`) provides Vue 3 components and
-composables; see its [README](packages/vue/README.md). See `SPEC.md` for milestones.
+composables; see its [README](packages/vue/README.md).
+`@acunsoft/datatable-react` (in `packages/react`) provides React hooks and
+components; see its [README](packages/react/README.md). See `SPEC.md` for milestones.
 
 ## Events
 

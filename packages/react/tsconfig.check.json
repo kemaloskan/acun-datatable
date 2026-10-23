@@ -1,0 +1,12 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "rootDir": "..",
+    "noEmit": true,
+    "paths": {
+      "@acunsoft/datatable-core": ["../core/src/index.ts"],
+      "@acunsoft/datatable-dom": ["../renderer-dom/src/index.ts"]
+    }
+  },
+  "include": ["src/**/*.ts", "tests/**/*.ts"]
+}

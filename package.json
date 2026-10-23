@@ -8,7 +8,12 @@
     "url": "git+https://github.com/kemaloskan/acun-datatable.git"
   },
   "workspaces": [
-    "packages/*"
+    "packages/core",
+    "packages/datasource-http",
+    "packages/renderer-dom",
+    "packages/export",
+    "packages/vue",
+    "packages/react"
   ],
   "scripts": {
     "check": "npm run check --workspaces --if-present && tsc -p e2e/tsconfig.json",

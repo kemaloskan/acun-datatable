@@ -258,6 +258,10 @@ const API = [
     ["useDataTable(options) · useTable(table)", {tr:"Reaktif tablo: state, sayfa, görünen kolonlar; bileşenle birlikte temizlenir.", en:"A reactive table: state, page, visible columns; cleaned up with the component."}],
     ["<AcunDataTable> · <AcunPagination> · <AcunSearch> · <AcunColumnToggle> · <AcunBulkActions>", {tr:"DOM renderer ile aynı erişilebilir işaretleme; özel hücreler için cell-<id> slot'ları.", en:"The DOM renderer's accessible markup; cell-<id> slots for custom cells."}],
   ]],
+  ['@acunsoft/datatable-react', [
+    ["useDataTable(options) · useTable(table)", {tr:"useSyncExternalStore ile tablo durumu; yeni data dizisi satırları değiştirir; Strict Mode güvenli.", en:"Table state via useSyncExternalStore; a new data array replaces the rows; Strict Mode safe."}],
+    ["<DataTable> · <Pagination> · <Search> · <ColumnToggle> · <BulkActions>", {tr:"DOM renderer ile aynı erişilebilir işaretleme; cells ile özel hücreler.", en:"The DOM renderer's accessible markup; custom cells via cells."}],
+  ]],
   ['@acunsoft/datatable-export', [
     ["tableToSheet(table, { rows, columns })", {tr:"Görünen tablo: başlıklar ve tipli değerler (sayı, ondalık, tarih, mantıksal); tüm satırlar, sayfa ya da seçim.", en:"The visible table: headers and typed values (numbers, decimals, dates, booleans); all rows, the page or the selection."}],
     ["toXlsx(sheet) · toCsv(sheet, { delimiter })", {tr:"Gerçek Excel dosyası (metin asla formül olmaz) ve formül enjeksiyonuna karşı korumalı CSV.", en:"A real Excel workbook (text never becomes a formula) and CSV with a formula-injection guard."}],
@@ -456,25 +460,33 @@ const { table } = useDataTable({
   </AcunDataTable>
   <AcunPagination :table="table" :labels="labelsTr" />
 </template>` },
-  react:{ name:"React", pkg:"@acunsoft/datatable-react", status:"planned",
-    lead:{tr:"React adapter'ı: çekirdeği bir hook ve hazır bir bileşenle saracak.",
-          en:"React adapter: will wrap the core with a hook and a ready component."},
-    note:{tr:"React 18+ peer dependency olacak. Next.js'te bileşen bir <code>\"use client\"</code> sınırında kullanılacak.",
-          en:"React 18+ will be a peer dependency. In Next.js, the component will live inside a <code>\"use client\"</code> boundary."},
+  react:{ name:"React", pkg:"@acunsoft/datatable-react", status:"ready",
+    install:"npm install react @acunsoft/datatable-core @acunsoft/datatable-react",
+    lead:{tr:"React hook'ları ve bileşenleri: erişilebilir tablo, sayfalama, arama, kolon menüsü ve toplu işlemler; özel hücreler için <code>cells</code>. <code>useSyncExternalStore</code> ile eşzamanlı render'da tutarlı.",
+          en:"React hooks and components: an accessible table, pagination, search, a column menu and bulk actions; <code>cells</code> for custom cells. Consistent under concurrent rendering via <code>useSyncExternalStore</code>."},
+    note:{tr:"React 18.2+ peer dependency (19 ile test edildi). Paket <code>\"use client\"</code> ile işaretli; Next.js App Router'da doğrudan kullanılabilir. Değerler React tarafından kaçışlanır; paket HTML enjekte etmez.",
+          en:"React 18.2+ peer dependency (tested with 19). The package is marked <code>\"use client\"</code>, so it works in the Next.js App Router. Values are escaped by React; the package never injects HTML."},
     lang:"typescript", code:
-`// Taslak API — paket henüz yazılmadı. / Draft API — not implemented yet.
-import { useDataTable, DataTable } from '@acunsoft/datatable-react';
+`import { DataTable, Pagination, Search, labelsTr, useDataTable } from '@acunsoft/datatable-react';
+import '@acunsoft/datatable-dom/styles.css';
 
 export function Orders({ orders }: { orders: Order[] }) {
-  const table = useDataTable({
+  const { table } = useDataTable<Order>({
     data: orders,
     columns: [
-      { id: 'customer', header: 'Müşteri', accessorKey: 'customer', enableSorting: true },
+      { id: 'customer', header: 'Müşteri', accessorKey: 'customer', enableSorting: true, enableFiltering: true },
       { id: 'total', header: 'Tutar', accessorKey: 'total', type: 'decimal', enableSorting: true },
     ],
-    initialState: { page: 1, pageSize: 25 },
+    locale: 'tr',
   });
-  return <DataTable table={table} />;
+  return (
+    <>
+      <Search table={table} labels={labelsTr} />
+      <DataTable table={table} caption="Siparişler" locale="tr" selectable labels={labelsTr}
+        cells={{ total: ({ text }) => <strong>{text} ₺</strong> }} />
+      <Pagination table={table} labels={labelsTr} />
+    </>
+  );
 }` }
 };
 const FW_ORDER = ["laravel","html","vue","react"];
@@ -501,7 +513,7 @@ const T = {
        h_s2:"Neler var?", h_s2d:"Her ortamda aynı çekirdek yetenekler.",
        h_s3:"Kod örneği", h_s3d:"Çekirdek bugün kullanılabilir.",
        h_core_install:"Paketler henüz npm'de yayınlanmadı. Yayından sonra yalnızca çekirdek için:", go:"İncele →",
-       fw_desc:{vue:"Hazır: composable\'lar ve bileşenler.",react:"Planlanıyor: hook ve bileşen.",html:"Hazır: framework olmadan DOM renderer.",laravel:"Hazır: Livewire tablosu ve JSON uç nokta, tek Composer paketi."},
+       fw_desc:{vue:"Hazır: composable\'lar ve bileşenler.",react:"Hazır: hook\'lar ve bileşenler.",html:"Hazır: framework olmadan DOM renderer.",laravel:"Hazır: Livewire tablosu ve JSON uç nokta, tek Composer paketi."},
        api_title:"API referansı", api_lead:"Depodaki dört paketin genel API'si: çekirdek, HTTP, DOM ve Laravel. Henüz npm'de ve Packagist'te yayınlanmadılar.",
        a_s1:"Fonksiyonlar", a_s1d:"İmza ve kısa açıklama.", a_s2:"Örnek", a_s2d:"Fonksiyonların birlikte kullanımı." },
   en:{ nav_start:"Getting started", nav_fw:"Frameworks", nav_api:"API", cta:"Get started",
@@ -525,7 +537,7 @@ const T = {
        h_s2:"What's inside?", h_s2d:"The same core capabilities everywhere.",
        h_s3:"Code example", h_s3d:"The core is available today.",
        h_core_install:"The packages are not on npm yet. After release, core only:", go:"Open →",
-       fw_desc:{vue:"Ready: composables and components.",react:"Planned: hook and component.",html:"Ready: DOM renderer, no framework.",laravel:"Ready: a Livewire table and a JSON endpoint, one Composer package."},
+       fw_desc:{vue:"Ready: composables and components.",react:"Ready: hooks and components.",html:"Ready: DOM renderer, no framework.",laravel:"Ready: a Livewire table and a JSON endpoint, one Composer package."},
        api_title:"API reference", api_lead:"Public API of the four packages in the repository: core, HTTP, DOM and Laravel. They are not published to npm or Packagist yet.",
        a_s1:"Functions", a_s1d:"Signature and short description.", a_s2:"Example", a_s2d:"Using the functions together." }
 };

@@ -7,6 +7,13 @@ All notable changes to this repository. Each npm package also has its own
 
 ### Added
 
+- **React adapter** (new package `@acunsoft/datatable-react`, peer
+  `react >=18.2`, marked `"use client"`): `useDataTable` (Strict-Mode safe;
+  a new `data` array replaces the rows), `useTable` (`useSyncExternalStore`),
+  and `DataTable` (custom `cells`), `Pagination`, `Search`, `ColumnToggle`,
+  `BulkActions` with the DOM renderer's markup and accessibility.
+- **Build order:** workspaces are listed in dependency order, so a clean
+  `npm run build` builds `core` and `datatable-dom` before the adapters.
 - **Vue 3 adapter** (new package `@acunsoft/datatable-vue`, peer `vue ^3.4`):
   `useDataTable` (data as array, ref or getter; destroyed with the
   component), `useTable`, and `AcunDataTable` (cell slots), `AcunPagination`,
