@@ -267,6 +267,9 @@ const API = [
     ["rowActions() · bulkActions() · Action::make($id)->label()->confirm()->visible()->handle()", {tr:"Satır ve toplu işlemler; satır query() içinde yeniden aranır, görünürlük çalıştırmadan önce tekrar kontrol edilir.", en:"Row and bulk actions; the row is looked up inside query() again and visibility is checked again before running."}],
     ["sortBy($field, $additive) · toggleRow($key) · togglePage() · selectAllMatching()", {tr:"Başlık tıklaması ve seçim eylemleri (Shift+tık çok kolonlu sıralama).", en:"Header-click and selection actions (Shift+click for multi-column sorting)."}],
     ["TableResponse::for($query)->columns([...])->maxPageSize(100)", {tr:"@acunsoft/datatable-http için JSON uç nokta: {rows, totalRows}; hatalı sorguda 422.", en:"JSON endpoint for @acunsoft/datatable-http: {rows, totalRows}; 422 on an invalid query."}],
+    ["exportFormats() · use WithTableImport · importRow($values, $line)", {tr:"Livewire'da Excel/CSV dışa aktarma butonları ve tek işlemde (transaction) içe aktarma; sorunlar satır numarasıyla listelenir.", en:"Livewire Excel/CSV export buttons and import in one transaction; problems are listed with their line."}],
+    ["TableExport::for($query)->columns()->query()->xlsx() · ->csv()", {tr:"Sunucuda tüm eşleşen satırları parça parça okuyup indirir; sınır aşılırsa 422.", en:"Downloads every matching row, read in chunks on the server; 422 beyond the limit."}],
+    ["SheetReader · RowImporter", {tr:"Yüklenen CSV/xlsx'i sınırlarla okur, tiplere çevirir, hataları satırıyla raporlar.", en:"Reads uploaded CSV/xlsx with limits, converts to types, reports problems by line."}],
     ["TableQuery::fromRequest($request) · QueryApplier::paginate($builder, $query, $columns)", {tr:"Parçaları doğrudan kullanmak için: doğrulanmış sorgu ve Eloquent uygulayıcı.", en:"The parts on their own: a validated query and the Eloquent applier."}],
   ]],
 ];

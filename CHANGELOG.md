@@ -15,6 +15,13 @@ All notable changes to this repository. Each npm package also has its own
   (shared strings, rich text, date formats, 1904 dates; row, column and
   inflated-size limits) and `importRows` (header matching, Turkish number and
   date formats, line-numbered errors instead of guesses). DOM: `downloadFile`.
+  Laravel: `TableExport` (chunked CSV/xlsx downloads of every matching row,
+  422 beyond a limit), `SheetReader` and `RowImporter` (same rules, translated
+  messages, Windows-1254 CSVs); Livewire export buttons (`exportFormats()`)
+  and `WithTableImport` (upload, line-numbered problems, one transaction).
+- **Fixed:** for qualified columns (`orders.total`) the Laravel JSON endpoint
+  and views read the row attribute `total`, not a nested path.
+  `InvalidTableQuery` renders as HTTP 422 wherever it is thrown.
 - **Column visibility.** Core: `hiddenColumns` state, `setColumnVisibility`,
   `setHiddenColumns`, `getVisibleColumns`, a `columnVisibility` event and the
   column option `enableHiding`. Hidden columns still sort, filter and search;

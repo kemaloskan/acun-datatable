@@ -72,7 +72,7 @@ jobs:
       - uses: shivammathur/setup-php@v2
         with:
           php-version: ${{ matrix.php }}
-          extensions: intl, mbstring, pdo_sqlite
+          extensions: intl, mbstring, pdo_sqlite, zip
           coverage: none
       # A library: no committed lock file; resolve the newest versions allowed
       # by composer.json for this PHP version.
