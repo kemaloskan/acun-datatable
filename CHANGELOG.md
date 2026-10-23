@@ -5,6 +5,16 @@ All notable changes to this repository. Each npm package also has its own
 
 ## Unreleased
 
+### Fixed
+
+- **Laravel search was case-sensitive for Turkish letters** on columns without
+  `Column::searchUsing()`: on SQLite `istanbul` did not find `İstanbul` and
+  `igdir` did not find `Iğdır` (MySQL and PostgreSQL had similar gaps with
+  I/ı/İ/i). Search, `contains` and `startsWith` now fold the column in SQL on
+  every database (a PHP function on SQLite, `LOWER`/`REPLACE` elsewhere) and
+  still match the text as typed. `searchUsing()` remains the faster option for
+  large tables. (`acunsoft/datatable-laravel` 0.2.1)
+
 ## 0.2.1 (2026-10-23)
 
 No code changes: the first release published from GitHub Actions through npm
