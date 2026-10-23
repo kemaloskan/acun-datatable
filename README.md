@@ -1,6 +1,7 @@
 # Acun DataTable
 
 [![CI](https://github.com/kemaloskan/acun-datatable/actions/workflows/ci.yml/badge.svg)](https://github.com/kemaloskan/acun-datatable/actions/workflows/ci.yml)
+[![npm](https://img.shields.io/npm/v/@acunsoft/datatable-core.svg)](https://www.npmjs.com/package/@acunsoft/datatable-core)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
 Documentation: **https://kemaloskan.github.io/acun-datatable/**

@@ -45,7 +45,7 @@ first version is published from a machine:
 
 1. `npm run version-packages`, review, commit and push (`chore: release 0.1.0`).
 2. `npm login` as `acunsoft` (2FA), then `npm run release` and `git push --tags`.
-3. On npmjs.com, for each of the three packages: Settings → Trusted Publisher →
+3. On npmjs.com, for each of the six packages: Settings → Trusted Publisher →
    GitHub Actions, organization or user `kemaloskan`, repository
    `acun-datatable`, workflow `release.yml`. Then set "Publishing access" to
    require 2FA and disallow tokens.
@@ -74,10 +74,13 @@ Packagist reads as the version.
 - [x] The `@acunsoft` npm scope belongs to the project owner.
 - [x] `repository`, `homepage`, `bugs` and `author` in each `package.json` and
       `composer.json`.
-- [x] npm account `acunsoft` owns the `@acunsoft` scope.
-- [ ] First release from a machine, then trusted publishers on npmjs.com (see
-      "First release" above). No `NPM_TOKEN` secret: tokens that bypass 2FA
-      are being restricted by npm.
+- [x] npm account `acunsoft` owns the `@acunsoft` scope (2FA with a security key).
+- [x] First release from a machine: 0.2.0 on 2026-10-23. With a security key,
+      `npm run release` opens a browser approval for the first package; tick
+      "skip 2FA for 5 minutes" and the rest follow.
+- [ ] Trusted publishers on npmjs.com for all six packages (see "First
+      release" above). No `NPM_TOKEN` secret: tokens that bypass 2FA are being
+      restricted by npm.
 - [ ] `SPLIT_TOKEN` repository secret: a fine-grained GitHub token with
       "Contents: read and write" on `kemaloskan/datatable-laravel` only.
 - [ ] Submit `https://github.com/kemaloskan/datatable-laravel` on
