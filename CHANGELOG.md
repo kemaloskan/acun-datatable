@@ -5,9 +5,9 @@ All notable changes to this repository. Each npm package also has its own
 
 ## Unreleased
 
-## 0.1.0 (2026-10-23)
+## 0.1.0 (not published yet)
 
-First release of `@acunsoft/datatable-core`, `@acunsoft/datatable-http` and
+Version prepared on 2026-10-23; npm publishing is on hold. First release of `@acunsoft/datatable-core`, `@acunsoft/datatable-http` and
 `@acunsoft/datatable-dom`. The Laravel package (`acunsoft/datatable-laravel`)
 is released separately through Packagist.
 
