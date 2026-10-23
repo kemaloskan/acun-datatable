@@ -8,3 +8,4 @@ export {
   renderBulkActions, type BulkAction, type BulkSelection, type RenderBulkActionsOptions, type RowAction,
 } from './actions';
 export { renderColumnToggle, type RenderColumnToggleOptions } from './columns';
+export { downloadFile } from './download';

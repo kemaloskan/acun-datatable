@@ -1,0 +1,27 @@
+{
+  "name": "@acunsoft/datatable-export",
+  "version": "0.1.0",
+  "description": "CSV and Excel (.xlsx) export and import for @acunsoft/datatable-core, without dependencies: formula-safe CSV, real xlsx files, typed and validated import.",
+  "keywords": ["datatable", "data-table", "csv", "xlsx", "excel", "export", "import"],
+  "homepage": "https://kemaloskan.github.io/acun-datatable/",
+  "repository": { "type": "git", "url": "git+https://github.com/kemaloskan/acun-datatable.git", "directory": "packages/export" },
+  "bugs": { "url": "https://github.com/kemaloskan/acun-datatable/issues" },
+  "author": "Kemal OSKAN (https://github.com/kemaloskan)",
+  "license": "MIT",
+  "type": "module",
+  "sideEffects": false,
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": { ".": { "types": "./dist/index.d.ts", "import": "./dist/index.js" } },
+  "files": ["dist"],
+  "scripts": {
+    "check": "tsc -p tsconfig.check.json",
+    "test": "vitest run",
+    "build": "tsup src/index.ts --format esm --dts --clean --external @acunsoft/datatable-core"
+  },
+  "dependencies": { "@acunsoft/datatable-core": "0.1.0" },
+  "devDependencies": { "tsup": "^8.0.0", "typescript": "^5.0.0", "vitest": "^5.0.5" },
+  "engines": { "node": ">=22" },
+  "publishConfig": { "access": "public" }
+}

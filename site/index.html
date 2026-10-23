@@ -254,6 +254,12 @@ const API = [
     ["renderPagination(container, table, options?)", {tr:"Önceki/sonraki, canlı durum metni, sayfa boyutu seçimi.", en:"Previous/next, live status, page-size select."}],
     ["renderSearch(container, table, options?)", {tr:"Gecikmeli arama kutusu; Enter hemen uygular.", en:"Debounced search box; Enter applies at once."}],
   ]],
+  ['@acunsoft/datatable-export', [
+    ["tableToSheet(table, { rows, columns })", {tr:"Görünen tablo: başlıklar ve tipli değerler (sayı, ondalık, tarih, mantıksal); tüm satırlar, sayfa ya da seçim.", en:"The visible table: headers and typed values (numbers, decimals, dates, booleans); all rows, the page or the selection."}],
+    ["toXlsx(sheet) · toCsv(sheet, { delimiter })", {tr:"Gerçek Excel dosyası (metin asla formül olmaz) ve formül enjeksiyonuna karşı korumalı CSV.", en:"A real Excel workbook (text never becomes a formula) and CSV with a formula-injection guard."}],
+    ["readXlsx(bytes) · parseCsv(text)", {tr:"Excel ve CSV okuma; satır, kolon ve açılmış boyut sınırları (zip bombasına karşı).", en:"Read Excel and CSV; row, column and inflated-size limits (zip-bomb safe)."}],
+    ["importRows(sheet, columns, options)", {tr:"Başlık eşleme, Türkçe sayı ve tarih biçimleri, satır numaralı hatalar; tahmin yok.", en:"Header matching, Turkish number and date formats, line-numbered errors; no guessing."}],
+  ]],
   ['acunsoft/datatable-laravel', [
     ["Column::make($id)->column()->type()->sortable()->filterable()", {tr:"İzin listesi: yalnızca tanımlı kolonlar SQL'e ulaşır. searchUsing() katlanmış kolonla Türkçe duyarlı arama, format() hücre metni.", en:"The allowlist: only declared columns reach SQL. searchUsing() for Turkish-aware search on a folded column, format() for cell text."}],
     ["use WithDataTable  (Livewire)", {tr:"columns() ve query() tanımla; arama, sıralama, filtre ve sayfa boyutu URL'de; seçim ve selectedQuery() toplu işlemler için.", en:"Declare columns() and query(); search, sorting, filters and page size in the URL; selection and selectedQuery() for bulk actions."}],

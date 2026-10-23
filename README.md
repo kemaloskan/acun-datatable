@@ -71,7 +71,9 @@ contract: `TableQuery`, `PageResult`, `DataSource`, `createTableQuery` and
 and provides a Livewire table (`WithDataTable`); see its
 [README](packages/adapter-laravel/README.md). `@acunsoft/datatable-dom` (in `packages/renderer-dom`) renders
 an accessible table, pagination and search; see its
-[README](packages/renderer-dom/README.md). See `SPEC.md` for milestones.
+[README](packages/renderer-dom/README.md). `@acunsoft/datatable-export` (in
+`packages/export`) writes CSV and real `.xlsx` files and imports them with
+typed validation; see its [README](packages/export/README.md). See `SPEC.md` for milestones.
 
 ## Events
 

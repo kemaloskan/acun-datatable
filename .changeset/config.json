@@ -4,7 +4,14 @@
   "access": "public",
   "changelog": "@changesets/cli/changelog",
   "commit": false,
-  "fixed": [["@acunsoft/datatable-core", "@acunsoft/datatable-http", "@acunsoft/datatable-dom"]],
+  "fixed": [
+    [
+      "@acunsoft/datatable-core",
+      "@acunsoft/datatable-http",
+      "@acunsoft/datatable-dom",
+      "@acunsoft/datatable-export"
+    ]
+  ],
   "linked": [],
   "updateInternalDependencies": "patch",
   "ignore": [],

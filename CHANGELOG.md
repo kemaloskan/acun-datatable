@@ -7,6 +7,14 @@ All notable changes to this repository. Each npm package also has its own
 
 ### Added
 
+- **Excel and CSV export and import** (new package
+  `@acunsoft/datatable-export`, no dependencies): `tableToSheet`, `toXlsx`
+  (real workbooks: typed numbers, decimals with scale, dates, booleans, bold
+  frozen header; text never becomes a formula; verified in Microsoft Excel),
+  `toCsv` (UTF-8 BOM, formula-injection guard), `parseCsv`, `readXlsx`
+  (shared strings, rich text, date formats, 1904 dates; row, column and
+  inflated-size limits) and `importRows` (header matching, Turkish number and
+  date formats, line-numbered errors instead of guesses). DOM: `downloadFile`.
 - **Column visibility.** Core: `hiddenColumns` state, `setColumnVisibility`,
   `setHiddenColumns`, `getVisibleColumns`, a `columnVisibility` event and the
   column option `enableHiding`. Hidden columns still sort, filter and search;

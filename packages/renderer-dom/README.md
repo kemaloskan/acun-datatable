@@ -116,6 +116,12 @@ A labelled `<input type="search">` bound to the global search. Typing is
 debounced (`debounceMs`, default 250); Enter applies at once. The input follows
 external state changes unless the user is typing in it.
 
+## `downloadFile(data, filename, type?)`
+
+Offers a string or bytes as a download (type from the extension: `.csv`,
+`.xlsx`, `.json`, `.txt`), e.g. with `@acunsoft/datatable-export`:
+`downloadFile(toXlsx(tableToSheet(table)), 'orders.xlsx')`.
+
 ## Labels and styling
 
 `labelsEn` (default) and `labelsTr` cover every visible and screen-reader text;
