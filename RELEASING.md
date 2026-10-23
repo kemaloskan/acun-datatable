@@ -31,10 +31,26 @@ change for users. Commit the generated `.changeset/*.md` with the change.
 2. Start the **Release** workflow by hand (Actions → Release → Run workflow,
    on `main`). It refuses to run while unversioned changesets exist, runs the
    Chromium end-to-end tests, then `npm run release` (check, test, build,
-   `changeset publish` with provenance) and pushes the `@acunsoft/…@x.y.z` tags.
+   `changeset publish` through npm trusted publishing, with provenance) and
+   pushes the `@acunsoft/…@x.y.z` tags. No npm token is involved.
 
-To publish from a machine instead: `npm login`, then `npm run release`, then
-`git push --tags`. Use `npx changeset pack` to inspect the exact tarballs first.
+To publish from a machine instead: `npm login` (with 2FA), then
+`npm run release`, then `git push --tags`. Use `npx changeset pack` to inspect
+the exact tarballs first.
+
+### First release (once)
+
+npm trusted publishing can only be set up for a package that exists, so the
+first version is published from a machine:
+
+1. `npm run version-packages`, review, commit and push (`chore: release 0.1.0`).
+2. `npm login` as `acunsoft` (2FA), then `npm run release` and `git push --tags`.
+3. On npmjs.com, for each of the three packages: Settings → Trusted Publisher →
+   GitHub Actions, organization or user `kemaloskan`, repository
+   `acun-datatable`, workflow `release.yml`. Then set "Publishing access" to
+   require 2FA and disallow tokens.
+
+Every later release goes through the Release workflow.
 
 ## Laravel package (Packagist)
 
@@ -58,9 +74,10 @@ Packagist reads as the version.
 - [x] The `@acunsoft` npm scope belongs to the project owner.
 - [x] `repository`, `homepage`, `bugs` and `author` in each `package.json` and
       `composer.json`.
-- [ ] `NPM_TOKEN` repository secret: an npm automation token with publish
-      rights to `@acunsoft`. After the first release, npm trusted publishing
-      (OIDC) can replace the token.
+- [x] npm account `acunsoft` owns the `@acunsoft` scope.
+- [ ] First release from a machine, then trusted publishers on npmjs.com (see
+      "First release" above). No `NPM_TOKEN` secret: tokens that bypass 2FA
+      are being restricted by npm.
 - [ ] `SPLIT_TOKEN` repository secret: a fine-grained GitHub token with
       "Contents: read and write" on `kemaloskan/datatable-laravel` only.
 - [ ] Submit `https://github.com/kemaloskan/datatable-laravel` on

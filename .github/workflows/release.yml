@@ -9,9 +9,12 @@ concurrency:
   group: release
   cancel-in-progress: false
 
+# npm trusted publishing (OIDC): no npm token is stored anywhere. Each package
+# trusts this repository and this workflow file on npmjs.com (see RELEASING.md);
+# provenance is added automatically. Needs npm 11.5.1+ (Node 24 ships it).
 permissions:
   contents: write # push the release tags
-  id-token: write # npm provenance
+  id-token: write # npm trusted publishing
 
 jobs:
   publish:
@@ -36,9 +39,7 @@ jobs:
       - run: npx playwright install --with-deps chromium
       - run: npm run e2e:chromium
       # check + test + build + changeset publish (only versions not yet on npm).
+      - run: npm --version
       - run: npm run release
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-          NPM_CONFIG_PROVENANCE: 'true'
       - name: Push release tags
         run: git push --tags
