@@ -254,6 +254,10 @@ const API = [
     ["renderPagination(container, table, options?)", {tr:"Önceki/sonraki, canlı durum metni, sayfa boyutu seçimi.", en:"Previous/next, live status, page-size select."}],
     ["renderSearch(container, table, options?)", {tr:"Gecikmeli arama kutusu; Enter hemen uygular.", en:"Debounced search box; Enter applies at once."}],
   ]],
+  ['@acunsoft/datatable-vue', [
+    ["useDataTable(options) · useTable(table)", {tr:"Reaktif tablo: state, sayfa, görünen kolonlar; bileşenle birlikte temizlenir.", en:"A reactive table: state, page, visible columns; cleaned up with the component."}],
+    ["<AcunDataTable> · <AcunPagination> · <AcunSearch> · <AcunColumnToggle> · <AcunBulkActions>", {tr:"DOM renderer ile aynı erişilebilir işaretleme; özel hücreler için cell-<id> slot'ları.", en:"The DOM renderer's accessible markup; cell-<id> slots for custom cells."}],
+  ]],
   ['@acunsoft/datatable-export', [
     ["tableToSheet(table, { rows, columns })", {tr:"Görünen tablo: başlıklar ve tipli değerler (sayı, ondalık, tarih, mantıksal); tüm satırlar, sayfa ya da seçim.", en:"The visible table: headers and typed values (numbers, decimals, dates, booleans); all rows, the page or the selection."}],
     ["toXlsx(sheet) · toCsv(sheet, { delimiter })", {tr:"Gerçek Excel dosyası (metin asla formül olmaz) ve formül enjeksiyonuna karşı korumalı CSV.", en:"A real Excel workbook (text never becomes a formula) and CSV with a formula-injection guard."}],
@@ -422,27 +426,35 @@ const table = createDataTable({
 renderSearch(document.querySelector('#search'), table, { labels: labelsTr });
 renderTable(document.querySelector('#orders'), table, { caption: 'Siparişler', selectable: true, locale: 'tr', labels: labelsTr });
 renderPagination(document.querySelector('#pages'), table, { labels: labelsTr });` },
-  vue:{ name:"Vue", pkg:"@acunsoft/datatable-vue", status:"planned",
-    lead:{tr:"Vue 3 adapter'ı: çekirdeği bir composable ve <code>&lt;DataTable&gt;</code> bileşeniyle sunacak.",
-          en:"Vue 3 adapter: will expose the core as a composable and a <code>&lt;DataTable&gt;</code> component."},
-    note:{tr:"Vue 3.4+ peer dependency olarak gerekecek. State reaktif olacak ve çekirdeğin değişmez anlık durumlarını izleyecek.",
-          en:"Will require Vue 3.4+ as a peer dependency. State will be reactive and track the core's immutable snapshots."},
+  vue:{ name:"Vue", pkg:"@acunsoft/datatable-vue", status:"ready",
+    install:"npm install vue @acunsoft/datatable-core @acunsoft/datatable-vue",
+    lead:{tr:"Vue 3 bileşenleri ve composable'ları: erişilebilir tablo, sayfalama, arama, kolon menüsü ve toplu işlemler; özel hücreler için slot'lar. Render fonksiyonlarıyla yazıldı, ek derleme eklentisi gerekmez.",
+          en:"Vue 3 components and composables: an accessible table, pagination, search, a column menu and bulk actions, with slots for custom cells. Written with render functions; no build plugin needed."},
+    note:{tr:"Vue 3.4+ peer dependency. Bileşenler DOM renderer ile aynı işaretlemeyi ve <code>adt-*</code> sınıflarını kullanır; aynı <code>styles.css</code> uygulanır. Değerler Vue tarafından metin olarak yazılır, <code>v-html</code> kullanılmaz.",
+          en:"Vue 3.4+ peer dependency. The components use the DOM renderer's markup and <code>adt-*</code> classes, so the same <code>styles.css</code> applies. Values are rendered as text by Vue; <code>v-html</code> is never used."},
     lang:"xml", code:
 `<script setup lang="ts">
-// Taslak API — paket henüz yazılmadı. / Draft API — not implemented yet.
-import { useDataTable, DataTable } from '@acunsoft/datatable-vue';
+import { ref } from 'vue';
+import { AcunDataTable, AcunPagination, AcunSearch, labelsTr, useDataTable } from '@acunsoft/datatable-vue';
+import '@acunsoft/datatable-dom/styles.css';
 
-const table = useDataTable({
+const orders = ref([]);
+const { table } = useDataTable({
   data: orders,
   columns: [
-    { id: 'customer', header: 'Müşteri', accessorKey: 'customer', enableSorting: true },
+    { id: 'customer', header: 'Müşteri', accessorKey: 'customer', enableSorting: true, enableFiltering: true },
     { id: 'total', header: 'Tutar', accessorKey: 'total', type: 'decimal', enableSorting: true },
   ],
+  locale: 'tr',
 });
 <\/script>
 
 <template>
-  <DataTable :table="table" />
+  <AcunSearch :table="table" :labels="labelsTr" />
+  <AcunDataTable :table="table" caption="Siparişler" locale="tr" selectable :labels="labelsTr">
+    <template #cell-total="{ text }"><strong>{{ text }} ₺</strong></template>
+  </AcunDataTable>
+  <AcunPagination :table="table" :labels="labelsTr" />
 </template>` },
   react:{ name:"React", pkg:"@acunsoft/datatable-react", status:"planned",
     lead:{tr:"React adapter'ı: çekirdeği bir hook ve hazır bir bileşenle saracak.",
@@ -489,7 +501,7 @@ const T = {
        h_s2:"Neler var?", h_s2d:"Her ortamda aynı çekirdek yetenekler.",
        h_s3:"Kod örneği", h_s3d:"Çekirdek bugün kullanılabilir.",
        h_core_install:"Paketler henüz npm'de yayınlanmadı. Yayından sonra yalnızca çekirdek için:", go:"İncele →",
-       fw_desc:{vue:"Planlanıyor: composable ve bileşen.",react:"Planlanıyor: hook ve bileşen.",html:"Hazır: framework olmadan DOM renderer.",laravel:"Hazır: Livewire tablosu ve JSON uç nokta, tek Composer paketi."},
+       fw_desc:{vue:"Hazır: composable\'lar ve bileşenler.",react:"Planlanıyor: hook ve bileşen.",html:"Hazır: framework olmadan DOM renderer.",laravel:"Hazır: Livewire tablosu ve JSON uç nokta, tek Composer paketi."},
        api_title:"API referansı", api_lead:"Depodaki dört paketin genel API'si: çekirdek, HTTP, DOM ve Laravel. Henüz npm'de ve Packagist'te yayınlanmadılar.",
        a_s1:"Fonksiyonlar", a_s1d:"İmza ve kısa açıklama.", a_s2:"Örnek", a_s2d:"Fonksiyonların birlikte kullanımı." },
   en:{ nav_start:"Getting started", nav_fw:"Frameworks", nav_api:"API", cta:"Get started",
@@ -513,7 +525,7 @@ const T = {
        h_s2:"What's inside?", h_s2d:"The same core capabilities everywhere.",
        h_s3:"Code example", h_s3d:"The core is available today.",
        h_core_install:"The packages are not on npm yet. After release, core only:", go:"Open →",
-       fw_desc:{vue:"Planned: composable and component.",react:"Planned: hook and component.",html:"Ready: DOM renderer, no framework.",laravel:"Ready: a Livewire table and a JSON endpoint, one Composer package."},
+       fw_desc:{vue:"Ready: composables and components.",react:"Planned: hook and component.",html:"Ready: DOM renderer, no framework.",laravel:"Ready: a Livewire table and a JSON endpoint, one Composer package."},
        api_title:"API reference", api_lead:"Public API of the four packages in the repository: core, HTTP, DOM and Laravel. They are not published to npm or Packagist yet.",
        a_s1:"Functions", a_s1d:"Signature and short description.", a_s2:"Example", a_s2d:"Using the functions together." }
 };

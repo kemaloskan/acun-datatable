@@ -1,0 +1,200 @@
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { createApp, defineComponent, h, nextTick, ref, type App, type Component } from 'vue';
+import { createDataTable, type ColumnDef, type Row } from '@acunsoft/datatable-core';
+import {
+  AcunBulkActions, AcunColumnToggle, AcunDataTable, AcunPagination, AcunSearch, labelsTr, useDataTable, type BulkSelection,
+} from '../src/index';
+
+type Order = { id: number; customer: string; total: string; locked?: boolean };
+const columns: readonly ColumnDef<Order>[] = [
+  { id: 'customer', header: 'Müşteri', accessorKey: 'customer', enableSorting: true, enableFiltering: true },
+  { id: 'total', header: 'Tutar', accessorKey: 'total', type: 'decimal', enableSorting: true },
+];
+const orders: Order[] = [
+  { id: 1, customer: 'Ayşe', total: '1250.50' },
+  { id: 2, customer: 'Ali', total: '90.00', locked: true },
+  { id: 3, customer: 'Can', total: '400.00' },
+];
+
+let host: HTMLElement;
+let app: App | undefined;
+beforeEach(() => {
+  document.body.replaceChildren();
+  host = document.createElement('div');
+  document.body.append(host);
+});
+afterEach(() => { app?.unmount(); app = undefined; vi.useRealTimers(); });
+const mount = async (render: () => ReturnType<typeof h>): Promise<void> => {
+  app = createApp(defineComponent({ setup: () => render }) as Component);
+  app.mount(host);
+  await nextTick();
+};
+const make = (pageSize = 10) => createDataTable<Order>({ data: orders, columns, initialState: { pageSize } });
+const texts = (selector: string) => [...host.querySelectorAll(selector)].map(node => node.textContent);
+
+describe('AcunDataTable', () => {
+  it('renders the same accessible markup as the DOM renderer and follows the table', async () => {
+    const table = make();
+    await mount(() => h(AcunDataTable, { table, caption: 'Siparişler', locale: 'tr', selectable: true }));
+    expect(host.querySelector('caption')!.textContent).toBe('Siparişler');
+    expect(texts('thead th.adt-th')).toEqual(['Müşteri', 'Tutar']);
+    expect(texts('tbody tr:first-child td:not(.adt-select)')).toEqual(['Ayşe', '1.250,50']);
+    expect(host.querySelector('tbody td')!.querySelector('input')!.getAttribute('aria-label')).toBe('Select Ayşe');
+
+    host.querySelector<HTMLButtonElement>('th button')!.click();
+    await nextTick();
+    expect(table.getState().sorting).toEqual([{ field: 'customer', direction: 'asc' }]);
+    expect(host.querySelector('th[aria-sort]')!.getAttribute('aria-sort')).toBe('ascending');
+    expect(texts('tbody td:nth-child(2)')).toEqual(['Ali', 'Ayşe', 'Can']);
+
+    const totalButton = host.querySelectorAll<HTMLButtonElement>('th button')[1]!;
+    totalButton.dispatchEvent(new MouseEvent('click', { shiftKey: true, bubbles: true }));
+    await nextTick();
+    expect(texts('.adt-sort-mark')).toEqual(['▲1', '▲2']);
+  });
+
+  it('selects rows and the page, with an indeterminate page checkbox', async () => {
+    const table = make();
+    await mount(() => h(AcunDataTable, { table, selectable: true }));
+    const boxes = () => [...host.querySelectorAll<HTMLInputElement>('input[type="checkbox"]')];
+    boxes()[2]!.click();
+    await nextTick();
+    expect(table.getState().selectedIds).toEqual(['2']);
+    expect(boxes()[0]!.indeterminate).toBe(true);
+    expect(host.querySelector('tr.adt-row--selected')!.getAttribute('data-row-id')).toBe('2');
+    boxes()[0]!.click();
+    await nextTick();
+    expect(table.getState().selectedIds).toEqual(['2', '1', '3']);
+    expect(boxes()[0]!.checked).toBe(true);
+  });
+
+  it('renders custom cells through slots and keeps values as text', async () => {
+    const table = createDataTable<Order>({ data: [{ id: 1, customer: '<img src=x onerror=alert(1)>', total: '1' }], columns });
+    await mount(() => h(AcunDataTable, { table }, {
+      'cell-total': ({ text }: { text: string }) => h('strong', `${text} ₺`),
+      empty: () => 'boş',
+    }));
+    expect(host.querySelector('td strong')!.textContent).toBe('1 ₺');
+    expect(host.querySelector('img')).toBeNull();
+    expect(host.querySelector('td')!.textContent).toBe('<img src=x onerror=alert(1)>');
+    table.setGlobalSearch('nobody');
+    await nextTick();
+    expect(host.querySelector('.adt-empty td')!.textContent).toBe('boş');
+  });
+
+  it('adds row actions named after the row, hidden or disabled per row', async () => {
+    const remove = vi.fn();
+    await mount(() => h(AcunDataTable, {
+      table: make(), labels: labelsTr,
+      rowActions: [{ id: 'delete', label: 'Sil', onSelect: remove, disabled: (row: Row<Order>) => row.original.locked === true }],
+    }));
+    const buttons = [...host.querySelectorAll<HTMLButtonElement>('.adt-action')];
+    expect(buttons.map(button => button.getAttribute('aria-label'))).toEqual(['Ayşe: Sil', 'Ali: Sil', 'Can: Sil']);
+    expect(texts('thead th')).toContain('İşlemler');
+    buttons[1]!.click();
+    expect(remove).not.toHaveBeenCalled();
+    buttons[0]!.click();
+    expect(remove.mock.calls[0]![0].original).toBe(orders[0]);
+  });
+
+  it('shows loading and error states from a status source', async () => {
+    let listener: (state: { status: string }) => void = () => undefined;
+    let current = 'loading';
+    const retry = vi.fn();
+    const status = { getState: () => ({ status: current as 'loading' }), subscribe: (fn: typeof listener) => { listener = fn; return () => undefined; }, retry };
+    await mount(() => h(AcunDataTable, { table: make(), status }));
+    expect(host.querySelector('.adt-table-wrap')!.getAttribute('aria-busy')).toBe('true');
+    expect(host.querySelector('[role="status"]')!.textContent).toBe('Loading…');
+    current = 'error';
+    listener({ status: 'error' });
+    await nextTick();
+    expect(host.querySelector('[role="alert"]')!.textContent).toContain('The data could not be loaded.');
+    host.querySelector<HTMLButtonElement>('.adt-retry')!.click();
+    expect(retry).toHaveBeenCalled();
+  });
+});
+
+describe('controls', () => {
+  it('paginates with aria-disabled ends and a page-size select', async () => {
+    const table = make(2);
+    await mount(() => h(AcunPagination, { table, pageSizes: [2, 10], labels: labelsTr }));
+    expect(host.querySelector('.adt-status')!.textContent).toBe('Sayfa 1 / 2 · 3 kayıt');
+    expect(host.querySelector('.adt-previous')!.getAttribute('aria-disabled')).toBe('true');
+    host.querySelector<HTMLButtonElement>('.adt-next')!.click();
+    await nextTick();
+    expect(table.getState().page).toBe(2);
+    expect(host.querySelector('.adt-next')!.getAttribute('aria-disabled')).toBe('true');
+    const select = host.querySelector('select')!;
+    select.value = '10';
+    select.dispatchEvent(new Event('change'));
+    await nextTick();
+    expect(table.getState()).toMatchObject({ page: 1, pageSize: 10 });
+  });
+
+  it('debounces search and follows external changes', async () => {
+    vi.useFakeTimers();
+    const table = make();
+    await mount(() => h(AcunSearch, { table, debounceMs: 100, labels: labelsTr }));
+    const input = host.querySelector('input')!;
+    expect(host.querySelector('label span')!.textContent).toBe('Ara');
+    input.value = 'ay';
+    input.dispatchEvent(new Event('input'));
+    vi.advanceTimersByTime(99);
+    expect(table.getState().globalSearch).toBe('');
+    vi.advanceTimersByTime(1);
+    expect(table.getState().globalSearch).toBe('ay');
+    table.setGlobalSearch('ali');
+    await nextTick();
+    expect(input.value).toBe('ali');
+  });
+
+  it('toggles columns and runs bulk actions', async () => {
+    const table = make();
+    const archive = vi.fn();
+    await mount(() => h('div', [
+      h(AcunColumnToggle, { table }),
+      h(AcunBulkActions, { table, actions: [{ id: 'archive', label: 'Archive', onSelect: archive, disabled: (selection: BulkSelection<Order>) => selection.rows.length > 5 }] }),
+      h(AcunDataTable, { table }),
+    ]));
+    expect(host.querySelector<HTMLElement>('.adt-selection')!.hidden).toBe(true);
+    const box = host.querySelector<HTMLInputElement>('input[value="total"]')!;
+    box.checked = false;
+    box.dispatchEvent(new Event('change'));
+    await nextTick();
+    expect(texts('thead th')).toEqual(['Müşteri']);
+    expect(host.querySelector<HTMLInputElement>('input[value="customer"]')!.disabled).toBe(true); // last visible
+
+    table.selectRows(['1', '3']);
+    await nextTick();
+    expect(host.querySelector('.adt-selection-count')!.textContent).toBe('2 selected');
+    host.querySelector<HTMLButtonElement>('.adt-bulk-action')!.click();
+    expect(archive.mock.calls[0]![0].ids).toEqual(['1', '3']);
+  });
+});
+
+describe('useDataTable', () => {
+  it('creates a table that follows a data ref and is destroyed with the component', async () => {
+    const data = ref<Order[]>(orders.slice(0, 1));
+    let binding!: ReturnType<typeof useDataTable<Order>>;
+    app = createApp(defineComponent({
+      setup() {
+        binding = useDataTable<Order>({ data, columns }); // composables run in setup
+        return () => h('p', String(binding.page.value.totalRows));
+      },
+    }));
+    app.mount(host);
+    await nextTick();
+    expect(host.textContent).toBe('1');
+    data.value = orders;
+    await nextTick();
+    await nextTick();
+    expect(host.textContent).toBe('3');
+    const listener = vi.fn();
+    binding.table.subscribe(listener);
+    app!.unmount();
+    app = undefined;
+    binding.table.setPage(1);
+    binding.table.setGlobalSearch('x');
+    expect(listener).not.toHaveBeenCalled(); // destroyed
+  });
+});

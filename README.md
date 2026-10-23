@@ -73,7 +73,9 @@ and provides a Livewire table (`WithDataTable`); see its
 an accessible table, pagination and search; see its
 [README](packages/renderer-dom/README.md). `@acunsoft/datatable-export` (in
 `packages/export`) writes CSV and real `.xlsx` files and imports them with
-typed validation; see its [README](packages/export/README.md). See `SPEC.md` for milestones.
+typed validation; see its [README](packages/export/README.md).
+`@acunsoft/datatable-vue` (in `packages/vue`) provides Vue 3 components and
+composables; see its [README](packages/vue/README.md). See `SPEC.md` for milestones.
 
 ## Events
 

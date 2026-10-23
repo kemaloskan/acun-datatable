@@ -7,6 +7,12 @@ All notable changes to this repository. Each npm package also has its own
 
 ### Added
 
+- **Vue 3 adapter** (new package `@acunsoft/datatable-vue`, peer `vue ^3.4`):
+  `useDataTable` (data as array, ref or getter; destroyed with the
+  component), `useTable`, and `AcunDataTable` (cell slots), `AcunPagination`,
+  `AcunSearch`, `AcunColumnToggle`, `AcunBulkActions` with the DOM renderer's
+  markup, classes and accessibility. The DOM package now exports the shared
+  `createCellText`, `cellValue`, `nextSorting` and `rowName`.
 - **Excel and CSV export and import** (new package
   `@acunsoft/datatable-export`, no dependencies): `tableToSheet`, `toXlsx`
   (real workbooks: typed numbers, decimals with scale, dates, booleans, bold

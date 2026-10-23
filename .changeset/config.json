@@ -9,7 +9,8 @@
       "@acunsoft/datatable-core",
       "@acunsoft/datatable-http",
       "@acunsoft/datatable-dom",
-      "@acunsoft/datatable-export"
+      "@acunsoft/datatable-export",
+      "@acunsoft/datatable-vue"
     ]
   ],
   "linked": [],

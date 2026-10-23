@@ -9,3 +9,4 @@ export {
 } from './actions';
 export { renderColumnToggle, type RenderColumnToggleOptions } from './columns';
 export { downloadFile } from './download';
+export { cellValue, createCellText, nextSorting, rowName, type CellTextOptions } from './cells';

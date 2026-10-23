@@ -1,10 +1,10 @@
-import { isDecimal, normalizeValue, type ColumnDef, type DataTable, type Row, type SortRule } from '@acunsoft/datatable-core';
+import type { DataTable, Row } from '@acunsoft/datatable-core';
 import { actionCell, checkActions, type RowAction } from './actions';
+import { createCellText, nextSorting, rowName, type CellFormatter } from './cells';
 import { checkTarget, element, keepFocus, type RenderedComponent } from './dom';
 import { labelsEn, type DataTableLabels } from './labels';
 
-/** Turns a cell value into plain text. It must return a string; HTML is never interpreted. */
-export type CellFormatter<TData> = (value: unknown, row: Row<TData>) => string;
+export type { CellFormatter } from './cells';
 
 /**
  * Loading state of a remote table, e.g. the HTTP package's `createQueryRunner`.
@@ -42,16 +42,6 @@ export interface RenderTableOptions<TData> {
   readonly rowActions?: readonly RowAction<TData>[];
 }
 
-function nextSorting(current: readonly Readonly<SortRule>[], field: string, additive: boolean): SortRule[] {
-  const existing = current.find(rule => rule.field === field);
-  const direction = !existing ? 'asc' : existing.direction === 'asc' ? 'desc' : undefined;
-  if (!additive) return direction ? [{ field, direction }] : [];
-  if (!existing) return [...current, { field, direction: 'asc' }];
-  return direction
-    ? current.map(rule => (rule.field === field ? { field, direction } : rule))
-    : current.filter(rule => rule.field !== field);
-}
-
 /**
  * Render a semantic, accessible `<table>` for a `createDataTable` instance and
  * keep it in sync.
@@ -71,14 +61,7 @@ export function renderTable<TData>(
   const doc = container.ownerDocument;
   const labels: DataTableLabels = { ...labelsEn, ...options.labels };
   const locale = options.locale ?? 'en';
-  const numbers = new Intl.NumberFormat(locale);
-  const dates = new Intl.DateTimeFormat(locale, { dateStyle: 'medium' });
-  const dateTimes = new Intl.DateTimeFormat(locale, { dateStyle: 'medium', timeStyle: 'short' });
-  const ids = new Set(table.getColumns().map(column => column.id));
-  for (const [id, formatter] of Object.entries(options.format ?? {})) {
-    if (!ids.has(id)) throw new Error(`unknown format column ID: ${id}`);
-    if (typeof formatter !== 'function') throw new TypeError(`format for column "${id}" must be a function`);
-  }
+  const text = createCellText(table.getColumns(), { locale, labels, ...(options.format ? { format: options.format } : {}) });
   if (options.rowLabel !== undefined && typeof options.rowLabel !== 'function') {
     throw new TypeError('rowLabel must be a function');
   }
@@ -90,43 +73,7 @@ export function renderTable<TData>(
     throw new TypeError('status must have getState and subscribe');
   }
 
-  const scaled = new Map<number, Intl.NumberFormat>();
-  const decimalFormat = (scale: number): Intl.NumberFormat => {
-    let format = scaled.get(scale);
-    if (!format) {
-      format = new Intl.NumberFormat(locale, { minimumFractionDigits: scale, maximumFractionDigits: scale });
-      scaled.set(scale, format);
-    }
-    return format;
-  };
-  const text = (column: ColumnDef<TData>, row: Row<TData>): string => {
-    const raw = column.accessorFn
-      ? column.accessorFn(row.original)
-      : (row.original as Record<PropertyKey, unknown>)[column.accessorKey as PropertyKey];
-    const formatter = options.format?.[column.id];
-    if (formatter) {
-      const output = formatter(raw, row);
-      if (typeof output !== 'string') throw new TypeError(`format for column "${column.id}" must return a string`);
-      return output;
-    }
-    // Typed columns read text values ("1250.50", "2026-10-23") as their type;
-    // an unreadable value is shown as written rather than hidden.
-    const value = column.type === undefined ? raw : normalizeValue(raw, column.type) ?? raw;
-    if (value == null) return '';
-    if (typeof value === 'number') return Number.isNaN(value) ? '' : numbers.format(value);
-    if (isDecimal(value)) return decimalFormat(value.scale).format(Number(value.text));
-    if (value instanceof Date) {
-      if (Number.isNaN(value.getTime())) return '';
-      return (column.type === 'datetime' ? dateTimes : dates).format(value);
-    }
-    if (typeof value === 'boolean') return value ? labels.yes : labels.no;
-    return String(value);
-  };
-  const nameOf = (row: Row<TData>, cells: readonly string[]): string => {
-    const name = options.rowLabel ? options.rowLabel(row) : (cells[0] ?? '').trim();
-    if (typeof name !== 'string') throw new TypeError('rowLabel must return a string');
-    return name === '' ? row.id : name;
-  };
+  const nameOf = (row: Row<TData>, cells: readonly string[]): string => rowName(row, cells[0] ?? '', options.rowLabel);
 
   const root = element(doc, 'div', { class: 'adt-table-wrap' });
   const scroller = element(doc, 'div', { class: 'adt-scroll' });
