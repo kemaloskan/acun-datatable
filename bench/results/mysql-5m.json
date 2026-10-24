@@ -1,0 +1,154 @@
+{
+  "dialect": "mysql",
+  "rows": 5000000,
+  "runs": 7,
+  "server": "8.0.33",
+  "results": [
+    {
+      "name": "first page (newest first)",
+      "params": "pageSize=25&sort=ordered:desc",
+      "page": {
+        "p50": 0.4324999999953434,
+        "p95": 2.6042919999963487
+      },
+      "count": {
+        "p50": 508.2877920000028,
+        "p95": 596.4874169999966
+      },
+      "limited": {
+        "p50": 1.2152080000014394,
+        "p95": 4.644583000001148
+      },
+      "plan": "index adt_perf_ordered_at_id"
+    },
+    {
+      "name": "page 2",
+      "params": "pageSize=25&sort=ordered:desc&page=2",
+      "page": {
+        "p50": 0.2888749999983702,
+        "p95": 0.5538329999981215
+      },
+      "plan": "index adt_perf_ordered_at_id"
+    },
+    {
+      "name": "page 100,000 by OFFSET",
+      "params": "pageSize=25&sort=ordered:desc&page=100000",
+      "page": {
+        "p50": 11488.989749999993,
+        "p95": 24251.377125
+      },
+      "plan": "ALL"
+    },
+    {
+      "name": "deep page by cursor",
+      "params": "pageSize=25&sort=ordered:desc&paging=cursor&cursor=eyJzIjoiMXhwbHRhaCIsInYiOlt7ImQiOiIyMDIyLTA3LTE1VDE0OjA2OjQwLjAwMFoifSwyNTAwMDAwXX0",
+      "page": {
+        "p50": 0.3684159999829717,
+        "p95": 6.8752499999827705
+      },
+      "plan": "range adt_perf_ordered_at_id"
+    },
+    {
+      "name": "filter status, sort by total",
+      "params": "pageSize=25&sort=total:desc&filters[0][field]=status&filters[0][op]=eq&filters[0][value]=paid",
+      "page": {
+        "p50": 0.501083999988623,
+        "p95": 1.0061249999853317
+      },
+      "count": {
+        "p50": 131.9672079999873,
+        "p95": 141.6837499999965
+      },
+      "limited": {
+        "p50": 1.6237919999985024,
+        "p95": 1.858457999973325
+      },
+      "plan": "ref adt_perf_status_total_id"
+    },
+    {
+      "name": "one month, newest first",
+      "params": "pageSize=25&sort=ordered:desc&filters[0][field]=ordered&filters[0][op]=between&filters[0][value][0]=2023-03-01&filters[0][value][1]=2023-03-31",
+      "page": {
+        "p50": 0.3947500000067521,
+        "p95": 4.698334000015166
+      },
+      "count": {
+        "p50": 9.310375000000931,
+        "p95": 9.797332999994978
+      },
+      "limited": {
+        "p50": 1.7649169999931473,
+        "p95": 1.8904579999798443
+      },
+      "plan": "range adt_perf_ordered_at_id"
+    },
+    {
+      "name": "search \"ayse\" (folded column)",
+      "params": "pageSize=25&sort=ordered:desc&search=ayse",
+      "page": {
+        "p50": 2.8951250000100117,
+        "p95": 2.984415999992052
+      },
+      "count": {
+        "p50": 1817.947542000009,
+        "p95": 1841.7698329999985
+      },
+      "limited": {
+        "p50": 67.75287500000559,
+        "p95": 68.05845800001407
+      },
+      "plan": "index adt_perf_ordered_at_id"
+    },
+    {
+      "name": "search a rare word (3 columns, 1 indexed)",
+      "params": "pageSize=25&search=zzqx",
+      "page": {
+        "p50": 2113.9658749999944,
+        "p95": 2119.1424580000166
+      },
+      "count": {
+        "p50": 1717.1326249999984,
+        "p95": 1724.7682919999934
+      },
+      "limited": {
+        "p50": 1717.550208999979,
+        "p95": 1723.9049999999988
+      },
+      "plan": "index PRIMARY"
+    },
+    {
+      "name": "two filters no index serves, many matches",
+      "params": "pageSize=25&filters[0][field]=city&filters[0][op]=eq&filters[0][value]=Konya&filters[1][field]=status&filters[1][op]=eq&filters[1][value]=cancelled",
+      "page": {
+        "p50": 0.5094999999855645,
+        "p95": 2.698666999989655
+      },
+      "count": {
+        "p50": 6248.313541999989,
+        "p95": 6260.95966600001
+      },
+      "limited": {
+        "p50": 110.75533300000825,
+        "p95": 112.43437499998254
+      },
+      "plan": "index PRIMARY"
+    },
+    {
+      "name": "a rare word in the indexed column",
+      "params": "pageSize=25&filters[0][field]=customer&filters[0][op]=contains&filters[0][value]=zzqx",
+      "page": {
+        "p50": 1630.979290999996,
+        "p95": 1633.2475829999894
+      },
+      "count": {
+        "p50": 657.3449170000094,
+        "p95": 660.2487079999992
+      },
+      "limited": {
+        "p50": 657.5093749999942,
+        "p95": 658.835665999999
+      },
+      "plan": "index PRIMARY"
+    }
+  ]
+}

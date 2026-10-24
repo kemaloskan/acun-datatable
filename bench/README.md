@@ -41,23 +41,37 @@ compare runs on the same machine. Measured results are in `results/`.
 
 ## Measured
 
-Only what a run in `results/` shows. So far: **PostgreSQL 17, 5,000,000
-rows, Apple M2** ([postgres-5m.md](results/postgres-5m.md)).
+Only what a run in `results/` shows. So far: **5,000,000 rows on an Apple
+M2**, each database with its default settings:
+[PostgreSQL 17](results/postgres-5m.md), [MySQL 8.0](results/mysql-5m.md),
+[MariaDB 10.11](results/mariadb-5m.md). p50 of 7 runs:
 
-- A deep page by `OFFSET` (row 2,500,000) took 2.5 s; the same depth by
-  cursor took 0.3 ms, about as long as page 2.
-- An exact `COUNT(*)` of the whole table took 65 ms; counting a search that
-  matches 250,000 rows took 740 ms.
-- The limited count (up to 10,001 matches) took 1–35 ms for most requests,
-  but 716 ms for a rare word no index serves: it read the whole table.
-- A search over three columns, one with a trigram index, scanned the table
-  (718 ms); the same word in the indexed column alone took 0.1 ms.
+| Request | PostgreSQL 17 | MySQL 8.0 | MariaDB 10.11 |
+|---|---|---|---|
+| first page, newest first | 0.4 ms | 0.4 ms | 1.4 ms |
+| middle page by `OFFSET` (row 2,500,000) | 2.45 s | 11.49 s | 3.50 s |
+| the same depth by cursor | 0.3 ms | 0.4 ms | 0.3 ms |
+| exact `COUNT(*)` of the whole table | 66 ms | 508 ms | 515 ms |
+| limited count (up to 10,001), whole table | 0.8 ms | 1.2 ms | 1.8 ms |
+| limited count, a rare word no index serves | 716 ms | 1.72 s | 1.85 s |
+| a rare word in the indexed column | 0.1 ms (trigram) | 1.63 s (no trigram index) | 1.66 s (no trigram index) |
+
+- A cursor page took about as long as page 2 on all three; a deep `OFFSET`
+  page took seconds on all three.
+- The exact count of 5 million rows differs eightfold between the databases.
+- The limited count took milliseconds where an index served the filter, and
+  over a second where none did.
+- `LIKE '%word%'` needs a trigram index (PostgreSQL) to be fast; MySQL and
+  MariaDB scan, so text search there needs a `FULLTEXT` index or a search
+  engine (`searchEngine()`).
+- 128 MB InnoDB buffer pools (the default) are much smaller than these
+  tables; a configured server gives other numbers.
 
 ## Expected, not measured
 
-How the database is expected to behave — check it with a run before relying
-on it, above all at 100 million and 1 billion rows, where nothing has been
-measured yet:
+How the databases are expected to behave — check it with a run before
+relying on it, above all at 100 million and 1 billion rows and on SQL
+Server, where nothing has been measured yet:
 
 - `OFFSET` reads and throws away every row before the page, so deep pages
   get slower with the depth; this is why the Laravel adapter refuses pages
