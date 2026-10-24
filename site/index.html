@@ -869,6 +869,29 @@ const GUIDES = {
       "// Pass the HTTP runner as status; skeleton is on by default.\n\u003cAcunDataTable :table=\"table\" :status=\"runner\" />      // :skeleton=\"false\" to turn off\n\u003cDataTable table={table} status={runner} />             // skeleton={false}"
      ]
     ]
+   },
+   {
+    "id": "datatables",
+    "title": {
+     "tr": "DataTables’tan geçiş",
+     "en": "Moving from DataTables"
+    },
+    "desc": {
+     "tr": "İki yönlü uyumluluk: Laravel uç noktası DataTables isteğini (draw, start, length, order, columns) anlar ve DataTables biçiminde yanıtlar; AcunDataTable da mevcut bir DataTables arka ucuyla (yajra/laravel-datatables) konuşabilir. Önce bir tarafı, sonra diğerini değiştirin.",
+     "en": "Both ways: the Laravel endpoint reads a DataTables request (draw, start, length, order, columns) and answers in its format, and AcunDataTable can talk to an existing DataTables back end (yajra/laravel-datatables). Move one side first, the other later."
+    },
+    "tabs": [
+     [
+      "Eski ön yüz → yeni uç nokta",
+      "php",
+      "// The DataTables page keeps its JavaScript; only the URL changes:\nRoute::get('/api/orders', fn () => TableResponse::for(Order::query())->columns([\n    Column::make('customer')->sortable()->filterable(),\n    Column::make('total')->type('decimal')->sortable(),\n]));\n// $('#orders').DataTable({ serverSide: true, ajax: '/api/orders', columns: [{ data: 'customer' }, { data: 'total' }] });"
+     ],
+     [
+      "Yeni ön yüz → eski arka uç",
+      "typescript",
+      "// AcunDataTable against yajra/laravel-datatables as it is:\nnew AcunDataTable('#orders', {\n  serverSide: true,\n  ajax: { url: '/datatables/orders', protocol: 'datatables' },\n  columns: [{ data: 'customer' }, { data: 'total', type: 'decimal' }],\n});"
+     ]
+    ]
    }
   ]
  },

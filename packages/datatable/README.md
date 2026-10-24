@@ -84,6 +84,12 @@ URL (`GET`) or as a form body (`method: 'POST'`). A POST sends Laravel's
 `{ rows, totalRows }`, Laravel's paginator (`{ data, total }`) or DataTables'
 `{ data, recordsFiltered }`; anything else is read with `ajax.dataSrc`.
 
+**An existing DataTables back end** (yajra/laravel-datatables, the PHP SSP
+class, …) keeps working: `ajax: { url, protocol: 'datatables' }` sends
+DataTables' own `draw`, `start`, `length`, `order[i]`, `columns[i]` and
+`search[value]` (give `columns`, which DataTables addresses by index), and
+`{ draw, recordsTotal, recordsFiltered, data }` is read as it is.
+
 With Laravel, the endpoint is one line (package `acunsoft/datatable-laravel`):
 
 ```php

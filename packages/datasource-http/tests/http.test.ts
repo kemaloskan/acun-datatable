@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { createTableQuery } from '@acunsoft/datatable-core';
 import {
-  createHttpDataSource, createQueryRunner, formatLocalDate, fromLaravelPaginator, HttpError, serializeTableQuery,
+  createHttpDataSource, createQueryRunner, formatLocalDate, fromDataTablesResponse, fromLaravelPaginator, HttpError, serializeDataTablesQuery, serializeTableQuery,
 } from '../src/index';
 
 const json = (body: unknown, init: ResponseInit = {}) =>
@@ -223,5 +223,28 @@ describe('cursor paging', () => {
     expect(url.searchParams.get('cursor')).toBe('eyJpZCI6Mn0');
     expect(result.nextCursor).toBe('eyJpZCI6M30');
     expect(serializeTableQuery(createTableQuery({ page: 1, pageSize: 1 })).has('cursor')).toBe(false);
+  });
+});
+
+describe('DataTables protocol', () => {
+  it('sends draw, start, length, order and columns', () => {
+    const query = createTableQuery({
+      page: 3, pageSize: 10, globalSearch: 'ayşe',
+      sorting: [{ field: 'total', direction: 'desc' }],
+      filters: [{ field: 'city', operator: 'eq', value: 'İzmir' }, { field: 'total', operator: 'gt', value: 100 }],
+    });
+    const params = Object.fromEntries(serializeDataTablesQuery(query, [{ data: 'city' }, { data: 'total', searchable: false }], 4));
+    expect(params).toMatchObject({
+      draw: '4', start: '20', length: '10', 'search[value]': 'ayşe',
+      'columns[0][data]': 'city', 'columns[0][search][value]': 'İzmir', 'columns[1][searchable]': 'false', 'columns[1][search][value]': '',
+      'order[0][column]': '1', 'order[0][dir]': 'desc',
+      'filters[1][field]': 'total', 'filters[1][op]': 'gt', 'filters[1][value]': '100',
+    });
+    expect(() => serializeDataTablesQuery(createTableQuery({ page: 1, pageSize: 10, sorting: [{ field: 'x', direction: 'asc' }] }), [], 1)).toThrow('not one of the DataTables columns');
+  });
+
+  it('reads the DataTables answer and its error', () => {
+    expect(fromDataTablesResponse({ draw: 4, recordsTotal: 90, recordsFiltered: '57', data: [{ id: 1 }] })).toEqual({ rows: [{ id: 1 }], totalRows: 57 });
+    expect(() => fromDataTablesResponse({ error: 'Bad column' })).toThrow('Bad column');
   });
 });

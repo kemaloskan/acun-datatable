@@ -7,7 +7,7 @@ import {
   type CellEdit, type FixedColumns, type MenuItem, type RenderedComponent, type ResponsiveMode, type RowAction, type StatusSource, type TableSize,
 } from '@acunsoft/datatable-dom';
 import { tableToSheet, toCsv, toXlsx, type Sheet } from '@acunsoft/datatable-export';
-import { connectTable, createHttpDataSource, createQueryRunner, type QueryRunner } from '@acunsoft/datatable-http';
+import { connectTable, createHttpDataSource, createQueryRunner, serializeDataTablesQuery, type QueryRunner } from '@acunsoft/datatable-http';
 
 type Data = Record<string, unknown>;
 
@@ -75,6 +75,13 @@ export interface AjaxOptions {
   readonly url: string;
   /** `'GET'` (default) or `'POST'`; POST sends Laravel's `<meta name="csrf-token">` automatically. */
   readonly method?: 'GET' | 'POST';
+  /**
+   * `serverSide` request format: `'acun'` (default: `page`, `pageSize`,
+   * `sort`, `filters`, `search`) or `'datatables'` (`draw`, `start`,
+   * `length`, `order`, `columns`, `search[value]`) for an existing
+   * DataTables back end such as yajra/laravel-datatables. Needs `columns`.
+   */
+  readonly protocol?: 'acun' | 'datatables';
   readonly headers?: HeadersInit | (() => HeadersInit | Promise<HeadersInit>);
   readonly credentials?: RequestCredentials;
   /**
@@ -280,7 +287,15 @@ export class AcunDataTable {
     const ajax = typeof options.ajax === 'string' ? { url: options.ajax } : options.ajax;
 
     if (ajax && options.serverSide) {
+      const datatables = ajax.protocol === 'datatables';
+      if (datatables && !columns) throw new TypeError('AcunDataTable: ajax.protocol "datatables" needs columns (DataTables sends them by index)');
+      let draw = 0;
       const source = createHttpDataSource<Data>({
+        ...(datatables ? {
+          serializeQuery: (query: TableQuery) => serializeDataTablesQuery(query, columns!.map(column => ({
+            data: column.id, searchable: column.enableFiltering === true, orderable: column.enableSorting === true,
+          })), ++draw),
+        } : {}),
         url: ajax.url,
         method: ajax.method ?? 'GET',
         headers: requestHeaders(ajax),

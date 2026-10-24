@@ -266,6 +266,32 @@ describe('columnResize and columnReorder', () => {
   });
 });
 
+describe('DataTables protocol', () => {
+  it('talks to an existing DataTables back end', async () => {
+    const fetch = vi.fn(async (url: string) => {
+      const query = new URL(url, 'http://x').searchParams;
+      const start = Number(query.get('start'));
+      return new Response(JSON.stringify({ draw: Number(query.get('draw')), recordsTotal: 30, recordsFiltered: 30, data: orders.slice(start, start + Number(query.get('length'))) }));
+    });
+    vi.stubGlobal('fetch', fetch);
+    const dt = new AcunDataTable('#orders', {
+      serverSide: true, ajax: { url: '/datatables', protocol: 'datatables' }, pagination: { pageSize: 10 },
+      columns: [{ data: 'customer' }, { data: 'total', type: 'number' }],
+    });
+    await dt.ready;
+    dt.order([{ field: 'total', direction: 'desc' }]);
+    dt.page(2);
+    await vi.waitFor(() => expect(fetch).toHaveBeenCalledTimes(3));
+    const last = new URL(String(fetch.mock.calls.at(-1)![0]), 'http://x').searchParams;
+    expect(Object.fromEntries([...last].filter(([key]) => /^(draw|start|length|order|columns\[1\]\[data\])/.test(key)))).toEqual({
+      draw: '3', start: '10', length: '10', 'order[0][column]': '1', 'order[0][dir]': 'desc', 'columns[1][data]': 'total',
+    });
+    await vi.waitFor(() => expect(info()).toBe('Showing 11 to 20 of 30 rows'));
+    const missing = new AcunDataTable(document.body.appendChild(document.createElement('div')), { serverSide: true, ajax: { url: '/x', protocol: 'datatables' } });
+    await expect(missing.ready).rejects.toThrow('needs columns');
+  });
+});
+
 describe('cursor paging', () => {
   it('asks for keyset pages and follows nextCursor', async () => {
     const fetch = vi.fn(async (url: string) => {

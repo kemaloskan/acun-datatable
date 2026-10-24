@@ -79,6 +79,11 @@ and invalid values and leaves out empty `contains` filters and empty search. The
 answers `{ "rows": [...], "totalRows": 185920 }` (`totalRows` may be omitted when
 unknown), or Laravel's paginator JSON with `parseResponse: fromLaravelPaginator`.
 
+**DataTables protocol.** `serializeQuery: query => serializeDataTablesQuery(query, columns, ++draw)`
+and `parseResponse: fromDataTablesResponse` talk to an existing DataTables
+back end (yajra/laravel-datatables, the PHP SSP class): `draw`, `start`,
+`length`, `order[i]`, `columns[i]` and `search[value]`.
+
 **Cursor (keyset) paging.** With `createDataTable({ mode: 'server', paging:
 'cursor' })` and `createHttpDataSource({ paging: 'cursor' })` every request
 carries `paging=cursor`, and pages after the first `cursor=` (the previous
