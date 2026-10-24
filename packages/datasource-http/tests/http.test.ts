@@ -212,3 +212,16 @@ describe('first-review leftovers', () => {
     ]);
   });
 });
+
+describe('cursor paging', () => {
+  it('sends paging=cursor and the cursor, and reads nextCursor', async () => {
+    const fetch = okFetch({ rows: [{ id: 3 }], nextCursor: 'eyJpZCI6M30' });
+    const source = createHttpDataSource({ url: '/api/orders', fetch, paging: 'cursor' });
+    const result = await source.getPage(createTableQuery({ page: 2, pageSize: 1, cursor: 'eyJpZCI6Mn0' }));
+    const url = new URL(String(fetch.mock.calls[0]![0]), 'http://x');
+    expect(url.searchParams.get('paging')).toBe('cursor');
+    expect(url.searchParams.get('cursor')).toBe('eyJpZCI6Mn0');
+    expect(result.nextCursor).toBe('eyJpZCI6M30');
+    expect(serializeTableQuery(createTableQuery({ page: 1, pageSize: 1 })).has('cursor')).toBe(false);
+  });
+});

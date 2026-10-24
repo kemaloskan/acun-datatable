@@ -266,6 +266,30 @@ describe('columnResize and columnReorder', () => {
   });
 });
 
+describe('cursor paging', () => {
+  it('asks for keyset pages and follows nextCursor', async () => {
+    const fetch = vi.fn(async (url: string) => {
+      const query = new URL(url, 'http://x').searchParams;
+      const after = Number(query.get('cursor') ?? 0);
+      const rows = orders.slice(after, after + 10);
+      return new Response(JSON.stringify({ rows, totalRows: 30, ...(after + 10 < 30 ? { nextCursor: String(after + 10) } : {}) }));
+    });
+    vi.stubGlobal('fetch', fetch);
+    const dt = new AcunDataTable('#orders', {
+      serverSide: true, ajax: '/api/orders', pagination: { pageSize: 10, cursor: true }, columns: [{ data: 'customer' }],
+    });
+    await dt.ready;
+    const first = new URL(String(fetch.mock.calls[0]![0]), 'http://x').searchParams;
+    expect(first.get('paging')).toBe('cursor');
+    expect(first.has('cursor')).toBe(false);
+    expect([...document.querySelectorAll('.adt-page-numbers > *')].map(node => node.textContent)).toEqual(['1', '2']); // only pages a cursor leads to
+    dt.page(2);
+    await vi.waitFor(() => expect(document.querySelector('tbody td')!.textContent).toBe('Ayşe 11'));
+    expect(new URL(String(fetch.mock.calls.at(-1)![0]), 'http://x').searchParams.get('cursor')).toBe('10');
+    expect(info()).toBe('Showing 11 to 20 of 30 rows');
+  });
+});
+
 describe('editing in place', () => {
   it('saves through onEdit and shows the new value', async () => {
     const onEdit = vi.fn(async () => undefined);

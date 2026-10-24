@@ -36,6 +36,12 @@ export interface HttpDataSourceOptions {
    * change data. Laravel needs the CSRF token in `headers` for POST routes.
    */
   readonly method?: 'GET' | 'POST';
+  /**
+   * `'cursor'` asks the server for keyset pages (`paging=cursor`, and
+   * `cursor=` from the page before), for tables created with
+   * `paging: 'cursor'`. Default `'pages'`.
+   */
+  readonly paging?: 'pages' | 'cursor';
 }
 
 function encodeValue(value: unknown, field: string): string {
@@ -49,7 +55,8 @@ function encodeValue(value: unknown, field: string): string {
 /**
  * Default wire format, readable by PHP/Laravel and Node `qs` as nested arrays:
  * `page=2&pageSize=25&sort=total:desc,customer:asc`
- * `&filters[0][field]=total&filters[0][op]=gt&filters[0][value]=100&search=ayşe`.
+ * `&filters[0][field]=total&filters[0][op]=gt&filters[0][value]=100&search=ayşe`
+ * (`&cursor=…` with cursor paging).
  * `between` and `in` send `filters[i][value][0..n]`; `empty` / `notEmpty` send
  * no value. `search` is the raw text: servers should apply the same smart
  * search (split into words, quoted phrases kept together, every word must
@@ -74,6 +81,7 @@ export function serializeTableQuery(query: TableQuery): URLSearchParams {
     } // empty / notEmpty carry no value
   });
   if (query.globalSearch !== undefined) params.set('search', query.globalSearch);
+  if (query.cursor !== undefined) params.set('cursor', query.cursor);
   return params;
 }
 
@@ -116,7 +124,9 @@ export function createHttpDataSource<TData = Record<string, unknown>>(options: H
       if (query.pageSize > maxPageSize) {
         throw new RangeError(`pageSize ${query.pageSize} exceeds maxPageSize ${maxPageSize}`);
       }
-      const params = serialize(query).toString();
+      const serialized = serialize(query);
+      if (options.paging === 'cursor') serialized.set('paging', 'cursor');
+      const params = serialized.toString();
       // Query parameters go before any #fragment: '/a?x=1#top' -> '/a?x=1&page=..#top'.
       const hash = url.indexOf('#');
       const base = hash === -1 ? url : url.slice(0, hash);

@@ -42,7 +42,8 @@ table.setFilters([{ field: 'total', operator: 'between', value: ['100', '500'] }
   (within `COLUMN_WIDTH_LIMITS`); `getVisibleColumns()` follows the order.
   Hidden columns still sort, filter and search; none of it changes the query.
 - **Pagination and selection,** local or server mode (`mode: 'server'` with
-  `setPageResult`). `getPageItems(page, pageCount, { siblings, boundaries })`
+  `setPageResult`); `paging: 'cursor'` sends the previous page's
+  `nextCursor` (keyset) instead of a page offset. `getPageItems(page, pageCount, { siblings, boundaries })`
   gives the numbers of a pager (`1 … 4 5 6 … 20`) with a fixed length, so it
   never changes width.
 - **Responsive priority:** `priority: 1 | 2 | 3` on a column tells renderers

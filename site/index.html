@@ -1355,6 +1355,39 @@ const GUIDES = {
      "php",
      "// Folded copy for Turkish, case- and accent-insensitive search (ayse → Ayşe):\nSchema::table('orders', fn (Blueprint $table) => $table->string('customer_search')->index());\n// PostgreSQL: CREATE EXTENSION pg_trgm;\n// CREATE INDEX orders_customer_trgm ON orders USING gin (customer_search gin_trgm_ops);\n\n// Filters used together: equality first, then the range.\n// CREATE INDEX orders_status_ordered ON orders (status, ordered_at, id);\n\nColumn::make('customer')->sortable()->filterable()->searchUsing('customer_search');"
     ]
+   },
+   {
+    "id": "cursor",
+    "title": {
+     "tr": "Cursor sayfalama",
+     "en": "Cursor paging"
+    },
+    "desc": {
+     "tr": "Derin sayfalar OFFSET yerine son satırdan devam eder: 5 milyon satırda 100.001. sayfa 3.898 ms yerine 55,5 ms (sayım dahil, 2. sayfa ile aynı). Sayfalara sırayla gidilir; sıralama kolonları NULL içermemeli.",
+     "en": "Deep pages continue after the last row instead of an OFFSET: on 5 million rows page 100,001 takes 55.5 ms instead of 3,898 ms (count included, the same as page 2). Pages are reached one after another; sort columns should not hold NULLs."
+    },
+    "tabs": [
+     [
+      "AcunDataTable",
+      "typescript",
+      "new AcunDataTable('#orders', {\n  serverSide: true,\n  ajax: '/api/orders',\n  pagination: { pageSize: 25, cursor: true },   // sends paging=cursor&cursor=…\n});"
+     ],
+     [
+      "Livewire",
+      "php",
+      "protected function cursorPaging(): bool\n{\n    return true;   // no result window; the pager offers the pages seen and the next one\n}"
+     ],
+     [
+      "JSON uç noktası",
+      "php",
+      "// Nothing to set: TableResponse answers paging=cursor with nextCursor.\nRoute::get('/api/orders', fn () => TableResponse::for(Order::query())->columns([...]));"
+     ],
+     [
+      "Vue / React",
+      "typescript",
+      "const table = createDataTable({ mode: 'server', paging: 'cursor', columns });\nconst source = createHttpDataSource({ url: '/api/orders', paging: 'cursor' });"
+     ]
+    ]
    }
   ]
  },

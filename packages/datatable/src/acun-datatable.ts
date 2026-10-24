@@ -114,6 +114,12 @@ export interface AcunDataTableOptions {
     readonly boundaries?: number;
     /** Also show « and ». */
     readonly firstLast?: boolean;
+    /**
+     * `serverSide`: keyset pages (`paging=cursor`): every page costs the same
+     * at any depth, with no result window; pages are reached one after
+     * another. The Laravel `TableResponse` answers it with `nextCursor`.
+     */
+    readonly cursor?: boolean;
   };
   readonly sorting?: boolean | {
     readonly enabled?: boolean;
@@ -273,6 +279,7 @@ export class AcunDataTable {
         headers: requestHeaders(ajax),
         parseResponse: body => serverRows(body, ajax.dataSrc),
         maxPageSize: 1000,
+        ...(cursorPaging(options) ? { paging: 'cursor' as const } : {}),
         ...(ajax.credentials ? { credentials: ajax.credentials } : {}),
       });
       let primed: PageResult<Data> | undefined;
@@ -351,6 +358,7 @@ export class AcunDataTable {
     let next = 0;
     const table = createDataTable<Data>({
       mode,
+      ...(mode === 'server' && cursorPaging(options) ? { paging: 'cursor' as const } : {}),
       columns,
       ...(mode === 'local' ? { data: data ?? [] } : {}),
       locale: options.language ?? 'en',
@@ -621,6 +629,10 @@ function queryKey(query: TableQuery): string {
   return JSON.stringify([query.page, query.pageSize, query.sorting, query.filters, query.globalSearch ?? '']);
 }
 
+function cursorPaging(options: AcunDataTableOptions): boolean {
+  return typeof options.pagination === 'object' && options.pagination.cursor === true;
+}
+
 function pageSizeOf(options: AcunDataTableOptions): number {
   const pagination = typeof options.pagination === 'object' ? options.pagination : {};
   if (pagination.pageSize !== undefined) return pagination.pageSize;
@@ -704,10 +716,14 @@ function serverRows(body: unknown, dataSrc: AjaxOptions['dataSrc']): unknown {
   return { rows: json['data'], ...total(json) };
 }
 
-function total(json: Data): { totalRows?: unknown; totals?: unknown } {
+function total(json: Data): { totalRows?: unknown; totals?: unknown; nextCursor?: string } {
   const meta = json['meta'] as Data | undefined;
   const count = json['totalRows'] ?? json['recordsFiltered'] ?? json['total'] ?? meta?.['total'];
-  return { ...(count === undefined ? {} : { totalRows: count }), ...(json['totals'] === undefined ? {} : { totals: json['totals'] }) };
+  return {
+    ...(count === undefined ? {} : { totalRows: count }),
+    ...(json['totals'] === undefined ? {} : { totals: json['totals'] }),
+    ...(typeof json['nextCursor'] === 'string' ? { nextCursor: json['nextCursor'] } : {}),
+  };
 }
 
 /** Headers of a request; POST adds Laravel's CSRF token from `<meta name="csrf-token">`. */

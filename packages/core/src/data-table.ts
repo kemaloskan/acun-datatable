@@ -40,6 +40,13 @@ interface DataTableBaseOptions<TData> {
   /** Default `'local'`. Fixed for the lifetime of the table. */
   readonly mode?: DataTableMode;
   /**
+   * Server mode: `'pages'` (default) asks for a page number (`OFFSET`);
+   * `'cursor'` sends the `nextCursor` of the page before (keyset), which
+   * stays fast at any depth. Pages are then reached one after another: every
+   * page up to the furthest one seen, plus the next while there is one.
+   */
+  readonly paging?: 'pages' | 'cursor';
+  /**
    * Caller-owned records. They are wrapped, never cloned or mutated. Default `[]`.
    * In server mode, the current page (or nothing until the first response).
    */
@@ -100,6 +107,8 @@ export type DataTableListener = (state: Readonly<DataTableState>, event: Readonl
 export interface DataTable<TData> {
   getState(): Readonly<DataTableState>;
   getMode(): DataTableMode;
+  /** `'pages'`, or `'cursor'` for keyset paging in server mode. */
+  getPaging(): 'pages' | 'cursor';
   getSelectionMode(): SelectionMode;
   /** The query a server should answer for the current state. */
   getQuery(): TableQuery;
@@ -200,6 +209,12 @@ export function createDataTable<TData>(options: DataTableOptions<TData>): DataTa
   const mode = options.mode ?? 'local';
   if (mode !== 'local' && mode !== 'server') throw new TypeError('mode must be "local" or "server"');
   const server = mode === 'server';
+  const paging = options.paging ?? 'pages';
+  if (paging !== 'pages' && paging !== 'cursor') throw new TypeError('paging must be "pages" or "cursor"');
+  if (paging === 'cursor' && !server) throw new TypeError('cursor paging needs mode: "server"');
+  const cursorPaging = paging === 'cursor';
+  // Cursor paging: cursors[n - 1] fetches page n (page 1 needs none); the list ends at the furthest known page.
+  let cursors: (string | undefined)[] = [undefined];
   const columns = createColumns(options.columns);
   const byId = new Map(columns.map(column => [column.id, column]));
   const getRowId = options.getRowId;
@@ -328,6 +343,10 @@ export function createDataTable<TData>(options: DataTableOptions<TData>): DataTa
     return rows;
   };
   const clampPage = (): void => {
+    if (cursorPaging) {
+      if (inner.getState().page > cursors.length) inner.setPage(cursors.length);
+      return;
+    }
     const { page, pageSize } = inner.getState();
     const total = server ? serverTotal : getFilteredRows().length;
     if (total === undefined) return;
@@ -357,6 +376,7 @@ export function createDataTable<TData>(options: DataTableOptions<TData>): DataTa
   };
   const viewChanged = (apply: () => void, event: () => DataTableEvent): void => {
     apply();
+    cursors = [undefined]; // other rows: the cursors no longer apply
     inner.setPage(1);
     emit(event());
   };
@@ -375,7 +395,11 @@ export function createDataTable<TData>(options: DataTableOptions<TData>): DataTa
     getFilteredRows,
     getMode: () => mode,
     getSelectionMode: () => selection.getState().mode,
-    getQuery: () => createTableQuery(state),
+    getQuery: () => {
+      const cursor = cursorPaging ? cursors[state.page - 1] : undefined;
+      return createTableQuery(cursor === undefined ? state : { ...state, cursor });
+    },
+    getPaging: () => paging,
     getTotalRows: () => (server ? serverTotal : getFilteredRows().length),
     getAggregates: () => {
       if (!server) return aggregateRows(getFilteredRows(), columns);
@@ -395,9 +419,11 @@ export function createDataTable<TData>(options: DataTableOptions<TData>): DataTa
       const { page, pageSize } = state;
       const known = serverTotal !== undefined;
       const totalRows = known ? serverTotal! : (page - 1) * pageSize + coreRows.length;
-      const pageCount = known
-        ? Math.max(1, Math.ceil(totalRows / pageSize))
-        : page + (coreRows.length === pageSize ? 1 : 0);
+      const pageCount = cursorPaging
+        ? cursors.length // only pages a cursor leads to
+        : known
+          ? Math.max(1, Math.ceil(totalRows / pageSize))
+          : page + (coreRows.length === pageSize ? 1 : 0);
       return Object.freeze({ rows: coreRows, page, pageSize, totalRows, pageCount });
     },
 
@@ -410,6 +436,11 @@ export function createDataTable<TData>(options: DataTableOptions<TData>): DataTa
       rowIds = new Set(rows.map(row => row.id));
       serverTotal = checked.totalRows;
       serverTotals = checked.totals;
+      if (cursorPaging) {
+        const page = inner.getState().page;
+        cursors = cursors.slice(0, page);
+        if (checked.nextCursor !== undefined && rows.length > 0) cursors.push(checked.nextCursor);
+      }
       // Make the state consistent first (page within the new total), then tell
       // listeners: every event they receive already has the corrected page.
       const before = inner.getState().page;

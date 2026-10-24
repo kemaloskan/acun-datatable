@@ -104,7 +104,7 @@ Route::match(['get', 'post'], '/api/products', fn () => TableResponse::for(Produ
 | `serverSide` | `false` | `serverSide` |
 | `processing` | `true` | `processing` |
 | `skeleton` | `true`: shimmering placeholder rows until the first rows arrive | |
-| `pagination` | `{ enabled: true, pageSize: 25, pageSizes: [10, 25, 50, 100] }`, also `firstLast`, `siblings` | `paging`, `pageLength`, `lengthMenu` |
+| `pagination` | `{ enabled: true, pageSize: 25, pageSizes: [10, 25, 50, 100] }`, also `firstLast`, `siblings`, and `cursor: true` for keyset pages with `serverSide` (same speed at any depth) | `paging`, `pageLength`, `lengthMenu` |
 | `sorting` | `{ enabled: true, multiSort: true, initial: [] }` | `ordering`, `order` |
 | `searching` | `{ enabled: true, debounce: 250, placeholder, initial }` | `searching`, `searchDelay` |
 | `language` | `'en'`; also `'tr'`, `'de'`, `'fr'`, `'es'` | `language` |

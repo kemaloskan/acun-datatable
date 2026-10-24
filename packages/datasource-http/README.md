@@ -79,6 +79,14 @@ and invalid values and leaves out empty `contains` filters and empty search. The
 answers `{ "rows": [...], "totalRows": 185920 }` (`totalRows` may be omitted when
 unknown), or Laravel's paginator JSON with `parseResponse: fromLaravelPaginator`.
 
+**Cursor (keyset) paging.** With `createDataTable({ mode: 'server', paging:
+'cursor' })` and `createHttpDataSource({ paging: 'cursor' })` every request
+carries `paging=cursor`, and pages after the first `cursor=` (the previous
+answer's `nextCursor`). The server continues after that row instead of
+skipping `OFFSET` rows, so every page costs the same at any depth; it answers
+`nextCursor` while there is a next page. The pager then offers the pages seen
+so far and the next one.
+
 ## Laravel / PHP backend
 
 ```php

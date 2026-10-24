@@ -9,6 +9,12 @@ export interface TableQuery {
   readonly filters: readonly Readonly<FilterRule>[];
   /** Omitted when there is no search text. */
   readonly globalSearch?: string;
+  /**
+   * Cursor pagination: the `nextCursor` of the page before, so the server
+   * continues after its last row (keyset) instead of skipping `OFFSET` rows.
+   * Omitted for the first page and in page mode.
+   */
+  readonly cursor?: string;
 }
 
 /** One page of records returned by a data source. */
@@ -16,7 +22,7 @@ export interface PageResult<TData> {
   readonly rows: readonly TData[];
   /** Total matching records; omitted when the server does not know it. */
   readonly totalRows?: number;
-  /** Reserved for cursor pagination (future). */
+  /** Cursor pagination: where the next page starts; omitted on the last page. */
   readonly nextCursor?: string;
   /** Footer totals per column ID, over every matching row (columns with `aggregate`). */
   readonly totals?: Readonly<Record<string, string | number | null>>;
@@ -48,6 +54,7 @@ export interface TableQueryInput {
   readonly sorting?: readonly SortRule[];
   readonly filters?: readonly FilterRule[];
   readonly globalSearch?: string;
+  readonly cursor?: string;
 }
 
 /**
@@ -77,9 +84,14 @@ export function createTableQuery(input: TableQueryInput): TableQuery {
   const search = input.globalSearch ?? '';
   if (typeof search !== 'string') throw new TypeError('globalSearch must be a string');
   const trimmed = search.trim();
+  const cursor = input.cursor;
+  if (cursor !== undefined && (typeof cursor !== 'string' || cursor === '' || cursor.length > 4096)) {
+    throw new TypeError('cursor must be a non-empty string of at most 4096 characters');
+  }
   return Object.freeze({
     page, pageSize, sorting, filters: copied,
     ...(trimmed === '' ? {} : { globalSearch: trimmed }),
+    ...(cursor !== undefined ? { cursor } : {}),
   });
 }
 
