@@ -34,9 +34,12 @@ dependencies.
   (⊕ opens the hidden columns below the row) or a details dialog, with a
   priority per column; sizes `sm`, `md`, `lg`; light and dark themes through
   `--adt-*` custom properties.
-- **Large tables:** exact counts within a time budget (5,000,000 rows counted
-  in 57 ms on PostgreSQL), "10,000+" only when a count would be slow, a result
-  window against deep pages, index-friendly dates, sorting and Turkish search.
+- **Large tables:** numbered pages by default, optional cursor (keyset)
+  paging (a deep page in 0.3 ms where `OFFSET` takes 2.5 s, on 5,000,000
+  PostgreSQL rows), exact counts within a time budget, "10,000+" only when a
+  count would be slow, a result window against deep pages, index-friendly
+  dates, sorting and Turkish search. Measured, not promised:
+  [bench/](bench/README.md) runs the same requests on your own database.
 - **Everything a back office needs:** row and bulk actions, "select all
   matching", a column menu, Excel/CSV export, print and import with
   line-numbered errors.

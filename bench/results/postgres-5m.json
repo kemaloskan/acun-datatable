@@ -1,0 +1,113 @@
+{
+  "dialect": "postgres",
+  "rows": 5000000,
+  "runs": 7,
+  "server": "17.0 (DBngin.app)",
+  "results": [
+    {
+      "name": "first page (newest first)",
+      "params": "pageSize=25&sort=ordered:desc",
+      "page": {
+        "p50": 0.7670839999991586,
+        "p95": 3.726749999997992
+      },
+      "count": {
+        "p50": 64.54562500000247,
+        "p95": 65.14474999999948
+      },
+      "plan": "Index Scan adt_perf_ordered_at_id"
+    },
+    {
+      "name": "page 2",
+      "params": "pageSize=25&sort=ordered:desc&page=2",
+      "page": {
+        "p50": 0.25979200000074343,
+        "p95": 0.42699999999967986
+      },
+      "plan": "Index Scan adt_perf_ordered_at_id"
+    },
+    {
+      "name": "page 100,000 by OFFSET",
+      "params": "pageSize=25&sort=ordered:desc&page=100000",
+      "page": {
+        "p50": 2472.6422500000044,
+        "p95": 3346.940749999998
+      },
+      "plan": "Index Scan adt_perf_ordered_at_id"
+    },
+    {
+      "name": "deep page by cursor",
+      "params": "pageSize=25&sort=ordered:desc&paging=cursor&cursor=eyJzIjoiMXhwbHRhaCIsInYiOlt7ImQiOiIyMDIyLTA3LTE1VDE0OjA2OjQwLjAwMFoifSwiMjUwMDAwMCJdfQ",
+      "page": {
+        "p50": 0.26974999999947613,
+        "p95": 1.9992500000007567
+      },
+      "plan": "Index Scan adt_perf_ordered_at_id"
+    },
+    {
+      "name": "filter status, sort by total",
+      "params": "pageSize=25&sort=total:desc&filters[0][field]=status&filters[0][op]=eq&filters[0][value]=paid",
+      "page": {
+        "p50": 0.5378330000021379,
+        "p95": 0.8769170000014128
+      },
+      "count": {
+        "p50": 118.58245799999713,
+        "p95": 121.07933400000184
+      },
+      "plan": "Index Scan adt_perf_status_total_id"
+    },
+    {
+      "name": "one month, newest first",
+      "params": "pageSize=25&sort=ordered:desc&filters[0][field]=ordered&filters[0][op]=between&filters[0][value][0]=2023-03-01&filters[0][value][1]=2023-03-31",
+      "page": {
+        "p50": 0.5782499999986612,
+        "p95": 1.290832999999111
+      },
+      "count": {
+        "p50": 69.15191600000253,
+        "p95": 70.96083299999736
+      },
+      "plan": "Index Scan adt_perf_ordered_at_id"
+    },
+    {
+      "name": "search \"ayse\" (folded column)",
+      "params": "pageSize=25&sort=ordered:desc&search=ayse",
+      "page": {
+        "p50": 1.0950830000001588,
+        "p95": 4.329334000001836
+      },
+      "count": {
+        "p50": 730.1394169999985,
+        "p95": 764.3742090000014
+      },
+      "plan": "Index Scan adt_perf_ordered_at_id"
+    },
+    {
+      "name": "search a rare word (3 columns, 1 indexed)",
+      "params": "pageSize=25&search=zzqx",
+      "page": {
+        "p50": 717.8211249999949,
+        "p95": 723.8742080000011
+      },
+      "count": {
+        "p50": 719.395583000005,
+        "p95": 728.5865830000039
+      },
+      "plan": "Seq Scan"
+    },
+    {
+      "name": "a rare word in the indexed column",
+      "params": "pageSize=25&filters[0][field]=customer&filters[0][op]=contains&filters[0][value]=zzqx",
+      "page": {
+        "p50": 0.13474999999743886,
+        "p95": 0.4608330000046408
+      },
+      "count": {
+        "p50": 0.11783299999660812,
+        "p95": 0.25141699999949196
+      },
+      "plan": "Bitmap Heap Scan, Bitmap Index Scan adt_perf_customer_trgm"
+    }
+  ]
+}
