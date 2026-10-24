@@ -9,6 +9,8 @@ const livewire = existsSync('packages/adapter-laravel/vendor/autoload.php');
 // Safari and every iOS browser, Firefox covers Gecko.
 export default defineConfig({
   testDir: './e2e',
+  // Visual baselines per platform: the same page renders text a little differently on each OS.
+  snapshotPathTemplate: '{testDir}/{testFileName}-snapshots/{arg}-{projectName}-{platform}{ext}',
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: 0,
