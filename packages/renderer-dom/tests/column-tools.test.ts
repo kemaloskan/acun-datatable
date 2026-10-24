@@ -69,10 +69,14 @@ describe('resizable columns', () => {
     expect(document.activeElement).toBe(handle('total')); // focus survives the re-render
     handle('total').dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowLeft', shiftKey: true, bubbles: true }));
     expect(table.getState().columnWidths.total).toBe(102);
+    // Delete and double-click go back to the width the content takes (150px here), measured
+    // with the automatic layout, so the fixed layout cannot squeeze the column to nothing.
     handle('total').dispatchEvent(new KeyboardEvent('keydown', { key: 'Delete', bubbles: true }));
-    expect(table.getState().columnWidths.total).toBeUndefined();
+    expect(table.getState().columnWidths.total).toBe(150);
+    expect(host.querySelector('table')!.classList.contains('adt-fixed-layout')).toBe(true);
+    handle('city').dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true }));
     handle('city').dispatchEvent(new MouseEvent('dblclick', { bubbles: true }));
-    expect(table.getState().columnWidths.city).toBeUndefined();
+    expect(table.getState().columnWidths.city).toBe(150);
   });
 });
 
@@ -120,5 +124,18 @@ describe('reorderable columns', () => {
     renderDataTable(host, make(), { resizableColumns: true, reorderableColumns: true });
     expect(host.querySelectorAll('.adt-resize')).toHaveLength(3);
     expect(host.querySelectorAll('.adt-columns .adt-move')).toHaveLength(6);
+  });
+});
+
+describe('review fixes', () => {
+  it('leaves a column hidden by the responsive layout without a frozen width', () => {
+    vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(function (this: HTMLElement) {
+      return { width: this.dataset['columnId'] === 'city' ? 0 : 150, left: 0 } as DOMRect; // city: display none
+    });
+    const table = make();
+    renderTable(host, table, { resizableColumns: true });
+    handle('total').dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true }));
+    expect(table.getState().columnWidths.city).toBeUndefined();
+    expect(th('city').classList.contains('adt-th--auto')).toBe(true); // 10rem when it shows again
   });
 });

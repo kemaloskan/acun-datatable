@@ -332,6 +332,7 @@ export function createDataTable<TData>(options: DataTableOptions<TData>): DataTa
   // Cell values and folded search text, kept per Row wrapper across searches.
   const filterCache = createFilterCache();
   let filtered: { sorted: readonly Row<TData>[]; filters: unknown; search: string; rows: readonly Row<TData>[] } | undefined;
+  let aggregated: { rows: readonly Row<TData>[]; result: Readonly<Record<string, AggregateResult>> } | undefined;
   const getFilteredRows = (): readonly Row<TData>[] => {
     if (server) return coreRows;
     const sorted = model.getSortedRows(inner.getState().sorting);
@@ -402,7 +403,12 @@ export function createDataTable<TData>(options: DataTableOptions<TData>): DataTa
     getPaging: () => paging,
     getTotalRows: () => (server ? serverTotal : getFilteredRows().length),
     getAggregates: () => {
-      if (!server) return aggregateRows(getFilteredRows(), columns);
+      if (!server) {
+        // Once per set of matching rows (a virtual table asks on every scroll frame).
+        const rows = getFilteredRows();
+        if (aggregated?.rows !== rows) aggregated = { rows, result: aggregateRows(rows, columns) };
+        return aggregated.result;
+      }
       const out: Record<string, AggregateResult> = {};
       for (const column of columns) {
         if (column.aggregate === undefined || serverTotals === undefined || !(column.id in serverTotals)) continue;

@@ -55,3 +55,19 @@ describe('persistState', () => {
     expect(typeof persistState(table, { key: 'nothing' })).toBe('function'); // no localStorage in node: a no-op
   });
 });
+
+describe('persistState with cursor paging', () => {
+  it('keeps the sort and size but not the page, which only the pages before it lead to', () => {
+    const storage = memory();
+    const first = createDataTable<R>({ mode: 'server', paging: 'cursor', columns });
+    persistState(first, { key: 'cursor', storage });
+    first.setPageSize(10);
+    first.setPageResult({ rows: data.slice(0, 10), nextCursor: 'c2' });
+    first.setPage(2);
+    expect(JSON.parse(storage.items.get('acun-datatable:cursor')!).state).not.toHaveProperty('page');
+    const second = createDataTable<R>({ mode: 'server', paging: 'cursor', columns });
+    persistState(second, { key: 'cursor', storage });
+    second.setPageResult({ rows: data.slice(0, 10), nextCursor: 'c2' });
+    expect(second.getState()).toMatchObject({ page: 1, pageSize: 10 });
+  });
+});

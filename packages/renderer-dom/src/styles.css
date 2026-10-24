@@ -459,6 +459,8 @@
 .adt-table.adt-fixed-layout { table-layout: fixed; }
 .adt-fixed-layout :is(th, td):not(.adt-actions) { overflow: hidden; text-overflow: ellipsis; overflow-wrap: anywhere; }
 .adt-fixed-layout :is(th, td).adt-actions { width: var(--adt-actions-width, auto); }
+/* A column without a width of its own in the fixed layout: a usable width, never the leftover nothing */
+.adt-fixed-layout th.adt-th--auto { width: var(--adt-column-width, 10rem); }
 .adt-table th[data-column-id] { position: relative; }
 .adt-resize {
   position: absolute; top: 0; right: 0; bottom: 0; width: 0.625rem; cursor: col-resize; touch-action: none; z-index: 1;
@@ -563,10 +565,11 @@
   /* Cards (responsive: 'cards', the default): each row a card, each cell with its header */
   .adt-responsive--cards .adt-table .adt-pin { position: static; box-shadow: none; background: transparent; }
   .adt-responsive--cards .adt-table thead :is(th, td) { position: static; box-shadow: none; background: transparent; }
-  .adt-responsive--cards .adt-scroll { border: 0; background: transparent; overflow: visible; box-shadow: none; }
+  .adt-responsive--cards .adt-scroll { border: 0; background: transparent; box-shadow: none; }
+  .adt-responsive--cards:not(.adt-scroll-y) .adt-scroll { overflow: visible; } /* with scrollY the cards scroll in their box */
   .adt-responsive--cards .adt-table, .adt-responsive--cards .adt-table tbody, .adt-responsive--cards .adt-table tr, .adt-responsive--cards .adt-table td { display: block; width: 100%; }
   .adt-responsive--cards .adt-table thead tr { display: flex; flex-wrap: wrap; gap: 0.25rem 0.75rem; padding: 0 0 0.75rem; }
-  .adt-responsive--cards .adt-table thead th { display: inline-block; padding: 0.25rem 0; border: 0; background: transparent; }
+  .adt-responsive--cards .adt-table thead th { display: inline-block; padding: 0.25rem 0; border: 0; background: transparent; width: auto !important; } /* column widths are for the table layout */
   .adt-responsive--cards .adt-row, .adt-responsive--cards .adt-empty { border: 1px solid var(--adt-line); border-radius: var(--adt-radius); margin-bottom: 0.75rem; background: var(--adt-surface); overflow: hidden; }
   .adt-responsive--cards .adt-table td { display: grid; grid-template-columns: minmax(7rem, 40%) 1fr; gap: 0.75rem; padding: 0.625rem 0.875rem; border-bottom: 1px solid var(--adt-line); overflow-wrap: anywhere; }
   .adt-responsive--cards .adt-table td.adt-num { text-align: left; }

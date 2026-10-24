@@ -38,3 +38,15 @@ describe('aggregates', () => {
     expect(() => createDataTable<R>({ data, columns: [{ id: 'total', header: 'T', accessorKey: 'total', aggregate: 'median' as never }] })).toThrow('aggregate must be');
   });
 });
+
+describe('getAggregates', () => {
+  it('computes once per set of matching rows', async () => {
+    const { createDataTable } = await import('../src/index');
+    const table = createDataTable({ data: [{ id: 1, n: 2 }, { id: 2, n: 3 }], columns: [{ id: 'n', header: 'N', accessorKey: 'n', type: 'number', aggregate: 'sum', enableFiltering: true }] });
+    const first = table.getAggregates();
+    expect(table.getAggregates()).toBe(first);
+    table.setGlobalSearch('3');
+    expect(table.getAggregates()).not.toBe(first);
+    expect(table.getAggregates()['n']!.value).toBe(3);
+  });
+});

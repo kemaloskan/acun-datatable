@@ -39,9 +39,31 @@ export function columnTools<TData>(container: HTMLElement, table: DataTable<TDat
     const actions = container.querySelector<HTMLElement>('thead th.adt-actions');
     if (actions) container.style.setProperty('--adt-actions-width', `${Math.ceil(actions.getBoundingClientRect().width)}px`);
     const widths: Record<string, number> = {};
-    for (const column of visible) widths[column.id] = current[column.id] ?? clamp(header(column.id)?.getBoundingClientRect().width ?? 0);
+    for (const column of visible) {
+      // A column the responsive layout hides now (no width at all) gets one when shown.
+      const measured = header(column.id)?.getBoundingClientRect().width ?? 0;
+      if (current[column.id] !== undefined) widths[column.id] = current[column.id]!;
+      else if (measured > 0) widths[column.id] = clamp(measured);
+    }
     table.setColumnWidths(widths);
   };
+
+  /** The width a column takes by its content, measured with the automatic layout for a moment. */
+  const natural = (id: string): number | undefined => {
+    const th = header(id);
+    const tableEl = th?.closest('table');
+    if (!th || !tableEl) return undefined;
+    const fixed = tableEl.classList.contains('adt-fixed-layout');
+    const before = th.style.width;
+    tableEl.classList.remove('adt-fixed-layout');
+    th.style.width = '';
+    const width = th.getBoundingClientRect().width;
+    if (fixed) tableEl.classList.add('adt-fixed-layout');
+    th.style.width = before;
+    return width > 0 ? clamp(width) : undefined;
+  };
+  // Back to the natural width: kept as a width, so the fixed layout cannot squeeze the column to nothing.
+  const reset = (id: string): void => table.setColumnWidth(id, natural(id));
 
   // Resizing ----------------------------------------------------------------
   let drag: { id: string; startX: number; start: number; width: number } | undefined;
@@ -96,12 +118,12 @@ export function columnTools<TData>(container: HTMLElement, table: DataTable<TDat
       table.setColumnWidth(id, widthOf(id) + (event.key === 'ArrowRight' ? step : -step));
     } else if (event.key === 'Delete' || event.key === 'Backspace') {
       event.preventDefault();
-      table.setColumnWidth(id, undefined);
+      reset(id);
     }
   };
   const onDoubleClick = (event: MouseEvent): void => {
     const id = (event.target as Element | null)?.closest?.<HTMLElement>('.adt-resize')?.dataset['columnId'];
-    if (id) table.setColumnWidth(id, undefined);
+    if (id) reset(id);
   };
 
   // Moving -------------------------------------------------------------------

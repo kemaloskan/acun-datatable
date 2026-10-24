@@ -297,6 +297,49 @@ test('edit a cell in place: Enter saves, errors keep the editor, Escape cancels,
   await expect(page.getByRole('cell', { name: 'Deniz Ak' })).toBeVisible();
 });
 
+test('a click that closes an editor still reaches the control it was meant for', async ({ page }) => {
+  await page.goto('/e2e/fixtures/table.html?edit');
+  await expect(page.locator('body[data-ready=true]')).toBeAttached();
+  const field = page.getByRole('textbox', { name: 'Customer' });
+  await page.getByRole('button', { name: 'Edit Customer: Ali' }).click();
+  await expect(field).toBeFocused();
+  await page.getByRole('button', { name: 'Edit Customer: Can' }).click(); // closes Ali's (unchanged) editor
+  await expect(field).toBeFocused();
+  await expect(field).toHaveValue('Can');
+  const sort = page.getByRole('button', { name: 'Total', exact: true });
+  await sort.click(); // closes Can's editor
+  await expect(page.locator('#orders th', { has: sort })).toHaveAttribute('aria-sort', 'ascending');
+  await expect(field).toHaveCount(0);
+});
+
+test('virtual rows scroll in their own box on a phone, in cards too', async ({ page }) => {
+  await page.setViewportSize({ width: 375, height: 800 });
+  for (const query of ['virtual', 'virtual&responsive=cards']) {
+    await page.goto(`/e2e/fixtures/table.html?${query}`);
+    await expect(page.locator('body[data-ready=true]')).toBeAttached();
+    const scroller = page.locator('.adt-scroll');
+    expect(await scroller.evaluate(node => getComputedStyle(node).overflowY)).toBe('auto');
+    await scroller.evaluate(node => { node.scrollTop = 20_000; });
+    await expect(page.locator('tbody .adt-row').first()).not.toContainText('Ayşe 1');
+    const box = (await scroller.boundingBox())!;
+    expect(box.height).toBeLessThanOrEqual(421); // the table stays inside its box
+  }
+});
+
+test('Delete on a resize handle goes back to the width the content takes', async ({ page }) => {
+  await page.setViewportSize({ width: 700, height: 800 });
+  await page.goto('/e2e/fixtures/table.html?columns&responsive=scroll');
+  await expect(page.locator('body[data-ready=true]')).toBeAttached();
+  const customer = page.getByRole('separator', { name: 'Resize Customer' });
+  await customer.focus();
+  for (let step = 0; step < 30; step++) await page.keyboard.press('Shift+ArrowRight'); // wider than the page
+  const total = page.getByRole('separator', { name: 'Resize Total' });
+  await total.focus();
+  await page.keyboard.press('Delete');
+  const width = await page.locator('#orders th[data-column-id="total"]').evaluate(node => node.getBoundingClientRect().width);
+  expect(width).toBeGreaterThan(48);
+});
+
 test('responsive auto hides only the columns that do not fit, at any width', async ({ page }) => {
   await page.setViewportSize({ width: 1100, height: 800 });
   await page.goto('/e2e/fixtures/table.html?responsive=auto');

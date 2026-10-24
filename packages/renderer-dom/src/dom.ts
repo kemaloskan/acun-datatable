@@ -22,14 +22,14 @@ export function element<K extends keyof HTMLElementTagNameMap>(
 export function keepFocus(root: HTMLElement, render: () => void): void {
   const active = root.ownerDocument.activeElement as HTMLElement | null;
   const key = active && root.contains(active) ? active.dataset?.['adtFocus'] : undefined;
+  const inDialog = active?.closest?.('dialog') != null;
   render();
   if (key === undefined) return;
-  for (const node of root.querySelectorAll<HTMLElement>('[data-adt-focus]')) {
-    if (node.dataset['adtFocus'] === key) {
-      node.focus();
-      return;
-    }
-  }
+  // The same control again: in a dialog when focus was in one (its row's buttons also sit in
+  // the table behind it), and a shown copy before one hidden by the responsive layout.
+  const matches = [...root.querySelectorAll<HTMLElement>('[data-adt-focus]')]
+    .filter(node => node.dataset['adtFocus'] === key && (node.closest('dialog') != null) === inDialog);
+  (matches.find(node => node.getClientRects().length > 0) ?? matches[0])?.focus();
 }
 
 export function checkTarget(container: unknown, table: unknown): void {

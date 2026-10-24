@@ -42,7 +42,7 @@ const detail = params.has('detail')
   : undefined;
 renderDataTable(document.getElementById('orders'), table, {
   caption: 'Orders', selectable: true, locale: 'tr', labels: labelsEn, pageSizes: [5, 10], search: { debounceMs: 0 },
-  responsive: params.get('responsive') ?? 'cards', size: params.get('size') ?? 'md',
+  ...(params.has('responsive') ? { responsive: params.get('responsive') } : {}), size: params.get('size') ?? 'md',
   rowActions: [{ id: 'edit', label: 'Edit', onSelect: row => { window.__edited = row.id; } }],
   ...(detail ? { detail } : {}),
   ...(params.has('fixed') ? { fixedColumns: { start: 1, end: 1 } } : {}),

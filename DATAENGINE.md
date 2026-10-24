@@ -1,4 +1,4 @@
-# Acun DataEngine — architecture contracts (draft 1)
+# Acun DataEngine — architecture contracts (draft 2)
 
 Status: **contracts only, no code yet.** Agreed on 2026-10-24: the light
 packages are finished and published first; DataEngine is built after that,
@@ -21,13 +21,26 @@ The backend and its database adapter run the queries.
 
 ## 1. Decisions and conditions
 
+Confirmed by the owner on 2026-10-24 as the architectural baseline.
+
 | Decision | |
 |---|---|
-| Name, licence | Acun DataEngine, MIT, free |
-| Light packages keep | filtering, sorting, the column allowlist, OFFSET and keyset paging, limits, basic search (LIKE or a folded column), exact counts within a time limit |
-| DataEngine adds | query management and plans, time and cost budgets, smart counting, search providers, Index Advisor, queued operations |
-| Search order | the databases' native full-text first, then OpenSearch |
-| SQL Server | supported by the Node adapter (light package) |
+| Name, licence | Acun DataEngine, MIT, free. No paid or "Enterprise" tier is planned |
+| Light packages keep | the column allowlist, filtering, sorting, limits, the result window, keyset (cursor) paging, a basic count, basic search (LIKE or a folded column) |
+| DataEngine takes | advanced search, counts with a time limit, queued exports, big-data optimizations (query plans, time and cost budgets, smart counting), Index Advisor |
+| SQL Server | optional support in the Node adapter; no database driver is ever required — database-independent, as DataTables is |
+| Search order | the databases' native full-text first, then OpenSearch as an optional provider; the provider contract stays open to Meilisearch and Typesense |
+| Order of work | first the first stable DataTable release (demo, tests, docs, upgrade guide); DataEngine after it |
+
+Further conditions:
+
+- **DataTable works professionally without DataEngine.** Nothing in the light
+  packages needs it, and nothing a user sees is reserved for it.
+- MySQL, MariaDB, PostgreSQL, SQLite and SQL Server are reached through
+  adapters (dialects), never by name in the core.
+- Index recommendations are written per database (§7) and **never applied
+  automatically**.
+- Performance tests for **5 million, 100 million and 1 billion rows** (§10).
 
 Three conditions every contract below must meet:
 
@@ -155,7 +168,7 @@ of the query; DB-first while the key list stays within budget; else the
 database's native full-text; else LIKE / folded column (light behaviour).
 Providers in order: PostgreSQL `tsvector`, MySQL/MariaDB `FULLTEXT`, SQL
 Server `CONTAINS`, SQLite FTS5, then OpenSearch (later Meilisearch,
-Typesense). Index sync: `upsert(key, document)` / `delete(key)` through an
+Typesense, through the same `SearchProvider` contract). Index sync: `upsert(key, document)` / `delete(key)` through an
 outbox (model events in Laravel, hooks in Node); change-data capture is an
 option for very large tables.
 
@@ -203,3 +216,18 @@ implementation and stays compatible when DataEngine takes over.
 
 No package of the light set depends on DataEngine; DataEngine depends on
 the light server packages only through the seams of §3.
+
+## 10. Performance targets and tests
+
+| Rows | Where it runs | What is measured |
+|---|---|---|
+| 5 million | locally and in an optional CI job | first page, page 100,000 by OFFSET and by cursor, filtered and sorted pages, search, the count (exact and with its time limit) |
+| 100 million | a dedicated database server, by hand or on schedule | the same, with the indexes Index Advisor recommends; p50 / p95 of each request |
+| 1 billion | a dedicated server or cluster, by hand | cursor paging, Search-First through a search provider, estimated counts; OFFSET is expected to be refused by the result window |
+
+A benchmark is a script that seeds a table of the given size (generated in
+the database, not sent from the client), runs every query type a fixed
+number of times and reports p50 / p95 and the query plan. Each size has a
+budget; a release must not make a measured request slower than its budget.
+The light packages are measured at 5 million; 100 million and 1 billion
+measure DataEngine.

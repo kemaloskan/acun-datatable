@@ -26,7 +26,8 @@ const VERSION = 1;
  * columns, column order and widths across reloads (DataTables `stateSave`). The saved state is applied
  * at once (each part on its own, so a part that no longer fits the columns is
  * skipped) and saved after every change. The page is applied again when the
- * first rows arrive, so it survives data that loads later. Returns `stop`.
+ * first rows arrive, so it survives data that loads later; with cursor paging
+ * the page is not kept (only the pages before it lead there). Returns `stop`.
  */
 export function persistState<TData>(table: DataTable<TData>, options: PersistStateOptions): () => void {
   if (!options || typeof options.key !== 'string' || options.key.trim() === '') throw new TypeError('persistState needs a key');
@@ -57,14 +58,16 @@ export function persistState<TData>(table: DataTable<TData>, options: PersistSta
   apply('sorting', () => table.setSorting(saved.sorting as never));
   apply('filters', () => table.setFilters(saved.filters as never));
   apply('globalSearch', () => table.setGlobalSearch(saved.globalSearch as string));
-  apply('page', () => table.setPage(saved.page as number));
+  // With cursor paging a page is only reachable through the pages before it: it is not kept.
+  const cursor = table.getPaging() === 'cursor';
+  if (!cursor) apply('page', () => table.setPage(saved.page as number));
 
   // Rows that load later (ajax, server) may arrive after the page was clamped: apply it once more.
-  let pagePending = include.has('page') && typeof saved.page === 'number' && table.getState().page !== saved.page;
+  let pagePending = !cursor && include.has('page') && typeof saved.page === 'number' && table.getState().page !== saved.page;
   const save = (): void => {
     const state = table.getState();
     const out: Partial<Record<PersistedPart, unknown>> = {};
-    for (const part of include) out[part] = state[part];
+    for (const part of include) if (!(cursor && part === 'page')) out[part] = state[part];
     try { storage.setItem(key, JSON.stringify({ v: VERSION, state: out })); } catch { /* full or blocked: keep working */ }
   };
   const unsubscribe = table.subscribe((_, event) => {

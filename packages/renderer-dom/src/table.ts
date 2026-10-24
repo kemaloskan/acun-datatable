@@ -201,7 +201,8 @@ export function renderTable<TData>(
     throw new TypeError('status must have getState and subscribe');
   }
 
-  const responsive = checkResponsive(options.responsive);
+  // Virtual rows need the table layout (one row, one height): the default is `scroll` then.
+  const responsive = checkResponsive(options.responsive ?? (options.virtual ? 'scroll' : undefined));
   if (options.detail !== undefined && typeof options.detail !== 'function') throw new TypeError('detail must be a function');
   const detailOf = options.detail;
   // The expand column: hidden columns (collapse, modal) or a child row (detail).
@@ -339,7 +340,7 @@ export function renderTable<TData>(
       root.append(dialog);
     }
     const head = element(doc, 'div', { class: 'adt-dialog-head' });
-    const close = element(doc, 'button', { type: 'button', class: 'adt-dialog-close', 'aria-label': labels.close });
+    const close = element(doc, 'button', { type: 'button', class: 'adt-dialog-close', 'aria-label': labels.close, 'data-adt-focus': 'dialog:close' });
     close.append(icon(doc, 'close'));
     close.addEventListener('click', closeDialog);
     head.append(element(doc, 'h2', { class: 'adt-dialog-title', id: `${uid}-dialog-title` }, labels.details(nameOf(row, cells))), close);
@@ -350,6 +351,14 @@ export function renderTable<TData>(
       else dialog.setAttribute('open', '');
     }
   };
+
+  // A pointer is pressed inside the table (between pointerdown and pointerup).
+  let pressed = false;
+  const onPress = (): void => { pressed = true; };
+  const onRelease = (): void => { pressed = false; };
+  root.addEventListener('pointerdown', onPress, true);
+  doc.addEventListener('pointerup', onRelease);
+  doc.addEventListener('pointercancel', onRelease);
 
   // The cell being edited in place (the editor element moves into each re-render).
   let editing: { rowId: string; columnId: string; editor: CellEditor } | undefined;
@@ -363,9 +372,28 @@ export function renderTable<TData>(
       onClose: () => {
         if (editing?.editor !== editor) return;
         editing = undefined;
-        editor.destroy();
-        render();
-        root.querySelector<HTMLElement>(`[data-adt-focus="${CSS.escape(focusKey)}"]`)?.focus();
+        if (!pressed) {
+          editor.destroy();
+          render();
+          root.querySelector<HTMLElement>(`[data-adt-focus="${CSS.escape(focusKey)}"]`)?.focus();
+          return;
+        }
+        // Closed by pressing another control (the editor lost focus on pointerdown): the closed
+        // editor stays in its cell and the table draws again only after that click, so nothing
+        // moves under the pointer and the click reaches the control it was meant for.
+        let done = false;
+        const after = (): void => {
+          if (done) return;
+          done = true;
+          doc.removeEventListener('pointerup', after, true);
+          doc.removeEventListener('pointercancel', after, true);
+          setTimeout(() => {
+            editor.destroy();
+            if (!editing) render();
+          }, 0);
+        };
+        doc.addEventListener('pointerup', after, true);
+        doc.addEventListener('pointercancel', after, true);
       },
     });
     editing = { rowId: row.id, columnId: column.id, editor };
@@ -442,7 +470,8 @@ export function renderTable<TData>(
         const box = element(doc, 'input', { type: 'checkbox', 'aria-label': labels.selectAll, 'data-adt-focus': 'select-all' });
         box.addEventListener('change', () => {
           if (table.getSelectionStatus(pageIds) === 'all') {
-            table.setSelectedRows(table.getState().selectedIds.filter(id => !pageIds.includes(id)));
+            const page = new Set(pageIds);
+            table.setSelectedRows(table.getState().selectedIds.filter(id => !page.has(id)));
           } else {
             table.selectRows(pageIds);
           }
@@ -461,6 +490,7 @@ export function renderTable<TData>(
       });
       const width = widths[column.id];
       if (width !== undefined) th.style.width = `${width}px`;
+      else if (tableEl.classList.contains('adt-fixed-layout')) th.classList.add('adt-th--auto'); // e.g. shown again by the responsive layout
       if (column.enableSorting) {
         const index = state.sorting.findIndex(rule => rule.field === column.id);
         const rule = state.sorting[index];
@@ -567,8 +597,9 @@ export function renderTable<TData>(
           anchor = row.id;
           if (event.shiftKey && from !== undefined && from !== row.id && table.getSelectionMode() === 'multiple') {
             const ids = rangeOf(pageIds, from, row.id);
+            const range = new Set(ids);
             if (input.checked) table.selectRows(ids);
-            else table.setSelectedRows(table.getState().selectedIds.filter(id => !ids.includes(id)));
+            else table.setSelectedRows(table.getState().selectedIds.filter(id => !range.has(id)));
             return;
           }
           table.toggleRow(row.id);
@@ -621,7 +652,9 @@ export function renderTable<TData>(
     if (page.view && page.view.after > 0) body.append(spacer(page.view.after));
     if (dialogRow !== undefined && !pageIds.includes(dialogRow)) closeDialog(); // its row left the page
     for (const id of details.keys()) if (!expanded.has(id) && dialogRow !== id) details.delete(id); // closed rows load again
-    if (editing && !placed) { editing.editor.destroy(); editing = undefined; } // its row left the page
+    // Its row left the page (or, scrolled virtually, the matching rows): the edit ends. A row
+    // only scrolled out of view keeps its editor for when it comes back.
+    if (editing && !placed && !(page.all && pageIds.includes(editing.rowId))) { editing.editor.destroy(); editing = undefined; }
     tableEl.append(head, body);
     // Footer totals of the columns with `aggregate` (every matching row, not just the page).
     if (columns.some(column => column.aggregate !== undefined)) {
@@ -719,6 +752,8 @@ export function renderTable<TData>(
       stopAuto();
       stopTools();
       doc.removeEventListener('click', closeMenus);
+      doc.removeEventListener('pointerup', onRelease);
+      doc.removeEventListener('pointercancel', onRelease);
       root.remove();
     },
   };
