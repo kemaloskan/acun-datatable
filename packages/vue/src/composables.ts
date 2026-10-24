@@ -1,5 +1,5 @@
 import {
-  computed, getCurrentScope, onScopeDispose, shallowRef, toValue, watch,
+  computed, getCurrentScope, isRef, onScopeDispose, shallowRef, toValue, watch,
   type ComputedRef, type MaybeRefOrGetter, type ShallowRef,
 } from 'vue';
 import {
@@ -18,28 +18,39 @@ export interface TableBinding<TData> {
 }
 
 /**
- * Follow an existing table reactively. Unsubscribes when the calling
- * component (or effect scope) is disposed; the table itself is not destroyed.
+ * Follow an existing table reactively: the table, or a ref or getter such as
+ * `() => props.table` to follow whichever table it gives. Unsubscribes when
+ * the calling component (or effect scope) is disposed; the table itself is
+ * not destroyed.
  */
-export function useTable<TData>(table: DataTable<TData>): TableBinding<TData> {
-  const state = shallowRef(table.getState());
+export function useTable<TData>(source: MaybeRefOrGetter<DataTable<TData>>): TableBinding<TData> {
+  const current = (): DataTable<TData> => toValue(source);
+  const state = shallowRef(current().getState());
   const version = shallowRef(0);
-  const unsubscribe = table.subscribe(next => {
-    state.value = next;
-    version.value += 1; // data and results change without a new state object
-  });
-  if (getCurrentScope()) onScopeDispose(unsubscribe);
+  let unsubscribe: (() => void) | undefined;
+  const follow = (table: DataTable<TData>): void => {
+    unsubscribe?.();
+    state.value = table.getState();
+    unsubscribe = table.subscribe(next => {
+      state.value = next;
+      version.value += 1; // data and results change without a new state object
+    });
+  };
+  follow(current());
+  // A ref or a getter: move to a new table before anything renders it.
+  const stop = isRef(source) || typeof source === 'function' ? watch(current, follow, { flush: 'sync' }) : undefined;
+  if (getCurrentScope()) onScopeDispose(() => { stop?.(); unsubscribe?.(); });
   const track = <T>(read: () => T): ComputedRef<T> => computed(() => {
     void version.value;
     void state.value;
     return read();
   });
   return {
-    table,
+    get table() { return current(); },
     state,
-    page: track(() => table.getPage()),
-    visibleColumns: track(() => table.getVisibleColumns()),
-    totalRows: track(() => table.getTotalRows()),
+    page: track(() => current().getPage()),
+    visibleColumns: track(() => current().getVisibleColumns()),
+    totalRows: track(() => current().getTotalRows()),
   };
 }
 

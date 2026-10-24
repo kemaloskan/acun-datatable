@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { createApp, defineComponent, h, nextTick, ref, type App, type Component } from 'vue';
+import { createApp, createSSRApp, defineComponent, h, nextTick, ref, shallowRef, type App, type Component } from 'vue';
+import { renderToString } from 'vue/server-renderer';
 import { createDataTable, type ColumnDef, type Row } from '@acunsoft/datatable-core';
 import {
   AcunBulkActions, AcunColumnToggle, AcunDataTable, AcunDataTableLayout, AcunFilterChips, AcunFilters, AcunPageInfo, AcunPageSize, AcunPagination, AcunSearch, AcunTools, labelsTr, useDataTable, type BulkSelection,
@@ -461,5 +462,187 @@ describe('virtual scrolling', () => {
     expect(host.querySelector('tbody .adt-row td:nth-child(2)')!.textContent).toBe('C999');
     host.querySelector<HTMLInputElement>('thead .adt-select input')!.click();
     expect(table.getState().selectedIds).toHaveLength(5000);
+  });
+});
+
+describe('virtual scrolling and editing', () => {
+  const editable: readonly ColumnDef<Order>[] = [
+    { id: 'customer', header: 'Müşteri', accessorKey: 'customer', editable: true },
+    { id: 'total', header: 'Tutar', accessorKey: 'total' },
+  ];
+  const many = Array.from({ length: 500 }, (_, i) => ({ id: i + 1, customer: `C${i + 1}`, total: '1.00' }));
+  const scrollTo = async (top: number): Promise<void> => {
+    const scroller = host.querySelector<HTMLElement>('.adt-scroll')!;
+    scroller.scrollTop = top;
+    scroller.dispatchEvent(new Event('scroll'));
+    await new Promise(resolve => setTimeout(resolve, 40));
+    await nextTick();
+    await nextTick();
+  };
+
+  it('scrolls sideways on narrow screens unless responsive is given', async () => {
+    const table = createDataTable<Order>({ data: orders, columns });
+    const mode = shallowRef<'cards' | undefined>(undefined);
+    await mount(() => h(AcunDataTable, { table, virtual: true, ...(mode.value ? { responsive: mode.value } : {}) }));
+    expect(host.querySelector('.adt-table-wrap')!.classList.contains('adt-responsive--scroll')).toBe(true);
+    mode.value = 'cards';
+    await nextTick();
+    expect(host.querySelector('.adt-table-wrap')!.classList.contains('adt-responsive--cards')).toBe(true);
+  });
+
+  it('edits a row past the first page and keeps the editor while it is scrolled out of view', async () => {
+    const table = createDataTable<Order>({ data: many, columns: editable, initialState: { pageSize: 10 } });
+    await mount(() => h(AcunDataTable, { table, virtual: { rowHeight: 40, overscan: 2 }, onEdit: () => undefined }));
+    await scrollTo(4000);
+    host.querySelector<HTMLButtonElement>('.adt-edit[aria-label="Edit Müşteri: C99"]')!.click();
+    await nextTick();
+    await nextTick();
+    const editor = host.querySelector('td.adt-editing .adt-editor');
+    expect(editor).not.toBeNull();
+    await scrollTo(12_000);
+    expect(host.querySelector('.adt-editor')).toBeNull();
+    await scrollTo(4000);
+    expect(host.querySelector('td.adt-editing .adt-editor')).toBe(editor);
+    table.setGlobalSearch('C1'); // C99 no longer matches: the edit ends
+    await nextTick();
+    await nextTick();
+    table.setGlobalSearch('');
+    await nextTick();
+    await nextTick();
+    expect(host.querySelector('td.adt-editing')).toBeNull();
+  });
+
+  it('closes the dialog only when its row stops matching', async () => {
+    const table = createDataTable<Order>({ data: many, columns, initialState: { pageSize: 10 } });
+    await mount(() => h(AcunDataTable, { table, virtual: { rowHeight: 40, overscan: 2 }, responsive: 'modal', selectable: true }));
+    await scrollTo(4000);
+    host.querySelector<HTMLButtonElement>('.adt-expand')!.click();
+    await nextTick();
+    await nextTick();
+    const dialog = host.querySelector('dialog')!;
+    expect(dialog.open).toBe(true);
+    table.selectRow('1');
+    await nextTick();
+    expect(dialog.open).toBe(true);
+    table.setGlobalSearch('nobody');
+    await nextTick();
+    expect(dialog.open).toBe(false);
+  });
+
+  it('keeps the editor of a row on the first page when its cell is drawn again', async () => {
+    const table = createDataTable<Order>({ data: many, columns: editable, initialState: { pageSize: 10 } });
+    await mount(() => h(AcunDataTable, { table, virtual: { rowHeight: 40, overscan: 2 }, onEdit: () => undefined }));
+    host.querySelector<HTMLButtonElement>('.adt-edit[aria-label="Edit Müşteri: C1"]')!.click();
+    await nextTick();
+    await nextTick();
+    const editor = host.querySelector('td.adt-editing .adt-editor');
+    expect(editor).not.toBeNull();
+    await scrollTo(8000);
+    await scrollTo(0);
+    expect(host.querySelector('td.adt-editing .adt-editor')).toBe(editor);
+  });
+
+  it('measures the row height once mounted', async () => {
+    vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(() => ({ height: 20, width: 100, left: 0 } as DOMRect));
+    await mount(() => h(AcunDataTable, { table: createDataTable<Order>({ data: many, columns }), virtual: { overscan: 0 } }));
+    await nextTick();
+    expect(host.querySelectorAll('tbody .adt-row')).toHaveLength(24); // 480px of 20px rows
+    vi.restoreAllMocks();
+  });
+
+  it('measures the viewport once mounted and follows resizes', async () => {
+    let height = 1200;
+    let resized: (() => void) | undefined;
+    vi.spyOn(HTMLElement.prototype, 'clientHeight', 'get').mockImplementation(() => height);
+    (window as { ResizeObserver?: unknown }).ResizeObserver = class {
+      constructor(callback: () => void) { resized = callback; }
+      observe(): void { /* the test calls the callback */ }
+      disconnect(): void { resized = undefined; }
+    };
+    try {
+      await mount(() => h(AcunDataTable, { table: createDataTable<Order>({ data: many, columns }), virtual: { rowHeight: 40, overscan: 0 } }));
+      await nextTick();
+      expect(host.querySelectorAll('tbody .adt-row')).toHaveLength(30); // 1200px of 40px rows
+      height = 400;
+      resized!();
+      await nextTick();
+      expect(host.querySelectorAll('tbody .adt-row')).toHaveLength(10);
+    } finally {
+      delete (window as { ResizeObserver?: unknown }).ResizeObserver;
+      vi.restoreAllMocks();
+    }
+  });
+});
+
+describe('changing props', () => {
+  it('follows a new table', async () => {
+    const first = createDataTable<Order>({ data: orders.slice(0, 1), columns });
+    const second = createDataTable<Order>({ data: orders, columns, initialState: { pageSize: 2 } });
+    const table = shallowRef(first);
+    await mount(() => h('div', [h(AcunDataTable, { table: table.value }), h(AcunPageInfo, { table: table.value }), h(AcunPagination, { table: table.value })]));
+    table.value = second;
+    await nextTick();
+    expect(texts('tbody tr td:first-child')).toEqual(['Ayşe', 'Ali']);
+    second.setGlobalSearch('Can');
+    await nextTick();
+    expect(texts('tbody tr td:first-child')).toEqual(['Can']);
+    expect(host.querySelector('.adt-info')!.textContent).toBe('Showing 1 to 1 of 1 row');
+    first.setGlobalSearch('nobody');
+    await nextTick();
+    expect(texts('tbody tr td:first-child')).toEqual(['Can']); // the old table is no longer followed
+  });
+
+  it('keeps bulk actions and tools mounted across parent re-renders, calling the latest callbacks', async () => {
+    const table = make();
+    const count = shallowRef(0);
+    const calls: number[] = [];
+    await mount(() => h('div', { 'data-count': count.value }, [
+      h(AcunBulkActions, { table, actions: [{ id: 'archive', label: 'Archive', onSelect: () => calls.push(count.value) }] }),
+      h(AcunTools, { items: [{ id: 'print', label: 'Print', onSelect: () => calls.push(-count.value) }] }),
+    ]));
+    table.selectRow('1');
+    await nextTick();
+    const bar = host.querySelector('.adt-selection');
+    const menu = host.querySelector<HTMLDetailsElement>('.adt-tools')!;
+    menu.open = true;
+    count.value = 1;
+    await nextTick();
+    expect(host.querySelector('.adt-selection')).toBe(bar);
+    expect(host.querySelector('.adt-tools')).toBe(menu);
+    expect(menu.open).toBe(true);
+    host.querySelector<HTMLButtonElement>('.adt-bulk-action')!.click();
+    host.querySelector<HTMLButtonElement>('[data-action="print"]')!.click();
+    expect(calls).toEqual([1, -1]);
+  });
+
+  it('re-mounts filters and chips for new labels and locale', async () => {
+    const table = createDataTable<Order>({ data: orders, columns: [
+      { id: 'customer', header: 'Müşteri', accessorKey: 'customer', enableFiltering: true },
+      { id: 'total', header: 'Tutar', accessorKey: 'total', type: 'decimal', enableFiltering: true, filter: true },
+    ] });
+    table.setFilters([{ field: 'total', operator: 'gte', value: '1000.5' }]);
+    const turkish = shallowRef(false);
+    await mount(() => h('div', [
+      h(AcunFilters, { table, ...(turkish.value ? { labels: labelsTr, locale: 'tr' } : {}) }),
+      h(AcunFilterChips, { table, ...(turkish.value ? { labels: labelsTr, locale: 'tr' } : {}) }),
+    ]));
+    expect(host.querySelector('.adt-filters summary')!.textContent).toContain('Filters');
+    expect(host.querySelector('.adt-chip')!.textContent).toBe('Tutar: ≥ 1,000.5');
+    turkish.value = true;
+    await nextTick();
+    expect(host.querySelector('.adt-filters summary')!.textContent).toContain('Filtreler');
+    expect(host.querySelector('.adt-chip')!.textContent).toBe('Tutar: ≥ 1.000,5');
+  });
+});
+
+describe('server rendering', () => {
+  it('gives the same element ids on every render, so hydration matches', async () => {
+    const html = () => renderToString(createSSRApp({
+      render: () => h(AcunDataTable, { table: make(), responsive: 'collapse' }),
+    }));
+    const ids = (markup: string) => markup.match(/aria-controls="[^"]+"/g);
+    const first = await html();
+    expect(ids(first)).toHaveLength(3);
+    expect(ids(await html())).toEqual(ids(first));
   });
 });

@@ -66,7 +66,8 @@ const bulk = [{ id: 'archive', label: 'Arşivle', onSelect: ({ ids }) => archive
   totalRows }`, all reactive.
 - **`useTable(table)`** follows a table you created yourself (for example a
   server-mode table connected with `@acunsoft/datatable-http`); it unsubscribes
-  with the component and does not destroy the table.
+  with the component and does not destroy the table. Pass a ref or a getter
+  (`useTable(() => props.table)`) to follow whichever table it gives.
 
 ## Components
 
@@ -96,6 +97,11 @@ so a component in it can fetch its own data when it mounts:
   <template #detail="{ row }"><OrderLines :order-id="row.id" /></template>
 </AcunDataTable>
 ```
+
+With `virtual`, `responsive` defaults to `scroll`: the drawn rows stay a
+table on narrow screens. Bulk actions and tools stay mounted while a parent
+re-renders with new arrays of the same entries; their callbacks are always the
+latest ones.
 
 Everything is rendered as text by Vue; nothing uses `v-html`.
 

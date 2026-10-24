@@ -435,3 +435,97 @@ describe('virtual scrolling', () => {
     expect(host.querySelector('tbody .adt-row td:nth-child(2)')!.textContent).toBe('C999');
   });
 });
+
+describe('virtual scrolling and editing', () => {
+  const editable: readonly ColumnDef<Order>[] = [
+    { id: 'customer', header: 'Müşteri', accessorKey: 'customer', editable: true },
+    { id: 'total', header: 'Tutar', accessorKey: 'total' },
+  ];
+  const many = Array.from({ length: 500 }, (_, i) => ({ id: i + 1, customer: `C${i + 1}`, total: '1.00' }));
+  const scrollTo = async (top: number): Promise<void> => {
+    const scroller = host.querySelector<HTMLElement>('.adt-scroll')!;
+    scroller.scrollTop = top;
+    await act(async () => {
+      scroller.dispatchEvent(new Event('scroll', { bubbles: true }));
+      await new Promise(resolve => setTimeout(resolve, 40));
+    });
+  };
+
+  it('scrolls sideways on narrow screens unless responsive is given', () => {
+    const table = createDataTable<Order>({ data: orders, columns });
+    render(h(DataTable<Order>, { table, virtual: true }));
+    expect(host.querySelector('.adt-table-wrap')!.classList.contains('adt-responsive--scroll')).toBe(true);
+    render(h(DataTable<Order>, { table, virtual: true, responsive: 'cards' }));
+    expect(host.querySelector('.adt-table-wrap')!.classList.contains('adt-responsive--cards')).toBe(true);
+  });
+
+  it('edits a row past the first page and keeps the editor while it is scrolled out of view', async () => {
+    const table = createDataTable<Order>({ data: many, columns: editable, initialState: { pageSize: 10 } });
+    render(h(DataTable<Order>, { table, virtual: { rowHeight: 40, overscan: 2 }, onEdit: () => undefined }));
+    await scrollTo(4000);
+    click(host.querySelector('.adt-edit[aria-label="Edit Müşteri: C99"]'));
+    const editor = host.querySelector('td.adt-editing .adt-editor');
+    expect(editor).not.toBeNull();
+    await scrollTo(12_000);
+    expect(host.querySelector('.adt-editor')).toBeNull();
+    await scrollTo(4000);
+    expect(host.querySelector('td.adt-editing .adt-editor')).toBe(editor);
+    act(() => table.setGlobalSearch('C1')); // C99 no longer matches: the edit ends
+    act(() => table.setGlobalSearch(''));
+    expect(host.querySelector('td.adt-editing')).toBeNull();
+  });
+
+  it('keeps the editor of a row on the first page when its cell is drawn again', async () => {
+    const table = createDataTable<Order>({ data: many, columns: editable, initialState: { pageSize: 10 } });
+    render(h(DataTable<Order>, { table, virtual: { rowHeight: 40, overscan: 2 }, onEdit: () => undefined }));
+    click(host.querySelector('.adt-edit[aria-label="Edit Müşteri: C1"]'));
+    const editor = host.querySelector('td.adt-editing .adt-editor');
+    expect(editor).not.toBeNull();
+    await scrollTo(8000);
+    await scrollTo(0);
+    expect(host.querySelector('td.adt-editing .adt-editor')).toBe(editor);
+  });
+
+  it('measures the viewport once mounted and follows resizes', () => {
+    let height = 1200;
+    let resized: (() => void) | undefined;
+    vi.spyOn(HTMLElement.prototype, 'clientHeight', 'get').mockImplementation(() => height);
+    (window as { ResizeObserver?: unknown }).ResizeObserver = class {
+      constructor(callback: () => void) { resized = callback; }
+      observe(): void { /* the test calls the callback */ }
+      disconnect(): void { resized = undefined; }
+    };
+    try {
+      render(h(DataTable<Order>, { table: createDataTable<Order>({ data: many, columns }), virtual: { rowHeight: 40, overscan: 0 } }));
+      expect(host.querySelectorAll('tbody .adt-row')).toHaveLength(30); // 1200px of 40px rows
+      height = 400;
+      act(() => resized!());
+      expect(host.querySelectorAll('tbody .adt-row')).toHaveLength(10);
+    } finally {
+      delete (window as { ResizeObserver?: unknown }).ResizeObserver;
+      vi.restoreAllMocks();
+    }
+  });
+});
+
+describe('changing props', () => {
+  it('keeps bulk actions and tools mounted across parent re-renders, calling the latest callbacks', () => {
+    const table = make();
+    const calls: number[] = [];
+    const view = (count: number): ReactElement => h('div', { 'data-count': count },
+      h(BulkActions<Order>, { table, actions: [{ id: 'archive', label: 'Archive', onSelect: () => calls.push(count) }] }),
+      h(Tools, { items: [{ id: 'print', label: 'Print', onSelect: () => calls.push(-count) }] }));
+    render(view(0));
+    act(() => table.selectRow('1'));
+    const bar = host.querySelector('.adt-selection');
+    const menu = host.querySelector<HTMLDetailsElement>('.adt-tools')!;
+    menu.open = true;
+    render(view(1));
+    expect(host.querySelector('.adt-selection')).toBe(bar);
+    expect(host.querySelector('.adt-tools')).toBe(menu);
+    expect(menu.open).toBe(true);
+    click(host.querySelector('.adt-bulk-action'));
+    click(host.querySelector('[data-action="print"]'));
+    expect(calls).toEqual([1, -1]);
+  });
+});

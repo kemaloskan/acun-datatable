@@ -1,3 +1,4 @@
+import * as Vue from 'vue';
 import {
   computed, defineComponent, h, nextTick, onMounted, onScopeDispose, onUpdated, shallowRef, watch,
   type PropType, type SlotsType, type VNode,
@@ -22,6 +23,8 @@ type AnyColumn = ColumnDef<any>;
 type LooseAction = RowAction<unknown>;
 
 let tables = 0;
+// Vue 3.5+: ids that match between the server render and hydration; 3.4: a counter.
+const useId: () => string = (Vue as { useId?: () => string }).useId ?? (() => `vue-${++tables}`);
 const tableProp = {
   type: Object as PropType<AnyTable>,
   required: true as const,
@@ -29,6 +32,16 @@ const tableProp = {
 };
 const labelsProp = { type: Object as PropType<Partial<DataTableLabels>>, default: () => ({}) };
 const withLabels = (labels: Partial<DataTableLabels>): DataTableLabels => ({ ...labelsEn, ...labels });
+// Mounted DOM controls: a new labels object with the same texts is no change.
+const labelsKey = (labels: Partial<DataTableLabels>): string => JSON.stringify(labels);
+/** Actions or items without their callbacks: a new array of the same entries is no change. */
+const shapeOf = (list: readonly object[]): string => JSON.stringify(list, (_, value: unknown) => (typeof value === 'function' ? true : value));
+/** Entries whose callbacks call the latest entry with the same ID, so a mounted control needs no re-mount. */
+const following = <T extends { readonly id: string }>(list: readonly T[], latest: () => readonly T[]): T[] => list.map(entry => Object.fromEntries(
+  Object.entries(entry).map(([key, value]) => [key, typeof value === 'function'
+    ? (...args: unknown[]) => (latest().find(next => next.id === entry.id) as Record<string, ((...args: unknown[]) => unknown) | undefined> | undefined)?.[key]?.(...args)
+    : value]),
+) as T);
 
 /** What a cell slot receives. */
 export interface CellSlotProps {
@@ -68,9 +81,9 @@ export const AcunDataTable = defineComponent({
     rowLabel: { type: Function as PropType<(row: Row<never>) => string>, default: undefined },
     rowActions: { type: Array as PropType<readonly RowAction<never>[]>, default: () => [] },
     status: { type: Object as PropType<StatusSource>, default: undefined },
-    /** Narrow screens: `cards` (default), `scroll`, `collapse`, `modal` or `auto` (measured); see `ColumnDef.priority`. */
+    /** Narrow screens: `cards` (default; `scroll` with `virtual`), `scroll`, `collapse`, `modal` or `auto` (measured); see `ColumnDef.priority`. */
     responsive: {
-      type: String as PropType<ResponsiveMode>, default: 'cards',
+      type: String as PropType<ResponsiveMode>, default: undefined,
       validator: (value: unknown) => { try { checkResponsive(value); return true; } catch { return false; } },
     },
     /** Density: `sm`, `md` (default) or `lg`. */
@@ -124,7 +137,7 @@ export const AcunDataTable = defineComponent({
    */
   slots: Object as SlotsType<{ cell: CellSlotProps; empty: Record<string, never>; detail: DetailSlotProps; [name: `cell-${string}`]: CellSlotProps }>,
   setup(props, { slots }) {
-    const binding = useTable(props.table);
+    const binding = useTable(() => props.table);
     const labels = computed(() => withLabels(props.labels));
     const text = computed(() => createCellText<any>(props.table.getColumns(), {
       locale: props.locale, labels: labels.value,
@@ -138,7 +151,7 @@ export const AcunDataTable = defineComponent({
       stopStatus = source?.subscribe(state => { phase.value = state.status; });
     }, { immediate: true });
     onScopeDispose(() => stopStatus?.());
-    const uid = `adt-vue-${++tables}`;
+    const uid = `adt-${useId()}`;
     let anchor: string | undefined;
     // Responsive collapse: open rows. Modal: the row shown in the dialog.
     const expanded = shallowRef<ReadonlySet<string>>(new Set());
@@ -190,9 +203,11 @@ export const AcunDataTable = defineComponent({
         : undefined;
     }, { flush: 'post' });
     onScopeDispose(() => stopTools?.());
+    // Virtual tables scroll sideways on narrow screens unless told otherwise.
+    const responsiveMode = computed(() => checkResponsive(props.responsive ?? (props.virtual ? 'scroll' : undefined)));
     // responsive="auto": columns hidden while the table does not fit, measured after every render.
     let stopAuto: (() => void) | undefined;
-    watch([wrapEl, () => props.responsive], ([node, mode]) => {
+    watch([wrapEl, responsiveMode], ([node, mode]) => {
       stopAuto?.();
       stopAuto = node && mode === 'auto' ? autoResponsive(node) : undefined;
     }, { flush: 'post' });
@@ -207,24 +222,52 @@ export const AcunDataTable = defineComponent({
       if (frame) return;
       frame = requestAnimationFrame(() => { frame = 0; scrollTop.value = node.scrollTop; viewport.value = node.clientHeight || viewport.value; });
     };
-    onUpdated(() => {
+    // The viewport is measured once mounted and follows resizes where ResizeObserver exists.
+    let stopViewport: (() => void) | undefined;
+    watch([wrapEl, () => Boolean(props.virtual)], ([node, on]) => {
+      stopViewport?.();
+      stopViewport = undefined;
+      const scroller = on ? node?.querySelector<HTMLElement>('.adt-scroll') : null;
+      if (!scroller) return;
+      const measure = (): void => { if (scroller.clientHeight > 0) viewport.value = scroller.clientHeight; };
+      measure();
+      const view = scroller.ownerDocument.defaultView as (Window & typeof globalThis) | null;
+      if (typeof view?.ResizeObserver !== 'function') return;
+      const observer = new view.ResizeObserver(measure);
+      observer.observe(scroller);
+      stopViewport = () => observer.disconnect();
+    }, { flush: 'post' });
+    onScopeDispose(() => stopViewport?.());
+    // Without rowHeight: the first drawn row is measured once, on mount or the first render with rows.
+    const measureRow = (): void => {
       if (!props.virtual || measuredRow.value) return;
       const row = wrapEl.value?.querySelector<HTMLElement>('tbody .adt-row');
       const height = row?.getBoundingClientRect().height ?? 0;
       if (height > 0) measuredRow.value = height;
-    });
+    };
+    onMounted(measureRow);
+    onUpdated(measureRow);
     // Editing in place: the shared editor is mounted into the editing cell, which Vue leaves empty.
     const editing = shallowRef<{ rowId: string; columnId: string } | undefined>();
     let editor: (CellEditor & { rowId: string; columnId: string }) | undefined;
     const closeEditor = (): void => { editor?.destroy(); editor = undefined; };
+    // The rows an edit can be in: the page, or every matching row when scrolled virtually.
+    const editRows = (): readonly AnyRow[] => (props.virtual ? props.table.getFilteredRows() : binding.page.value.rows);
     const mountEditor = (): void => {
       const target = editing.value;
       if (!target) return closeEditor();
-      if (editor && editor.rowId === target.rowId && editor.columnId === target.columnId) return;
-      closeEditor();
-      const row = binding.page.value.rows.find(candidate => candidate.id === target.rowId);
-      const column = props.table.getColumns().find(candidate => candidate.id === target.columnId);
       const host = wrapEl.value?.querySelector('td[data-adt-edit-host]');
+      if (editor && editor.rowId === target.rowId && editor.columnId === target.columnId) {
+        // A re-created cell gets the editor back; a row only scrolled out of view keeps it for when it comes back.
+        if (host) { if (!host.contains(editor.element)) host.append(editor.element); return; }
+        if (props.virtual && editRows().some(row => row.id === target.rowId)) return;
+        closeEditor();
+        editing.value = undefined;
+        return;
+      }
+      closeEditor();
+      const row = editRows().find(candidate => candidate.id === target.rowId);
+      const column = props.table.getColumns().find(candidate => candidate.id === target.columnId);
       if (!row || !column || !host || !props.onEdit) { editing.value = undefined; return; }
       const focusKey = `${row.id}:${column.id}`;
       const mounted = cellEditor(host.ownerDocument, {
@@ -244,14 +287,15 @@ export const AcunDataTable = defineComponent({
     onUpdated(mountEditor);
     onScopeDispose(closeEditor);
     onScopeDispose(() => { if (typeof document !== 'undefined') document.removeEventListener('click', closeMenus); });
-    // Close the dialog when its row leaves the page.
+    // Close the dialog when its row leaves the page (scrolled virtually: the matching rows).
     watch(() => binding.page.value, page => {
-      if (dialogRow.value !== undefined && !page.rows.some(row => row.id === dialogRow.value)) closeDialog();
+      const rows = props.virtual ? props.table.getFilteredRows() : page.rows;
+      if (dialogRow.value !== undefined && !rows.some(row => row.id === dialogRow.value)) closeDialog();
     });
 
     return (): VNode => {
       const { table } = props;
-      const responsive = props.responsive;
+      const responsive = responsiveMode.value;
       const collapsible = responsive === 'collapse' || responsive === 'modal' || responsive === 'auto';
       const detailSlot = slots.detail as ((props: DetailSlotProps) => VNode[]) | undefined; // absent unless given
       const expandable = collapsible || detailSlot !== undefined;
@@ -560,7 +604,7 @@ export const AcunPagination = defineComponent({
     labels: labelsProp,
   },
   setup(props) {
-    const binding = useTable(props.table);
+    const binding = useTable(() => props.table);
     const numbers = computed(() => new Intl.NumberFormat(props.locale));
     return (): VNode => {
       const label = withLabels(props.labels);
@@ -603,7 +647,7 @@ export const AcunPageSize = defineComponent({
     labels: labelsProp,
   },
   setup(props) {
-    const binding = useTable(props.table);
+    const binding = useTable(() => props.table);
     return (): VNode => {
       const size = binding.state.value.pageSize;
       return h('label', { class: 'adt-length' }, [
@@ -624,7 +668,7 @@ export const AcunPageInfo = defineComponent({
     all: { type: Boolean, default: false },
   },
   setup(props) {
-    const binding = useTable(props.table);
+    const binding = useTable(() => props.table);
     return (): VNode => {
       void binding.page.value; // re-render on every table change
       return h('div', { class: 'adt-info', 'aria-live': 'polite', 'aria-atomic': 'true' }, pageInfoText(props.table, withLabels(props.labels), props.all));
@@ -642,7 +686,7 @@ export const AcunSearch = defineComponent({
     debounceMs: { type: Number, default: 250, validator: (value: number) => Number.isFinite(value) && value >= 0 },
   },
   setup(props) {
-    const binding = useTable(props.table);
+    const binding = useTable(() => props.table);
     const text = shallowRef(binding.state.value.globalSearch);
     let timer: ReturnType<typeof setTimeout> | undefined;
     let typing = false;
@@ -681,7 +725,7 @@ export const AcunColumnToggle = defineComponent({
     reorderable: { type: Boolean, default: false },
   },
   setup(props) {
-    const binding = useTable(props.table);
+    const binding = useTable(() => props.table);
     return (): VNode => {
       const label = withLabels(props.labels);
       const { hiddenColumns: hidden, columnOrder } = binding.state.value;
@@ -734,18 +778,20 @@ export const AcunBulkActions = defineComponent({
   setup(props) {
     const host = shallowRef<HTMLElement | null>(null);
     let part: RenderedComponent | undefined;
+    const latest = (): readonly BulkAction<unknown>[] => props.actions as readonly BulkAction<unknown>[];
     const mount = (): void => {
       part?.destroy();
-      if (host.value) part = renderBulkActions(host.value, props.table, { actions: props.actions as readonly BulkAction<unknown>[], labels: withLabels(props.labels) });
+      if (host.value) part = renderBulkActions(host.value, props.table, { actions: following(latest(), latest), labels: withLabels(props.labels) });
     };
     onMounted(mount);
-    watch(() => [props.actions, props.labels], mount);
+    // Mounted once per table, actions and labels: a parent re-render keeps focus in the bar.
+    watch([() => props.table, () => shapeOf(props.actions), () => labelsKey(props.labels)], mount);
     onScopeDispose(() => part?.destroy());
     return (): VNode => h('div', { ref: host, class: 'adt-feature' });
   },
 });
 
-/** Mount a DOM-renderer control in a wrapper element and keep it for the component's life. */
+/** Mount a DOM-renderer control in a wrapper element, again for a new table, labels or locale. */
 function domControl(name: string, render: (el: HTMLElement, props: { table: AnyTable; labels: Partial<DataTableLabels>; locale: string }) => RenderedComponent) {
   return defineComponent({
     name,
@@ -753,7 +799,12 @@ function domControl(name: string, render: (el: HTMLElement, props: { table: AnyT
     setup(props) {
       const host = shallowRef<HTMLElement | null>(null);
       let part: RenderedComponent | undefined;
-      onMounted(() => { if (host.value) part = render(host.value, { table: props.table, labels: withLabels(props.labels), locale: props.locale }); });
+      const mount = (): void => {
+        part?.destroy();
+        if (host.value) part = render(host.value, { table: props.table, labels: withLabels(props.labels), locale: props.locale });
+      };
+      onMounted(mount);
+      watch([() => props.table, () => labelsKey(props.labels), () => props.locale], mount);
       onScopeDispose(() => part?.destroy());
       return (): VNode => h('div', { ref: host, class: 'adt-feature' });
     },
@@ -776,12 +827,14 @@ export const AcunTools = defineComponent({
   setup(props) {
     const host = shallowRef<HTMLElement | null>(null);
     let part: RenderedComponent | undefined;
+    const latest = (): readonly MenuItem[] => props.items;
     const mount = (): void => {
       part?.destroy();
-      if (host.value) part = renderMenu(host.value, { items: props.items, labels: withLabels(props.labels), ...(props.label ? { label: props.label } : {}) });
+      if (host.value) part = renderMenu(host.value, { items: following(latest(), latest), labels: withLabels(props.labels), ...(props.label ? { label: props.label } : {}) });
     };
     onMounted(mount);
-    watch(() => [props.items, props.label], mount);
+    // Mounted once per items, label and labels: a parent re-render keeps the menu open.
+    watch([() => shapeOf(props.items), () => props.label, () => labelsKey(props.labels)], mount);
     onScopeDispose(() => part?.destroy());
     return (): VNode => h('div', { ref: host, class: 'adt-feature' });
   },

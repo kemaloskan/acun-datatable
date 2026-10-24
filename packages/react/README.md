@@ -83,8 +83,11 @@ elements per column (`{ column, row, value, text }`); values are escaped by
 React; the package never injects HTML. `detail={row => <OrderLines orderId={row.id} />}`
 opens a child row under each row with a ⊕ button (in the dialog with
 `responsive="modal"`); it renders only while the row is open, so the
-component can load its own data on mount. In server mode pass the HTTP runner as
-`status` for loading and error states.
+component can load its own data on mount. With `virtual`, `responsive`
+defaults to `scroll`: the drawn rows stay a table on narrow screens.
+`BulkActions` and `Tools` stay mounted while a parent re-renders with new
+arrays of the same entries; their callbacks are always the latest ones. In
+server mode pass the HTTP runner as `status` for loading and error states.
 
 ## License
 

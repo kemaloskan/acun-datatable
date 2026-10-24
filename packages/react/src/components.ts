@@ -1,5 +1,5 @@
 import {
-  createElement as h, useCallback, useEffect, useId, useMemo, useRef, useState, useSyncExternalStore,
+  createElement as h, useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore,
   type ChangeEvent, type CSSProperties, type KeyboardEvent, type RefObject, type MouseEvent, type ReactElement, type ReactNode,
 } from 'react';
 import { COLUMN_WIDTH_LIMITS, getPageItems, type ColumnDef, type DataTable, type Row } from '@acunsoft/datatable-core';
@@ -15,6 +15,8 @@ import { useTable } from './hooks.js';
 type AnyTable = DataTable<any>;
 
 const withLabels = (labels?: Partial<DataTableLabels>): DataTableLabels => ({ ...labelsEn, ...labels });
+// Measure before the browser paints; on the server (no layout) an effect that never runs there.
+const useMeasureEffect = typeof document === 'undefined' ? useEffect : useLayoutEffect;
 
 /** What a custom cell renderer receives. */
 export interface CellRenderProps<TData> {
@@ -43,7 +45,7 @@ export interface DataTableProps<TData> {
   readonly rowActions?: readonly RowAction<TData>[];
   /** Server mode: loading and error states, e.g. the HTTP package's runner. */
   readonly status?: StatusSource;
-  /** Narrow screens: `cards` (default), `scroll`, `collapse`, `modal` or `auto` (measured); see `ColumnDef.priority`. */
+  /** Narrow screens: `cards` (default; `scroll` with `virtual`), `scroll`, `collapse`, `modal` or `auto` (measured); see `ColumnDef.priority`. */
   readonly responsive?: ResponsiveMode;
   /** Density: `sm`, `md` (default) or `lg`. */
   readonly size?: TableSize;
@@ -117,7 +119,7 @@ export function DataTable<TData>(props: DataTableProps<TData>): ReactElement {
   const onScroll = (event: { currentTarget: HTMLElement }): void => {
     const node = event.currentTarget;
     if (frame.current) return;
-    frame.current = requestAnimationFrame(() => { frame.current = 0; setScroll({ top: node.scrollTop, viewport: node.clientHeight || 480 }); });
+    frame.current = requestAnimationFrame(() => { frame.current = 0; setScroll(current => ({ top: node.scrollTop, viewport: node.clientHeight || current.viewport })); });
   };
   const all = virtual ? table.getFilteredRows() : undefined;
   const view = all ? virtualWindow(all.length, virtual!.rowHeight || measuredRow, scroll.top, scroll.viewport, virtual!.overscan) : undefined;
@@ -136,7 +138,8 @@ export function DataTable<TData>(props: DataTableProps<TData>): ReactElement {
   useEffect(() => {
     if (selectAll.current) selectAll.current.indeterminate = pageStatus === 'some';
   });
-  const responsive = checkResponsive(props.responsive);
+  // Virtual tables scroll sideways on narrow screens unless told otherwise.
+  const responsive = checkResponsive(props.responsive ?? (props.virtual ? 'scroll' : undefined));
   const size = checkSize(props.size);
   const collapsible = responsive === 'collapse' || responsive === 'modal' || responsive === 'auto';
   const detail = props.detail;
@@ -189,12 +192,22 @@ export function DataTable<TData>(props: DataTableProps<TData>): ReactElement {
     }
     const current = editor.current;
     if (!editing) { current?.destroy(); editor.current = undefined; return; }
-    if (current && current.rowId === editing.rowId && current.columnId === editing.columnId) return;
+    // The rows an edit can be in: the page, or every matching row when scrolled virtually.
+    const editRows = all ?? page.rows;
+    const host = wrap.current?.querySelector('td[data-adt-edit-host]');
+    if (current && current.rowId === editing.rowId && current.columnId === editing.columnId) {
+      // A re-created cell gets the editor back; a row only scrolled out of view keeps it for when it comes back.
+      if (host) { if (!host.contains(current.element)) host.append(current.element); return; }
+      if (all && editRows.some(row => row.id === editing.rowId)) return;
+      current.destroy();
+      editor.current = undefined;
+      setEditing(undefined);
+      return;
+    }
     current?.destroy();
     editor.current = undefined;
-    const row = page.rows.find(candidate => candidate.id === editing.rowId);
+    const row = editRows.find(candidate => candidate.id === editing.rowId);
     const column = table.getColumns().find(candidate => candidate.id === editing.columnId);
-    const host = wrap.current?.querySelector('td[data-adt-edit-host]');
     if (!row || !column || !host || !props.onEdit) { setEditing(undefined); return; }
     const mounted = cellEditor(host.ownerDocument, {
       row, column, value: cellValue(column, row), labels, onEdit: props.onEdit,
@@ -212,6 +225,22 @@ export function DataTable<TData>(props: DataTableProps<TData>): ReactElement {
     mounted.focus();
   });
   useEffect(() => () => editor.current?.destroy(), []);
+  // Virtual scrolling: the viewport measured once mounted, and on resize where ResizeObserver exists.
+  const isVirtual = virtual !== undefined;
+  useMeasureEffect(() => {
+    const scroller = isVirtual ? wrap.current?.querySelector<HTMLElement>('.adt-scroll') : null;
+    if (!scroller) return undefined;
+    const measure = (): void => {
+      const height = scroller.clientHeight;
+      if (height > 0) setScroll(current => (current.viewport === height ? current : { ...current, viewport: height }));
+    };
+    measure();
+    const view = scroller.ownerDocument.defaultView as (Window & typeof globalThis) | null;
+    if (typeof view?.ResizeObserver !== 'function') return undefined;
+    const observer = new view.ResizeObserver(measure);
+    observer.observe(scroller);
+    return () => observer.disconnect();
+  }, [isVirtual]);
   // Virtual scrolling without rowHeight: measure the first drawn row once.
   useEffect(() => {
     if (!virtual || virtual.rowHeight || measuredRow) return;
@@ -668,7 +697,9 @@ export interface BulkActionsProps<TData> {
  * selected", the actions, "Select all N matching" and "Clear selection".
  */
 export function BulkActions<TData>({ table, actions, labels }: BulkActionsProps<TData>): ReactElement {
-  const host = useDomControl(el => renderBulkActions(el, table, { actions, labels: withLabels(labels) }), [table, actions, JSON.stringify(labels ?? {})]);
+  // Mounted once per table, actions and labels: a parent re-render keeps focus in the bar.
+  const latest = useLatest(actions);
+  const host = useDomControl(el => renderBulkActions(el, table, { actions: latest.entries(), labels: withLabels(labels) }), [table, latest.shape, JSON.stringify(labels ?? {})]);
   return h('div', { ref: host, className: 'adt-feature' });
 }
 
@@ -677,6 +708,22 @@ export interface FiltersProps {
   readonly labels?: Partial<DataTableLabels>;
   /** For dates and numbers in the chips. Default `'en'`. */
   readonly locale?: string;
+}
+
+/**
+ * Actions or items for a mounted control: `shape` is everything but the
+ * callbacks (a new array of the same entries is no change), and `entries()`
+ * gives entries whose callbacks call the latest entry with the same ID.
+ */
+function useLatest<T extends { readonly id: string }>(list: readonly T[]): { readonly shape: string; entries(): T[] } {
+  const latest = useRef(list);
+  useEffect(() => { latest.current = list; });
+  return {
+    shape: JSON.stringify(list, (_, value: unknown) => (typeof value === 'function' ? true : value)),
+    entries: () => list.map(entry => Object.fromEntries(Object.entries(entry).map(([key, value]) => [key, typeof value === 'function'
+      ? (...args: unknown[]) => (latest.current.find(next => next.id === entry.id) as Record<string, ((...args: unknown[]) => unknown) | undefined> | undefined)?.[key]?.(...args)
+      : value])) as T),
+  };
 }
 
 /** Mount a DOM-renderer control once per table, labels and locale. */
@@ -712,7 +759,9 @@ export interface ToolsProps {
 
 /** A tools menu (export, copy, print, your own actions) with `items` (see `renderMenu`). */
 export function Tools({ items, label, labels }: ToolsProps): ReactElement {
-  const host = useDomControl(el => renderMenu(el, { items, labels: withLabels(labels), ...(label ? { label } : {}) }), [items, label, JSON.stringify(labels ?? {})]);
+  // Mounted once per items, label and labels: a parent re-render keeps the menu open.
+  const latest = useLatest(items);
+  const host = useDomControl(el => renderMenu(el, { items: latest.entries(), labels: withLabels(labels), ...(label ? { label } : {}) }), [latest.shape, label, JSON.stringify(labels ?? {})]);
   return h('div', { ref: host, className: 'adt-feature' });
 }
 
