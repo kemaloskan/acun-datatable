@@ -143,6 +143,37 @@
   .gtable td code{font-family:var(--mono);font-size:12.5px;color:var(--ink)}
   .note{border:1px solid var(--line);border-left:3px solid var(--brand);background:var(--surface-subtle);border-radius:var(--radius);padding:11px 15px;color:var(--muted);font-size:14px;line-height:1.6;margin:12px 0}
   .note.warn{border-left-color:#c48214}
+  /* home */
+  .hero h1{font-size:44px;line-height:1.1;letter-spacing:-.03em;margin:0 0 16px;max-width:760px}
+  .hero .lead{font-size:18px;max-width:720px}
+  .actions{display:flex;flex-wrap:wrap;gap:10px;margin:22px 0 14px}
+  .actions .btn{margin:0}
+  .btn.ghost{background:transparent;color:var(--ink);border:1px solid var(--line-strong)}
+  .btn.ghost:hover{background:var(--surface-hover);filter:none}
+  .badges{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 28px;padding:0;list-style:none}
+  .badges li{font-size:13px;color:var(--muted);border:1px solid var(--line);border-radius:999px;padding:3px 11px;background:var(--surface)}
+  .preview{border:1px solid var(--line);border-radius:10px;background:var(--surface);box-shadow:var(--shadow-sm);overflow:hidden;margin:0 0 10px}
+  .preview .bar{display:flex;align-items:center;gap:6px;padding:9px 14px;border-bottom:1px solid var(--line);background:var(--surface-subtle);font-family:var(--mono);font-size:12px;color:var(--faint)}
+  .preview .bar i{width:9px;height:9px;border-radius:50%;background:var(--line-strong);display:inline-block}
+  .preview .bar span{margin-left:8px}
+  .preview .stage{padding:16px}
+  .caption{font-size:13.5px;color:var(--muted);margin:0 0 8px}
+  .steps{list-style:none;margin:0;padding:0;counter-reset:step}
+  .steps>li{position:relative;padding:0 0 8px 46px;counter-increment:step}
+  .steps>li::before{content:counter(step);position:absolute;left:0;top:0;width:30px;height:30px;border-radius:50%;background:var(--brand-soft);color:var(--brand-text);font-weight:700;font-size:14px;display:grid;place-items:center;border:1px solid color-mix(in srgb,var(--brand) 35%,transparent)}
+  .steps>li::after{content:"";position:absolute;left:15px;top:36px;bottom:6px;width:1px;background:var(--line)}
+  .steps>li:last-child::after{display:none}
+  .steps h3{margin:3px 0 4px;font-size:16px;color:var(--ink)}
+  .steps p{margin:0 0 6px;color:var(--muted);font-size:14.5px;line-height:1.6}
+  .flow{display:grid;grid-template-columns:1fr auto 1fr auto 1fr;gap:10px;align-items:stretch}
+  .flow .box{border:1px solid var(--line);border-radius:var(--radius);padding:14px 16px;background:var(--surface)}
+  .flow .box.mid{background:var(--surface-subtle)}
+  .flow .box h3{margin:0 0 6px;font-size:14.5px;color:var(--ink)}
+  .flow .box p{margin:0;font-size:13.5px;color:var(--muted);line-height:1.55}
+  .flow .box code{font-size:12px}
+  .flow .arrow{display:grid;place-items:center;color:var(--faint);font-size:20px}
+  .gtable td a{color:var(--brand-text);font-weight:600;text-decoration:none;white-space:nowrap}
+  .gtable td a:hover{text-decoration:underline}
   .api{border:1px solid var(--line);border-radius:var(--radius);overflow:hidden}
   .api .r{display:grid;grid-template-columns:270px 1fr;gap:16px;padding:11px 16px;border-top:1px solid var(--line);font-size:14px}
   .api .r:first-child{border-top:0}
@@ -180,6 +211,11 @@
     .sh h2{font-size:20px}
     .cards{grid-template-columns:minmax(0,1fr)}
     .api .r{grid-template-columns:1fr;gap:4px}
+    .hero h1{font-size:32px}
+    .hero .lead{font-size:16px}
+    .flow{grid-template-columns:minmax(0,1fr)}
+    .flow .arrow{transform:rotate(90deg);height:20px}
+    .preview .stage{padding:10px}
   }
   @media (max-width:520px){
     .logo span.t{display:none}
@@ -212,6 +248,8 @@
 </div>
 <div class="backdrop" id="backdrop"></div>
 
+<link rel="stylesheet" href="demo/styles.css">
+<script src="demo/acun-datatable.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
 <script>
 /* ======================= data ======================= */
@@ -398,10 +436,10 @@ const FW = {
     install:"composer require acunsoft/datatable-laravel",
     unpub:{tr:"Packagist'te yayında (0.5.0, MIT):", en:"Published on Packagist (0.5.0, MIT):"},
     api:'acunsoft/datatable-laravel',
-    lead:{tr:"Laravel ve Livewire için tek Composer paketi. Ortak sorgu katmanı (izin verilen kolonlar, Eloquent operatörleri, Türkçe duyarlı akıllı arama, sayfa boyutu sınırı) hem Livewire tablolarına hem de tarayıcıdaki HTTP paketine JSON veren uç noktaya hizmet eder. Livewire tablosu DataTables tarzı düzen, numaralı sayfalama, Araçlar menüsü (dışa aktarma, yazdırma, içe aktarma), dört mobil görünüm ve sm/md/lg boyutlarla gelir; milyonlarca satırda tam sayım süre bütçesiyle yapılır. Livewire yalnızca Livewire tablosu için gerekir; npm veya bir UI kiti gerekmez.",
-          en:"One Composer package for Laravel and Livewire. A shared query layer (allowlisted columns, Eloquent operators, Turkish-aware smart search, page-size limit) serves Livewire tables and the JSON endpoint used by the browser HTTP package. The Livewire table comes with a DataTables-style layout, numbered pages, a tools menu (export, print, import), four narrow-screen modes and sm/md/lg sizes; on millions of rows exact counts run within a time budget. Livewire is only needed for the Livewire table; no npm or UI kit required."},
-    note:{tr:"Sıralanabilir ve filtrelenebilir kolonlar sunucuda <strong>izin listesiyle</strong> sınırlanır; istemciden gelen kolon adları asla ham SQL'e girmez. Uç nokta her sorguyu ayrıca yetkilendirmelidir. <code>query()</code> ve <code>columns()</code> korumalı (protected) metotlardır; tarayıcıdan çağrılamazlar. URL'den gelen geçersiz durum sayfayı bozmak yerine atılır; seçilen anahtarlar yalnızca <code>query()</code> içinde aranır. Görünüm düz Blade'dir ve DOM renderer'ın <code>adt-*</code> sınıflarını kullanır; aynı isteğe bağlı <code>styles.css</code> ikisini de biçimlendirir.",
-          en:"Sortable and filterable columns are <strong>allowlisted</strong> on the server; client column names never reach raw SQL. Endpoints must authorize every query. <code>query()</code> and <code>columns()</code> are protected, so the browser cannot call them. Invalid URL state is dropped instead of failing the page; selected keys are only looked up inside <code>query()</code>. The view is plain Blade with the DOM renderer's <code>adt-*</code> class names, so the same optional <code>styles.css</code> styles both."},
+    lead:{tr:"Laravel ve Livewire için tek Composer paketi. İki yol: sunucuda çizilen bir <strong>Livewire tablosu</strong> ya da Vue, React veya düz JavaScript için bir <strong>JSON uç noktası</strong>. İzin verilen kolonlar, Türkçe duyarlı arama, sayfa sınırları ve süreli sayım ikisinde de aynı. npm ya da bir UI kiti gerekmez.",
+          en:"One Composer package for Laravel and Livewire. Two ways: a <strong>Livewire table</strong> rendered on the server, or a <strong>JSON endpoint</strong> for Vue, React or plain JavaScript. Allowlisted columns, Turkish-aware search, page limits and timed counts are the same in both. No npm or UI kit needed."},
+    note:{tr:"Yalnızca <code>columns()</code> içinde tanımlı ve izin verilen kolonlar sıralanır, filtrelenir ve aranır; istekten gelen kolon adları asla SQL'e girmez. Yetkiyi siz verirsiniz: <code>query()</code> yalnızca bu kullanıcının görebileceği satırları döndürmeli, JSON uç noktası da rotasında yetkilendirilmeli. <code>query()</code> ve <code>columns()</code> korumalıdır; tarayıcıdan çağrılamaz.",
+          en:"Only the columns defined and allowed in <code>columns()</code> are sorted, filtered and searched; column names from a request never reach the SQL. Authorization is yours: <code>query()</code> must return only the rows this user may see, and the JSON endpoint must be authorized on its route. <code>query()</code> and <code>columns()</code> are protected; the browser cannot call them."},
     lang:"php", code:
 `<\?php
 use Acunsoft\\DataTable\\Laravel\\Column;
@@ -442,6 +480,46 @@ use Acunsoft\\DataTable\\Laravel\\TableResponse;
 Route::get('/orders/data', fn () => TableResponse::for(\\App\\Models\\Order::query())
     ->columns([Column::make('customer')->sortable()->filterable()])
     ->maxPageSize(100));`,
+    usage:[['Livewire','php',`<\?php
+use Acunsoft\\DataTable\\Laravel\\Column;
+use Illuminate\\Database\\Eloquent\\Builder;
+
+use Acunsoft\\DataTable\\Laravel\\Livewire\\WithDataTable;
+
+class OrdersTable extends \\Livewire\\Component
+{
+    use WithDataTable;
+
+    protected function columns(): array
+    {
+        return [
+            Column::make('customer')->header('Müşteri')->sortable()->filterable()->searchUsing('customer_search'),
+            Column::make('total')->header('Tutar')->type('decimal')->sortable()->filterable()->priority(1),
+            Column::make('status')->header('Durum')->filterable()->view('orders.status-badge'),
+            Column::make('created')->column('created_at')->header('Tarih')->type('datetime')->sortable()->priority(3),
+        ];
+    }
+
+    protected function query(): Builder
+    {
+        return \\App\\Models\\Order::query(); // only the rows this user may see
+    }
+
+    protected function selectable(): bool { return true; }
+    protected function responsive(): string { return 'collapse'; } // cards, scroll, collapse, modal
+    protected function exportFormats(): array { return ['xlsx', 'csv']; }
+}`],
+      ['Blade','html',`{{-- resources/views/orders.blade.php --}}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@acunsoft/datatable-dom@0.4.0/dist/styles.css">
+
+<livewire:orders-table />`],
+      ['JSON endpoint','php',`<\?php
+// A JSON endpoint for the browser packages (Blade + JS, Vue, React, Inertia).
+use Acunsoft\\DataTable\\Laravel\\TableResponse;
+
+Route::get('/orders/data', fn () => TableResponse::for(\\App\\Models\\Order::query())
+    ->columns([Column::make('customer')->sortable()->filterable()])
+    ->maxPageSize(100));`]],
     examples:[
       { title:{tr:"Kendi filtre kontrolleriniz", en:"Your own filter controls"},
         desc:{tr:"Filtreler URL'de tutulur; geçersiz bir kural eklenmez.", en:"Filters live in the URL; an invalid rule is not added."}, lang:"xml", code:
@@ -2018,14 +2096,58 @@ const GUIDES = {
  }
 };
 const GUIDE_ORDER = ["quick", "server", "filters", "tools", "pagesize", "mobile", "header", "look", "texts", "bigdata"];
+/* "Which package do I install?" on the home page: the command for each row. */
+const CHOOSE = {
+  laravel:"composer require acunsoft/datatable-laravel",
+  inertia:"composer require acunsoft/datatable-laravel\nnpm install @acunsoft/datatable",
+  nextjs:"npm install @acunsoft/datatable-server @acunsoft/datatable-react",
+  nuxt:"npm install @acunsoft/datatable-vue @acunsoft/datatable-server",
+  vue:"npm install @acunsoft/datatable-vue",
+  react:"npm install @acunsoft/datatable-react",
+  quick:"npm install @acunsoft/datatable",
+  webcomponent:"npm install @acunsoft/datatable",
+  api:"npm install @acunsoft/datatable-core",
+};
+const QUICK_ADD = [
+  ['<script>', 'html', `<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@acunsoft/datatable@0.4.0/dist/styles.css">
+<script src="https://cdn.jsdelivr.net/npm/@acunsoft/datatable@0.4.0/dist/acun-datatable.min.js"><\/script>`],
+  ['npm', 'typescript', `// npm install @acunsoft/datatable
+import { AcunDataTable } from '@acunsoft/datatable';
+import '@acunsoft/datatable/styles.css';`],
+];
+const QUICK_TABLE = `<table id="orders">
+  <thead>
+    <tr><th>Customer</th><th data-type="decimal">Total</th><th>City</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>Ayşe Yılmaz</td><td>1250.50</td><td>İzmir</td></tr>
+    <tr><td>Ali Kaya</td><td>980.00</td><td>Ankara</td></tr>
+  </tbody>
+</table>
+
+<script>
+  new AcunDataTable('#orders', { language: 'tr' });
+<\/script>`;
+const QUICK_SERVER = `new AcunDataTable('#orders', {
+  serverSide: true,
+  ajax: '/api/orders',            // your Laravel, Node.js or any other end point
+  columns: [
+    { data: 'customer', title: 'Customer' },
+    { data: 'total', title: 'Total', type: 'decimal' },
+    { data: 'city', title: 'City' },
+  ],
+  language: 'tr',
+});`;
+/* "Next steps" on every framework page: the guides most tables need next. */
+const NEXT_STEPS = ['server', 'filters', 'tools', 'mobile', 'bigdata'];
 const FW_ORDER = ["laravel","html","vue","react","nextjs","nuxt","inertia","webcomponent"];
 
 const T = {
   tr:{ nav_start:"Başlangıç", nav_fw:"Frameworkler", nav_guides:"Kılavuzlar", nav_api:"API", cta:"Kuruluma başla",
        g_start:"Başlangıç", g_fw:"Frameworkler", g_guides:"Kılavuzlar", g_core:"Çekirdek",
        home:"Giriş", api:"API referansı", toc:"Bu sayfada",
-       s_install:"Kurulum", s_usage:"Kullanım", s_features:"Özellikler", s_examples:"Örnekler", s_api:"API",
-       d_install:"Paketleri projene ekle.", d_usage:"İlk tabloyu oluştur.", d_features:"Adapter'ın sağladığı yetenekler.",
+       s_install:"Kurulum", s_usage:"İlk tablo", s_features:"Özellikler", s_examples:"Örnekler", s_api:"API",
+       d_install:"Paketleri projene ekle.", d_usage:"İlk tablonuz; kopyalayıp kolonlarınızı yazın.", d_features:"Adapter'ın sağladığı yetenekler.",
        d_examples:"Kopyalanıp uyarlanabilecek örnekler.", d_api:"Kullanılan çekirdek fonksiyonlar.",
        preview:"planlanıyor", updated:"Son güncelleme · 24 Ekim 2026",
        ex1:"Sıralama ve sayfalama", ex1d:"Çok kolonlu stable sıralama, ardından 1-tabanlı sayfa.",
@@ -2045,12 +2167,36 @@ const T = {
        demo:"Canlı demoyu aç", demo_d:"Kurulum olmadan tarayıcıda: sunucu tarafı sayfalama, filtreler, alt toplam, hücrede düzenleme, 100.000 satırlık sanal kaydırma.",
        fw_desc:{vue:"Hazır: composable\'lar ve bileşenler.",react:"Hazır: hook\'lar ve bileşenler.",html:"Hazır: framework olmadan DOM renderer.",laravel:"Hazır: Livewire tablosu ve JSON uç nokta, tek Composer paketi.",nextjs:"Route handler için Node sunucu paketi ve React ön yüz.",nuxt:"Nitro API rotası ve Vue bileşenleri.",inertia:"Laravel JSON uç noktası, Inertia sayfasında tablo.",webcomponent:"<acun-datatable>: Angular, Svelte, Astro, Alpine, düz HTML."},
        api_title:"API referansı", api_lead:"Paketlerin genel API'si: tek çağrılık AcunDataTable, çekirdek, HTTP, Node sunucusu, DOM, dışa/içe aktarma, Vue, React (npm'de 0.4.0) ve Laravel (Packagist'te 0.5.0).",
-       a_s1:"Fonksiyonlar", a_s1d:"İmza ve kısa açıklama.", a_s2:"Örnek", a_s2d:"Fonksiyonların birlikte kullanımı." },
+       a_s1:"Fonksiyonlar", a_s1d:"İmza ve kısa açıklama.", a_s2:"Örnek", a_s2d:"Fonksiyonların birlikte kullanımı.",
+       h2_title:"Veri tablonuz, her projede aynı.",
+       h2_lead:"Sıralama, akıllı arama, filtreler, sayfalama, dışa aktarma ve mobil görünüm hazır gelir. Laravel, Vue, React, Next.js ya da düz HTML'de aynı tablo; veriyi nasıl sorgulayacağına sizin backend'iniz karar verir.",
+       h2_start:"5 dakikada başla", h2_demo:"Canlı demo", h2_github:"GitHub",
+       h2_badges:["MIT, ücretsiz","Türkçe dahil 5 dil","Klavye ve ekran okuyucu","jQuery yok, harici bağımlılık yok"],
+       h2_preview:"Bu tablo canlı: arayın (\"ayse\" Ayşe'yi bulur), başlığa tıklayıp sıralayın, sayfalayın, pencereyi daraltın.",
+       q_title:"5 dakikada ilk tablo", q_desc:"En kısa yol: tek dosya, derleme adımı yok.",
+       q1:"Ekleyin", q1d:"Stil dosyası ve tek bir script. npm kullanıyorsanız ikinci sekme.",
+       q2:"Tabloyu dönüştürün", q2d:"Elinizdeki <code>&lt;table&gt;</code> yeter: başlıklar kolon, satırlar veri olur. Arama, sıralama ve sayfalama hemen çalışır.",
+       q3:"Sunucuya bağlayın", q3d:"Binlerce, milyonlarca satırda sayfa, sıralama, arama ve sayım backend'de yapılır; tablo yalnızca bir sayfa tutar.",
+       q3n:"Backend tarafı: Laravel'de <a href=\"#/laravel\">TableResponse</a>, Node.js'te <a href=\"#/nextjs\">@acunsoft/datatable-server</a>; başka bir dil için <a href=\"#/server\">istek ve yanıt biçimi</a>.",
+       c_title:"Hangi paketi kurmalıyım?", c_desc:"Projenize göre tek satırlık cevap.",
+       c_head:["Projeniz","Kurun","Rehber"],
+       c_rows:[["Laravel + Livewire","laravel"],["Laravel + Inertia (Vue veya React)","inertia"],["Next.js, Express, Fastify","nextjs"],["Nuxt","nuxt"],["Vue 3","vue"],["React","react"],["Düz HTML, DataTables'tan geçiş","quick"],["Angular, Svelte, Astro, Alpine","webcomponent"],["Kendi tasarım sisteminiz (headless)","api"]],
+       c_open:"Aç →",
+       f_title:"Framework rehberleri", f_desc:"Her sayfada kurulum, ilk tablo ve kopyalanabilir örnekler.",
+       w_title:"Nasıl çalışır?", w_desc:"Tablo arayüzü yönetir; veriyi sorgulayan backend'dir.",
+       w1:"Tarayıcı", w1d:"Acun DataTable: tablo, arama, filtreler, sayfalar. Kullanıcının istediğini yazar, gelen yanıtı gösterir.",
+       w2:"İstek ve yanıt", w2d:"<code>page, pageSize, sort, filters, search</code> → <code>rows, totalRows</code>. DataTables biçimi de desteklenir.",
+       w3:"Backend", w3d:"Laravel, Node.js ya da kendi sunucunuz: izin verilen kolonlar, sorgu, sayım. Veritabanı sürücüsü sizindir.",
+       n_title:"Neler hazır gelir?", n_desc:"Her ortamda aynı yetenekler.",
+       s_next:"Sonraki adımlar", d_next:"Tablonuz çalışıyor; sıradaki konular.", sec_label:"Bilmeniz gerekenler:",
+       next_d:{server:"Milyonlarca satır: sayfa, sıralama ve arama sunucuda.",filters:"Kolon türüne göre filtre paneli ve etiketler.",tools:"Excel/CSV, yazdırma, kendi hücreleriniz, hücrede düzenleme.",mobile:"Telefonda kart, yana kaydırma, açılır satır ya da modal.",bigdata:"Sayım, derin sayfa ve indeksler: ölçülmüş sonuçlarla."},
+       next_demo:"Bütün özellikler tarayıcıda, kurulum olmadan.",
+  },
   en:{ nav_start:"Getting started", nav_fw:"Frameworks", nav_guides:"Guides", nav_api:"API", cta:"Get started",
        g_start:"Getting started", g_fw:"Frameworks", g_guides:"Guides", g_core:"Core",
        home:"Introduction", api:"API reference", toc:"On this page",
-       s_install:"Installation", s_usage:"Usage", s_features:"Features", s_examples:"Examples", s_api:"API",
-       d_install:"Add the packages to your project.", d_usage:"Create your first table.", d_features:"What the adapter provides.",
+       s_install:"Installation", s_usage:"First table", s_features:"Features", s_examples:"Examples", s_api:"API",
+       d_install:"Add the packages to your project.", d_usage:"Your first table; copy it and write your columns.", d_features:"What the adapter provides.",
        d_examples:"Examples to copy and adapt.", d_api:"Core functions used.",
        preview:"planned", updated:"Last updated · 24 October 2026",
        ex1:"Sorting and pagination", ex1d:"Multi-column stable sorting, then a 1-based page.",
@@ -2070,7 +2216,31 @@ const T = {
        demo:"Open the live demo", demo_d:"In the browser, no install: server-side paging, filters, footer totals, editing in place, virtual scrolling over 100,000 rows.",
        fw_desc:{vue:"Ready: composables and components.",react:"Ready: hooks and components.",html:"Ready: DOM renderer, no framework.",laravel:"Ready: a Livewire table and a JSON endpoint, one Composer package.",nextjs:"A Node server package for route handlers, and the React front end.",nuxt:"A Nitro API route and the Vue components.",inertia:"A Laravel JSON endpoint, the table on an Inertia page.",webcomponent:"<acun-datatable>: Angular, Svelte, Astro, Alpine, plain HTML."},
        api_title:"API reference", api_lead:"Public API of the packages: the one-call AcunDataTable, core, HTTP, Node server, DOM, export/import, Vue, React (on npm, 0.4.0) and Laravel (on Packagist, 0.5.0).",
-       a_s1:"Functions", a_s1d:"Signature and short description.", a_s2:"Example", a_s2d:"Using the functions together." }
+       a_s1:"Functions", a_s1d:"Signature and short description.", a_s2:"Example", a_s2d:"Using the functions together.",
+       h2_title:"Your data table, the same in every project.",
+       h2_lead:"Sorting, smart search, filters, paging, export and mobile layouts come ready. The same table in Laravel, Vue, React, Next.js or plain HTML; your back end decides how the data is queried.",
+       h2_start:"Start in 5 minutes", h2_demo:"Live demo", h2_github:"GitHub",
+       h2_badges:["MIT, free","5 languages","Keyboard and screen reader","No jQuery, no dependencies"],
+       h2_preview:"This table is live: search (\"ayse\" finds Ayşe), click a header to sort, page through, narrow the window.",
+       q_title:"Your first table in 5 minutes", q_desc:"The shortest path: one file, no build step.",
+       q1:"Add it", q1d:"A stylesheet and one script. Using npm? The second tab.",
+       q2:"Turn your table into a data table", q2d:"Your existing <code>&lt;table&gt;</code> is enough: the headers become columns, the rows the data. Search, sorting and paging work at once.",
+       q3:"Connect it to your server", q3d:"With thousands or millions of rows, paging, sorting, search and counting run on the back end; the table holds one page.",
+       q3n:"The back end: <a href=\"#/laravel\">TableResponse</a> in Laravel, <a href=\"#/nextjs\">@acunsoft/datatable-server</a> in Node.js; for any other language, the <a href=\"#/server\">request and response format</a>.",
+       c_title:"Which package do I install?", c_desc:"A one-line answer for your project.",
+       c_head:["Your project","Install","Guide"],
+       c_rows:[["Laravel + Livewire","laravel"],["Laravel + Inertia (Vue or React)","inertia"],["Next.js, Express, Fastify","nextjs"],["Nuxt","nuxt"],["Vue 3","vue"],["React","react"],["Plain HTML, moving from DataTables","quick"],["Angular, Svelte, Astro, Alpine","webcomponent"],["Your own design system (headless)","api"]],
+       c_open:"Open →",
+       f_title:"Framework guides", f_desc:"Installation, a first table and examples to copy on every page.",
+       w_title:"How does it work?", w_desc:"The table runs the interface; your back end queries the data.",
+       w1:"Browser", w1d:"Acun DataTable: the table, search, filters, pages. It writes what the user asks for and shows the answer.",
+       w2:"Request and response", w2d:"<code>page, pageSize, sort, filters, search</code> → <code>rows, totalRows</code>. DataTables' format works too.",
+       w3:"Back end", w3d:"Laravel, Node.js or your own server: the allowed columns, the query, the count. The database driver is yours.",
+       n_title:"What comes ready?", n_desc:"The same capabilities everywhere.",
+       s_next:"Next steps", d_next:"Your table works; what usually comes next.", sec_label:"Good to know:",
+       next_d:{server:"Millions of rows: paging, sorting and search on the server.",filters:"A filter panel by column type, with chips.",tools:"Excel/CSV, printing, your own cells, editing in place.",mobile:"Cards, sideways scrolling, collapsible rows or a dialog on phones.",bigdata:"Counts, deep pages and indexes, with measured results."},
+       next_demo:"Every feature in the browser, no install.",
+  }
 };
 
 /* ======================= state ======================= */
@@ -2107,12 +2277,26 @@ function page(r) {
   const t = T[lang];
   if (r === 'home') {
     const cards = FW_ORDER.map((id,i) => { const f = FW[id];
-      return `<a class="card link${i===0?' feat':''}" href="#/${id}" data-go="${id}"><div class="ct"><span class="ico">${ICON[id]}</span><h3>${f.name}</h3></div><span class="lb">${esc(f.pkg)}</span><p>${esc(t.fw_desc[id])}</p><span class="go">${t.go}</span></a>`; }).join('');
-    return { toc:[['s1',t.h_s1],['s2',t.h_s2],['s3',t.h_s3]], html:
-      `<h1>${t.h_title}</h1><p class="lead">${t.h_lead}</p><div class="meta"><span>${t.h_meta}</span><span>${t.updated}</span></div>` +
-      sec('s1',1,t.h_s1,t.h_s1d,`<p style="margin:0 0 18px"><a class="btn" href="demo/">${t.demo} →</a> <span class="muted">${t.demo_d}</span></p><div class="cards">${cards}</div><p style="margin-top:18px">${t.h_core_install} <code>npm install @acunsoft/datatable-core</code></p>`) +
-      sec('s2',2,t.h_s2,t.h_s2d,featCards()) +
-      sec('s3',3,t.h_s3,t.h_s3d,code(EX_TABLE,'typescript')) };
+      return `<a class="card link" href="#/${id}" data-go="${id}"><div class="ct"><span class="ico">${ICON[id]}</span><h3>${f.name}</h3></div><span class="lb">${esc(f.pkg)}</span><p>${esc(t.fw_desc[id])}</p><span class="go">${t.go}</span></a>`; }).join('');
+    const label = (id) => FW[id] ? FW[id].name : GUIDES[id] ? GUIDES[id].title[lang] : t.api;
+    const chooser = `<div class="gtable"><table><thead><tr>${t.c_head.map(h => `<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>${
+      t.c_rows.map(([project, id]) => `<tr><td>${esc(project)}</td><td>${CHOOSE[id].split('\n').map(line => `<code>${esc(line)}</code>`).join('<br>')}</td><td><a href="#/${id}" data-go="${id}">${esc(label(id))}</a></td></tr>`).join('')}</tbody></table></div>`;
+    const steps = `<ol class="steps">` +
+      `<li><h3>${t.q1}</h3><p>${t.q1d}</p>${tabs(QUICK_ADD)}</li>` +
+      `<li><h3>${t.q2}</h3><p>${t.q2d}</p>${code(QUICK_TABLE,'html')}</li>` +
+      `<li><h3>${t.q3}</h3><p>${t.q3d}</p>${code(QUICK_SERVER,'typescript')}<div class="note">${t.q3n}</div></li></ol>`;
+    const flow = `<div class="flow"><div class="box"><h3>${t.w1}</h3><p>${t.w1d}</p></div><div class="arrow" aria-hidden="true">⇄</div>` +
+      `<div class="box mid"><h3>${t.w2}</h3><p>${t.w2d}</p></div><div class="arrow" aria-hidden="true">⇄</div><div class="box"><h3>${t.w3}</h3><p>${t.w3d}</p></div></div>`;
+    return { toc:[['s1',t.q_title],['s2',t.c_title],['s3',t.f_title],['s4',t.w_title],['s5',t.n_title]], html:
+      `<div class="hero"><h1>${t.h2_title}</h1><p class="lead">${t.h2_lead}</p>` +
+      `<div class="actions"><a class="btn" href="#/home/s1">${t.h2_start} →</a><a class="btn ghost" href="demo/">${t.h2_demo}</a><a class="btn ghost" href="https://github.com/kemaloskan/acun-datatable">${t.h2_github}</a></div>` +
+      `<ul class="badges">${t.h2_badges.map(b => `<li>${esc(b)}</li>`).join('')}</ul>` +
+      `<div class="preview"><div class="bar"><i></i><i></i><i></i><span>new AcunDataTable('#orders', { … })</span></div><div class="stage" id="home-table"></div></div><p class="caption">${t.h2_preview}</p></div>` +
+      sec('s1',1,t.q_title,t.q_desc,steps) +
+      sec('s2',2,t.c_title,t.c_desc,chooser) +
+      sec('s3',3,t.f_title,t.f_desc,`<div class="cards">${cards}</div>`) +
+      sec('s4',4,t.w_title,t.w_desc,flow) +
+      sec('s5',5,t.n_title,t.n_desc,featCards()) };
   }
   if (r === 'api') {
     return { toc:[['a1',t.a_s1],['a2',t.a_s2]], html:
@@ -2129,16 +2313,18 @@ function page(r) {
         (x.note ? `<div class="note">${x.note[lang]}</div>` : ''))).join('') };
   }
   const f = FW[r];
-  return { toc:[['install',t.s_install],['usage',t.s_usage],['features',t.s_features],['examples',t.s_examples],['api',t.s_api]], html:
+  const next = `<div class="cards">${NEXT_STEPS.map(id => `<a class="card link" href="#/${id}" data-go="${id}"><div class="ct"><span class="ico">${ICON.guide}</span><h3>${esc(GUIDES[id].title[lang])}</h3></div><p>${esc(t.next_d[id])}</p><span class="go">${t.go}</span></a>`).join('')}` +
+    `<a class="card link" href="demo/"><div class="ct"><span class="ico">${ICON.home}</span><h3>${t.h2_demo}</h3></div><p>${esc(t.next_demo)}</p><span class="go">${t.go}</span></a></div>`;
+  return { toc:[['install',t.s_install],['usage',t.s_usage],['examples',t.s_examples],['next',t.s_next],['api',t.s_api]], html:
     `<h1><span class="hi">${ICON[r]}</span>${f.name}${f.status === 'ready' ? '' : ` <span class="pill">${t.preview}</span>`}</h1><p class="lead">${f.lead[lang]}</p><div class="meta"><span>${esc(f.pkg)}</span><span>${t.updated}</span></div>` +
     (f.status === 'ready' ? '' : `<div class="note warn" style="margin-top:22px">${t.prevNote}</div>`) +
     sec('install',1,t.s_install,t.d_install,
-      (f.status === 'ready' ? `<p>${f.unpub ? f.unpub[lang] : t.unpub}</p>${code(f.install,'bash')}` : `<p>${t.planned_install}</p>`) + `<div class="note">${f.note[lang]}</div>`) +
-    sec('usage',2,t.s_usage,t.d_usage,code(f.code,f.lang)) +
-    sec('features',3,t.s_features,t.d_features,`<p>${esc(t.feat_for(f.name))}</p>`+featCards()) +
-    sec('examples',4,t.s_examples,t.d_examples, f.examples
+      (f.status === 'ready' ? `<p>${f.unpub ? f.unpub[lang] : t.unpub}</p>${code(f.install,'bash')}` : `<p>${t.planned_install}</p>`) + `<div class="note"><strong>${t.sec_label}</strong> ${f.note[lang]}</div>`) +
+    sec('usage',2,t.s_usage,t.d_usage,f.usage ? tabs(f.usage) : code(f.code,f.lang)) +
+    sec('examples',3,t.s_examples,t.d_examples, f.examples
       ? f.examples.map(x => `<h3 class="sub">${esc(x.title[lang])}</h3><p>${esc(x.desc[lang])}</p>${code(x.code,x.lang)}`).join('')
       : `<h3 class="sub">${t.ex1}</h3><p>${t.ex1d}</p>${code(EX_SORT,'typescript')}<h3 class="sub">${t.ex2}</h3><p>${t.ex2d}</p>${code(EX_STATE,'typescript')}`) +
+    sec('next',4,t.s_next,t.d_next,next) +
     sec('api',5,t.s_api,t.d_api,apiList(f.api ?? (f.status === 'ready' ? undefined : '@acunsoft/datatable-core'))) };
 }
 
@@ -2171,12 +2357,40 @@ let tocIds = [];
 function renderPage(r) {
   const t = T[lang], p = page(r);
   tocIds = p.toc.map(x => x[0]);
-  const chips = `<nav class="chips" id="chips" aria-label="${esc(t.toc)}">${p.toc.map(([id,l]) => `<a href="#/${r}/${id}" data-to="${id}">${esc(l)}</a>`).join('')}</nav>`;
+  const chips = r === 'home' ? '' : `<nav class="chips" id="chips" aria-label="${esc(t.toc)}">${p.toc.map(([id,l]) => `<a href="#/${r}/${id}" data-to="${id}">${esc(l)}</a>`).join('')}</nav>`;
   $('#content').innerHTML = chips + p.html + `<footer class="legal"><strong>${T[lang].legal_title}</strong><p>${T[lang].legal}</p></footer>`;
   $('#toc').innerHTML = `<h4>${t.toc}</h4><ul>${p.toc.map(([id,l]) => `<li><a href="#/${r}/${id}" data-to="${id}">${esc(l)}</a></li>`).join('')}</ul>`;
   document.querySelectorAll('#content pre code').forEach(b => { try { hljs.highlightElement(b); } catch (e) {} });
+  mountHomeTable(r);
   document.title = r === 'home' ? 'Acun DataTable' : (FW[r] ? FW[r].name : GUIDES[r] ? GUIDES[r].title[lang] : t.api) + ' — Acun DataTable';
   spy();
+}
+/* The live table on the home page: the real <script> build, rows made here. */
+let homeTable = null;
+function mountHomeTable(r) {
+  homeTable?.destroy();
+  homeTable = null;
+  const host = document.getElementById('home-table');
+  if (r !== 'home' || !host || typeof AcunDataTable === 'undefined') return;
+  const dark = document.documentElement.getAttribute('data-theme') === 'dark' ||
+    (!document.documentElement.getAttribute('data-theme') && matchMedia('(prefers-color-scheme: dark)').matches);
+  host.setAttribute('data-theme', dark ? 'dark' : 'light');
+  const names = ['Ayşe Yılmaz','Ali Kaya','İrem Şahin','Çağrı Öztürk','Zeynep Doğan','Ümit Kılıç','Deniz Ak','Gülşen Erdoğan','Hakan Çelik','Şule Aydın','Mehmet Öz','Ebru Güneş'];
+  const cities = ['İstanbul','Ankara','İzmir','Bursa','Antalya','Konya'];
+  const statuses = lang === 'tr' ? ['Yeni','Ödendi','Kargoda','Teslim'] : ['New','Paid','Shipped','Delivered'];
+  const data = Array.from({ length: 48 }, (_, i) => ({ id: i + 1, customer: names[(i * 7) % names.length], city: cities[(i * 5) % cities.length],
+    total: (((i * 104729 + 31337) % 250000) / 100 + 40).toFixed(2), status: statuses[(i * 3) % statuses.length] }));
+  const tr = lang === 'tr';
+  homeTable = new AcunDataTable(host, {
+    data, language: lang, responsive: 'collapse', size: 'sm',
+    pagination: { pageSize: 6, pageSizes: [6, 12, 24] },
+    columns: [
+      { data: 'customer', title: tr ? 'Müşteri' : 'Customer', priority: 1 },
+      { data: 'city', title: tr ? 'Şehir' : 'City', priority: 3 },
+      { data: 'total', title: tr ? 'Tutar' : 'Total', type: 'decimal' },
+      { data: 'status', title: tr ? 'Durum' : 'Status', priority: 2 },
+    ],
+  });
 }
 /** `#/vue/install` deep-links to a section of a page. */
 const sectionFromHash = () => (location.hash.match(/^#\/[a-z]+\/([a-z0-9-]+)/) || [])[1];
@@ -2185,7 +2399,8 @@ function render(scrollTop) {
   const r = route();
   if (r !== rendered) { renderHeader(r); renderSide(r); renderPage(r); rendered = r; }
   const target = sectionFromHash() && document.getElementById(sectionFromHash());
-  if (target) target.scrollIntoView({ block: 'start' });
+  // After layout (fonts, highlighted code, the live table), or the browser's own restore wins.
+  if (target) requestAnimationFrame(() => target.scrollIntoView({ block: 'start' }));
   else if (scrollTop) window.scrollTo({ top: 0, behavior: 'instant' });
 }
 
@@ -2246,8 +2461,10 @@ $('#theme').onclick = () => {
   const next = dark ? 'light' : 'dark';
   document.documentElement.setAttribute('data-theme', next);
   try { localStorage.setItem('adt-theme', next); } catch (e) {}
+  document.getElementById('home-table')?.setAttribute('data-theme', next);
   renderHeader(route());
 };
+if ('scrollRestoration' in history) history.scrollRestoration = 'manual'; // deep links decide where a page opens
 window.addEventListener('hashchange', () => render(true));
 render(false);
 // The browser settles the initial scroll position after load; apply a deep
