@@ -25,6 +25,8 @@ jobs:
       - run: npm run check
       - run: npm run test
       - run: npm run build
+      # Each built file must stay within its gzip budget (size-budget.json).
+      - run: npm run size
 
   browsers:
     # Real-browser tests of the DOM renderer (SPEC M3): keyboard-only use,
@@ -78,3 +80,45 @@ jobs:
       # by composer.json for this PHP version.
       - run: composer update --no-interaction --no-progress --prefer-dist
       - run: composer test
+
+  databases:
+    # Exact counts with a time limit on real servers (statement_timeout,
+    # max_execution_time, max_statement_time); SQLite cannot test them.
+    runs-on: ubuntu-latest
+    name: count time limit (PostgreSQL, MySQL, MariaDB)
+    defaults:
+      run:
+        working-directory: packages/adapter-laravel
+    services:
+      postgres:
+        image: postgres:17
+        env: { POSTGRES_PASSWORD: secret, POSTGRES_DB: adt_test }
+        ports: ['5432:5432']
+        options: --health-cmd "pg_isready -U postgres" --health-interval 5s --health-retries 10
+      mysql:
+        image: mysql:8.4
+        env: { MYSQL_ROOT_PASSWORD: secret, MYSQL_DATABASE: adt_test }
+        ports: ['3306:3306']
+        options: --health-cmd "mysqladmin ping -psecret" --health-interval 5s --health-retries 20
+      mariadb:
+        image: mariadb:11
+        env: { MARIADB_ROOT_PASSWORD: secret, MARIADB_DATABASE: adt_test }
+        ports: ['3307:3306']
+        options: --health-cmd "healthcheck.sh --connect" --health-interval 5s --health-retries 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.5'
+          extensions: intl, mbstring, pdo_sqlite, pdo_pgsql, pdo_mysql, zip
+          coverage: none
+      - run: composer update --no-interaction --no-progress --prefer-dist
+      - name: PostgreSQL
+        run: vendor/bin/phpunit --filter PostgresCountTest
+        env: { ADT_TEST_PGSQL: 'postgres://postgres:secret@127.0.0.1:5432/adt_test' }
+      - name: MySQL
+        run: vendor/bin/phpunit --filter MysqlCountTest
+        env: { ADT_TEST_MYSQL: 'mysql://root:secret@127.0.0.1:3306/adt_test' }
+      - name: MariaDB (through the mysql driver)
+        run: vendor/bin/phpunit --filter MysqlCountTest
+        env: { ADT_TEST_MYSQL: 'mysql://root:secret@127.0.0.1:3307/adt_test' }

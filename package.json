@@ -25,7 +25,8 @@
     "e2e:chromium": "npm run build && playwright test --project=chromium",
     "changeset": "changeset",
     "version-packages": "changeset version && npm install --package-lock-only",
-    "release": "npm run check && npm run test && npm run build && changeset publish"
+    "release": "npm run check && npm run test && npm run build && changeset publish",
+    "size": "node scripts/size.mjs"
   },
   "engines": {
     "node": ">=22"

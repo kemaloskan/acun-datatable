@@ -1,0 +1,13 @@
+{
+  "//": "Largest gzip size (bytes) of each built file; `npm run size` fails past it. Raise a budget on purpose, in the same change that needs it.",
+  "packages/core/dist/index.js": 16500,
+  "packages/datasource-http/dist/index.js": 3600,
+  "packages/server/dist/index.js": 7800,
+  "packages/renderer-dom/dist/index.js": 28500,
+  "packages/renderer-dom/dist/styles.css": 9300,
+  "packages/export/dist/index.js": 12400,
+  "packages/datatable/dist/index.js": 9000,
+  "packages/datatable/dist/acun-datatable.min.js": 46500,
+  "packages/vue/dist/index.js": 11800,
+  "packages/react/dist/index.js": 9900
+}
