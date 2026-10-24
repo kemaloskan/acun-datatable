@@ -40,7 +40,11 @@ table.setFilters([{ field: 'total', operator: 'between', value: ['100', '500'] }
 - **Column visibility:** `setColumnVisibility`, `getVisibleColumns`; hidden
   columns still sort, filter and search.
 - **Pagination and selection,** local or server mode (`mode: 'server'` with
-  `setPageResult`).
+  `setPageResult`). `getPageItems(page, pageCount, { siblings, boundaries })`
+  gives the numbers of a pager (`1 … 4 5 6 … 20`) with a fixed length, so it
+  never changes width.
+- **Responsive priority:** `priority: 1 | 2 | 3` on a column tells renderers
+  which columns stay on phones (1) and tablets (2) when rows collapse.
 - **Immutable:** frozen snapshots; your data is never mutated or cloned.
 - **Events in order:** a throwing listener never stops the others
   (`onListenerError`).

@@ -211,29 +211,34 @@ const ICON = {
 };
 
 const FEATURES = {
-  tr:[["Headless çekirdek","DOM ve framework'ten bağımsız saf TypeScript; istediğin renderer veya adapter ile kullan."],
-      ["Değişmez state","Her değişim donmuş bir snapshot üretir; çağıranın verisi asla mutasyona uğramaz."],
-      ["Kararlı sıralama","Çok kolonlu, locale-duyarlı (ör. Türkçe), stable sıralama; eşitlikte giriş sırası korunur."],
-      ["Filtre, arama, sayfalama","contains/eq/gt/lt filtreleri ve global arama; 1-tabanlı sayfalar, sınır-dışı sayfa son sayfaya clamp edilir."],
-      ["Güvenli varsayılan","Hücre içeriği metin olarak basılır; güvenilmeyen HTML enjekte edilmez."],
-      ["Tip-güvenli","Kolon tanımları ve satır kimlikleri TypeScript ile tam tiplenir."]],
-  en:[["Headless core","Pure TypeScript, free of DOM and frameworks; use it with any renderer or adapter."],
-      ["Immutable state","Every change yields a frozen snapshot; caller-owned data is never mutated."],
-      ["Stable sorting","Multi-column, locale-aware (e.g. Turkish), stable sorting; ties keep input order."],
-      ["Filter, search, paginate","contains/eq/gt/lt filters and global search; 1-based pages, an out-of-range page clamps to the last one."],
-      ["Secure by default","Cell content renders as text; untrusted HTML is never injected."],
-      ["Type-safe","Column definitions and row IDs are fully typed with TypeScript."]]
+  tr:[["DataTables tarzı düzen","Üstte sayfa başı ve arama, altta \"Toplam: 5.000 kaydın 1 ile 25 arasını gösteriyor\" ve numaralı sayfalar; her parça taşınabilir, kaldırılabilir ya da kendi kontrolünüzle değiştirilebilir."],
+      ["Mobil uyum, dört seçenek","Kart, yana kaydırma, açılır satır (⊕ ile gizlenen kolonlar satırın altında) veya modal; hangi kolonun telefonda kalacağını öncelik belirler."],
+      ["Büyük veri","5 milyon kayıtta ilk sayfa ~1 ms; tam sayı süre bütçesiyle (57 ms), yalnızca yavaşsa \"10.000+\"; derin sayfa koruması, indeks dostu tarih ve Türkçe arama."],
+      ["Yönetim paneli için hazır","Satır ve toplu işlemler, eşleşen tümünü seçme, kolon menüsü, Excel/CSV dışa aktarma, yazdırma ve satır numaralı hatalarla içe aktarma."],
+      ["Özelleştirilebilir görünüm","sm / md / lg boyutlar, açık ve koyu tema, --adt-* CSS değişkenleri; Livewire'da hücreleri kendi Blade görünümünüzle çizin (rozet, avatar)."],
+      ["Beş dil, bağımlılık yok","Türkçe, İngilizce, Almanca, Fransızca, İspanyolca metinler tekil/çoğul ve basamak ayırıcıyla yerleşik; dışarıdan hiçbir çalışma zamanı bağımlılığı yok."],
+      ["Headless çekirdek","DOM ve framework'ten bağımsız saf TypeScript; Laravel, Vue, React ve düz HTML aynı çekirdeği ve aynı işaretlemeyi kullanır."],
+      ["Güvenli ve erişilebilir","Değerler hep metin olarak yazılır, sunucu yalnızca tanımlı kolonları kabul eder; her kontrol klavyeyle çalışır ve ekran okuyucu adı taşır."]],
+  en:[["DataTables-style layout","Page size and search above, \"Showing 1 to 25 of 5,000 rows\" and numbered pages below; every part can be moved, removed or replaced with your own control."],
+      ["Four ways to fit a phone","Cards, sideways scrolling, collapsible rows (⊕ opens the hidden columns below the row) or a dialog; a priority per column decides what stays."],
+      ["Large tables","First page in ~1 ms on 5 million rows; exact counts within a time budget (57 ms), \"10,000+\" only when slow; deep-page guard, index-friendly dates and Turkish search."],
+      ["Ready for back offices","Row and bulk actions, select all matching, a column menu, Excel/CSV export, print and import with line-numbered errors."],
+      ["Make it yours","Sizes sm / md / lg, light and dark themes, --adt-* custom properties; in Livewire render cells with your own Blade view (badges, avatars)."],
+      ["Five languages, no dependencies","English, Turkish, German, French and Spanish texts with plural forms and digit grouping built in; no third-party runtime dependency."],
+      ["Headless core","Pure TypeScript, free of DOM and frameworks; Laravel, Vue, React and plain HTML share one core and one markup."],
+      ["Safe and accessible","Values are always written as text and the server only accepts declared columns; every control works from the keyboard and has a screen-reader name."]]
 };
 
 const API = [
   ['@acunsoft/datatable-core', [
     ["createDataTable({ data, columns, mode? })", {tr:"Hepsi bir arada tablo: yerel veya sunucu modu; sıralama, filtre, arama, sayfa, seçim; işlem başına bir olay.", en:"All-in-one table, local or server mode: sorting, filters, search, pages, selection; one event per action."}],
     ["table.setColumnVisibility(id, visible) · getVisibleColumns()", {tr:"Kolon gizleme; gizli kolonlar sıralama, filtre ve aramada kalır, sorgu değişmez.", en:"Column hiding; hidden columns still sort, filter and search, the query is unchanged."}],
-    ["createColumns(definitions)", {tr:"Kolon tanımlarını doğrular, kopyalar ve dondurur; type: text, number, decimal, date, boolean.", en:"Validates, copies and freezes column definitions; type: text, number, decimal, date, boolean."}],
+    ["createColumns(definitions)", {tr:"Kolon tanımlarını doğrular, kopyalar ve dondurur; type: text, number, decimal, date, datetime, boolean; priority: 1 | 2 | 3 (dar ekranda hangi kolon kalır).", en:"Validates, copies and freezes column definitions; type: text, number, decimal, date, datetime, boolean; priority: 1 | 2 | 3 (which columns stay on narrow screens)."}],
     ["createRows(data, { getRowId? })", {tr:"Kararlı satır kimlikleri üretir; veriyi klonlamaz.", en:"Builds stable row identities; never clones caller data."}],
     ["createLocalRowModel(rows, columns, options?)", {tr:"Yerel çok kolonlu, kararlı, doğal sıralama + önbellek.", en:"Local multi-column, stable, natural sorting with caching."}],
     ["filterRows(rows, columns, { filters, globalSearch })", {tr:"contains, startsWith, eq, gt, lt, between, in, empty, notEmpty; Türkçe duyarlı akıllı arama.", en:"contains, startsWith, eq, gt, lt, between, in, empty, notEmpty; Turkish-aware smart search."}],
     ["paginateRows(rows, { page, pageSize })", {tr:"1 tabanlı sayfa dilimi ve sayfa bilgisi; sınır dışı sayfa son sayfaya çekilir.", en:"1-based page slice plus page metadata; out-of-range pages are clamped."}],
+    ["getPageItems(page, pageCount, { siblings?, boundaries? })", {tr:"Numaralı sayfalayıcının sayıları: 1 … 4 5 6 … 20; uzunluk sabit kalır, boşluk en az iki sayfayı gizler.", en:"The numbers of a pager: 1 … 4 5 6 … 20; the length stays fixed, a gap hides at least two pages."}],
     ["createPagination(page?, pageSize?)", {tr:"Doğrulanmış, donmuş { page, pageSize } değeri.", en:"Validated, frozen { page, pageSize } value."}],
     ["createTableState(options?)", {tr:"Değişmez state: page, pageSize, sorting; subscribe ve destroy.", en:"Immutable state: page, pageSize, sorting; subscribe and destroy."}],
     ["createRowSelection({ mode })", {tr:"Kararlı ID'lerle tekli/çoklu seçim; değişiklik olayı ve none/some/all durumu.", en:"Single/multiple selection by stable IDs; change events and none/some/all status."}],
@@ -248,22 +253,23 @@ const API = [
     ["serializeTableQuery(query) · formatLocalDate(date)", {tr:"Laravel/qs uyumlu sorgu parametreleri; tarihler yerel saatle.", en:"Laravel/qs-friendly query parameters; dates in local time."}],
   ]],
   ['@acunsoft/datatable-dom', [
-    ["renderDataTable(container, table, options?)", {tr:"Hepsi bir arada: üst çubukta sayfa başı ve arama (solda), kolon menüsü (sağda); altta kayıt aralığı (solda) ve numaralı sayfalar (sağda). layout ile her parça taşınır, kaldırılır veya kendi kontrolünüz eklenir.", en:"All in one: page size and search top left, column menu top right; row range bottom left and numbered pages bottom right. Move, remove or add your own controls with layout."}],
-    ["renderTable(container, table, options?)", {tr:"Erişilebilir <table>: sıralama butonları, seçim kutuları, odak koruma.", en:"Accessible <table>: sort buttons, selection checkboxes, focus kept."}],
+    ["renderDataTable(container, table, options?)", {tr:"Hepsi bir arada: üst çubukta sayfa başı ve arama (solda), kolon menüsü (sağda); altta kayıt aralığı (solda) ve numaralı sayfalar (sağda). layout ile her parça taşınır, kaldırılır veya kendi kontrolünüz eklenir; locale metinleri seçer.", en:"All in one: page size and search top left, column menu top right; row range bottom left and numbered pages bottom right. Move, remove or add your own controls with layout; locale picks the texts."}],
+    ["renderTable(container, table, options?)", {tr:"Erişilebilir <table>: sıralama butonları, seçim kutuları, satır işlemleri, odak koruma; sayılar sağa hizalı.", en:"Accessible <table>: sort buttons, selection checkboxes, row actions, focus kept; numbers right-aligned."}],
+    ["responsive: 'cards' | 'scroll' | 'collapse' | 'modal' · size: 'sm' | 'md' | 'lg'", {tr:"Dar ekran: kart, yana kaydırma, açılır satır (⊕) veya ayrıntı penceresi (<dialog>); boyut satır, yazı ve kontrolleri birlikte değiştirir.", en:"Narrow screens: cards, sideways scrolling, collapsible rows (⊕) or a details <dialog>; size changes rows, text and controls together."}],
     ["renderColumnToggle(container, table, options?)", {tr:"\"Kolonlar\" menüsü: her kolon için etiketli bir onay kutusu; son görünen kolon gizlenemez.", en:"\"Columns\" menu: a labelled checkbox per column; the last visible column cannot be hidden."}],
     ["renderBulkActions(container, table, { actions })", {tr:"Seçim varken görünen çubuk: \"3 seçili\", toplu işlem butonları, seçimi temizle. renderTable'a rowActions ile satır butonları eklenir.", en:"A bar shown while rows are selected: \"3 selected\", bulk action buttons, clear selection. renderTable's rowActions adds per-row buttons."}],
     ["renderPagination(container, table, options?)", {tr:"Numaralı sayfalar: ‹ 1 … 4 5 6 … 20 ›; buton sayısı sabit kalır, aktif sayfa aria-current ile işaretlenir; isteğe bağlı ilk/son.", en:"Numbered pages: ‹ 1 … 4 5 6 … 20 ›; the button count stays fixed, the current page has aria-current; optional first/last."}],
     ["renderPageSize · renderPageInfo", {tr:"Sayfa başı satır seçimi ve canlı kayıt aralığı metni (Toplam: 5.000 kaydın 1 ile 25 arasını gösteriyor).", en:"Rows-per-page select and the live row range (Showing 1 to 25 of 5,000 rows)."}],
-    ["renderSearch(container, table, options?)", {tr:"Gecikmeli arama kutusu; Enter hemen uygular.", en:"Debounced search box; Enter applies at once."}],
+    ["renderSearch(container, table, options?)", {tr:"İkonlu, gecikmeli arama kutusu; Enter hemen uygular.", en:"Debounced search box with an icon; Enter applies at once."}],
     ["resolveLabels(locale, overrides?) · labelsEn/Tr/De/Fr/Es", {tr:"Yerleşik metinler (i18n kütüphanesi gerekmez): en, tr, de, fr, es; tekil/çoğul ve basamak ayırıcı dile göre.", en:"Built-in texts (no i18n library needed): en, tr, de, fr, es; singular/plural and digit grouping per language."}],
   ]],
   ['@acunsoft/datatable-vue', [
     ["useDataTable(options) · useTable(table)", {tr:"Reaktif tablo: state, sayfa, görünen kolonlar; bileşenle birlikte temizlenir.", en:"A reactive table: state, page, visible columns; cleaned up with the component."}],
-    ["<AcunDataTable> · <AcunPagination> · <AcunPageSize> · <AcunPageInfo> · <AcunSearch> · <AcunColumnToggle> · <AcunBulkActions>", {tr:"DOM renderer ile aynı erişilebilir işaretleme; özel hücreler için cell-<id> slot'ları.", en:"The DOM renderer's accessible markup; cell-<id> slots for custom cells."}],
+    ["<AcunDataTable> · <AcunPagination> · <AcunPageSize> · <AcunPageInfo> · <AcunSearch> · <AcunColumnToggle> · <AcunBulkActions>", {tr:"DOM renderer ile aynı erişilebilir işaretleme; özel hücreler için cell-<id> slot'ları; responsive ve size özellikleri.", en:"The DOM renderer's accessible markup; cell-<id> slots for custom cells; responsive and size props."}],
   ]],
   ['@acunsoft/datatable-react', [
     ["useDataTable(options) · useTable(table)", {tr:"useSyncExternalStore ile tablo durumu; yeni data dizisi satırları değiştirir; Strict Mode güvenli.", en:"Table state via useSyncExternalStore; a new data array replaces the rows; Strict Mode safe."}],
-    ["<DataTable> · <Pagination> · <PageSize> · <PageInfo> · <Search> · <ColumnToggle> · <BulkActions>", {tr:"DOM renderer ile aynı erişilebilir işaretleme; cells ile özel hücreler.", en:"The DOM renderer's accessible markup; custom cells via cells."}],
+    ["<DataTable> · <Pagination> · <PageSize> · <PageInfo> · <Search> · <ColumnToggle> · <BulkActions>", {tr:"DOM renderer ile aynı erişilebilir işaretleme; cells ile özel hücreler; responsive ve size özellikleri.", en:"The DOM renderer's accessible markup; custom cells via cells; responsive and size props."}],
   ]],
   ['@acunsoft/datatable-export', [
     ["tableToSheet(table, { rows, columns })", {tr:"Görünen tablo: başlıklar ve tipli değerler (sayı, ondalık, tarih, mantıksal); tüm satırlar, sayfa ya da seçim.", en:"The visible table: headers and typed values (numbers, decimals, dates, booleans); all rows, the page or the selection."}],
@@ -273,12 +279,16 @@ const API = [
   ]],
   ['acunsoft/datatable-laravel', [
     ["Column::make($id)->column()->type()->sortable()->filterable()", {tr:"İzin listesi: yalnızca tanımlı kolonlar SQL'e ulaşır. searchUsing() katlanmış kolonla Türkçe duyarlı arama, format() hücre metni.", en:"The allowlist: only declared columns reach SQL. searchUsing() for Turkish-aware search on a folded column, format() for cell text."}],
+    ["->view('orders.status-badge') · ->priority(1|2|3) · ->hideable() · ->hidden()", {tr:"Hücreyi kendi Blade görünümünle çiz (rozet, avatar; dışa aktarma metni kullanır); dar ekran önceliği; kolon menüsü.", en:"Render the cell with your Blade view (badge, avatar; exports keep the text); narrow-screen priority; column menu."}],
+    ["tableLayout() · pagingOptions() · texts()", {tr:"Üst/alt çubuk yerleşimi (pageSize, search, columns, tools, info, paging veya kendi Blade görünümün); sayfalayıcı ayarları; tabloya özel metinler.", en:"Top/bottom bar layout (pageSize, search, columns, tools, info, paging or your own Blade view); pager options; texts for one table."}],
+    ["responsive() · tableSize()", {tr:"cards, scroll, collapse veya modal; sm, md veya lg.", en:"cards, scroll, collapse or modal; sm, md or lg."}],
+    ["countLimit() · countTimeout() · maxResultWindow()", {tr:"Tam sayım: 10.000'e kadar her zaman, ötesinde 250 ms bütçeyle (PostgreSQL, MySQL, MariaDB), aşarsa \"10.000+\"; 100.000 satırdan derin sayfa yok.", en:"Exact counts: always up to 10,000, beyond that within 250 ms (PostgreSQL, MySQL, MariaDB), else \"10,000+\"; no pages deeper than 100,000 rows."}],
     ["use WithDataTable  (Livewire)", {tr:"columns() ve query() tanımla; arama, sıralama, filtre ve sayfa boyutu URL'de; seçim ve selectedQuery() toplu işlemler için.", en:"Declare columns() and query(); search, sorting, filters and page size in the URL; selection and selectedQuery() for bulk actions."}],
     ["setFilter($field, $op, $value) · removeFilter($i) · clearFilters()", {tr:"Livewire eylemleri; geçersiz kurallar eklenmez.", en:"Livewire actions; invalid rules are not added."}],
     ["rowActions() · bulkActions() · Action::make($id)->label()->confirm()->visible()->handle()", {tr:"Satır ve toplu işlemler; satır query() içinde yeniden aranır, görünürlük çalıştırmadan önce tekrar kontrol edilir.", en:"Row and bulk actions; the row is looked up inside query() again and visibility is checked again before running."}],
     ["sortBy($field, $additive) · toggleRow($key) · togglePage() · selectAllMatching()", {tr:"Başlık tıklaması ve seçim eylemleri (Shift+tık çok kolonlu sıralama).", en:"Header-click and selection actions (Shift+click for multi-column sorting)."}],
-    ["TableResponse::for($query)->columns([...])->maxPageSize(100)", {tr:"@acunsoft/datatable-http için JSON uç nokta: {rows, totalRows}; hatalı sorguda 422.", en:"JSON endpoint for @acunsoft/datatable-http: {rows, totalRows}; 422 on an invalid query."}],
-    ["exportFormats() · use WithTableImport · importRow($values, $line)", {tr:"Livewire'da Excel/CSV dışa aktarma butonları ve tek işlemde (transaction) içe aktarma; sorunlar satır numarasıyla listelenir.", en:"Livewire Excel/CSV export buttons and import in one transaction; problems are listed with their line."}],
+    ["TableResponse::for($query)->columns([...])->maxPageSize(100)", {tr:"@acunsoft/datatable-http için JSON uç nokta: {rows, totalRows} (sayılamayacak kadar büyükse totalRowsAtLeast); hatalı sorguda 422.", en:"JSON endpoint for @acunsoft/datatable-http: {rows, totalRows} (totalRowsAtLeast when too large to count in time); 422 on an invalid query."}],
+    ["exportFormats() · printable() · use WithTableImport · importRow($values, $line)", {tr:"Araçlar menüsü: Excel/CSV dışa aktarma, yazdırma ve tek işlemde (transaction) içe aktarma; sorunlar satır numarasıyla listelenir.", en:"The tools menu: Excel/CSV export, print and import in one transaction; problems are listed with their line."}],
     ["TableExport::for($query)->columns()->query()->xlsx() · ->csv()", {tr:"Sunucuda tüm eşleşen satırları parça parça okuyup indirir; sınır aşılırsa 422.", en:"Downloads every matching row, read in chunks on the server; 422 beyond the limit."}],
     ["SheetReader · RowImporter", {tr:"Yüklenen CSV/xlsx'i sınırlarla okur, tiplere çevirir, hataları satırıyla raporlar.", en:"Reads uploaded CSV/xlsx with limits, converts to types, reports problems by line."}],
     ["TableQuery::fromRequest($request) · QueryApplier::paginate($builder, $query, $columns)", {tr:"Parçaları doğrudan kullanmak için: doğrulanmış sorgu ve Eloquent uygulayıcı.", en:"The parts on their own: a validated query and the Eloquent applier."}],
@@ -347,10 +357,10 @@ state.destroy();`;
 const FW = {
   laravel:{ name:"Laravel", pkg:"acunsoft/datatable-laravel", status:"ready",
     install:"composer require acunsoft/datatable-laravel",
-    unpub:{tr:"Packagist'te yayında (0.2.0, MIT):", en:"Published on Packagist (0.2.0, MIT):"},
+    unpub:{tr:"Packagist'te yayında (0.4.0, MIT):", en:"Published on Packagist (0.4.0, MIT):"},
     api:'acunsoft/datatable-laravel',
-    lead:{tr:"Laravel ve Livewire için tek Composer paketi. Ortak sorgu katmanı (izin verilen kolonlar, Eloquent operatörleri, Türkçe duyarlı akıllı arama, sayfa boyutu sınırı) hem Livewire tablolarına hem de tarayıcıdaki HTTP paketine JSON veren uç noktaya hizmet eder. Livewire yalnızca Livewire tablosu için gerekir; npm veya bir UI kiti gerekmez.",
-          en:"One Composer package for Laravel and Livewire. A shared query layer (allowlisted columns, Eloquent operators, Turkish-aware smart search, page-size limit) serves Livewire tables and the JSON endpoint used by the browser HTTP package. Livewire is only needed for the Livewire table; no npm or UI kit required."},
+    lead:{tr:"Laravel ve Livewire için tek Composer paketi. Ortak sorgu katmanı (izin verilen kolonlar, Eloquent operatörleri, Türkçe duyarlı akıllı arama, sayfa boyutu sınırı) hem Livewire tablolarına hem de tarayıcıdaki HTTP paketine JSON veren uç noktaya hizmet eder. Livewire tablosu DataTables tarzı düzen, numaralı sayfalama, Araçlar menüsü (dışa aktarma, yazdırma, içe aktarma), dört mobil görünüm ve sm/md/lg boyutlarla gelir; milyonlarca satırda tam sayım süre bütçesiyle yapılır. Livewire yalnızca Livewire tablosu için gerekir; npm veya bir UI kiti gerekmez.",
+          en:"One Composer package for Laravel and Livewire. A shared query layer (allowlisted columns, Eloquent operators, Turkish-aware smart search, page-size limit) serves Livewire tables and the JSON endpoint used by the browser HTTP package. The Livewire table comes with a DataTables-style layout, numbered pages, a tools menu (export, print, import), four narrow-screen modes and sm/md/lg sizes; on millions of rows exact counts run within a time budget. Livewire is only needed for the Livewire table; no npm or UI kit required."},
     note:{tr:"Sıralanabilir ve filtrelenebilir kolonlar sunucuda <strong>izin listesiyle</strong> sınırlanır; istemciden gelen kolon adları asla ham SQL'e girmez. Uç nokta her sorguyu ayrıca yetkilendirmelidir. <code>query()</code> ve <code>columns()</code> korumalı (protected) metotlardır; tarayıcıdan çağrılamazlar. URL'den gelen geçersiz durum sayfayı bozmak yerine atılır; seçilen anahtarlar yalnızca <code>query()</code> içinde aranır. Görünüm düz Blade'dir ve DOM renderer'ın <code>adt-*</code> sınıflarını kullanır; aynı isteğe bağlı <code>styles.css</code> ikisini de biçimlendirir.",
           en:"Sortable and filterable columns are <strong>allowlisted</strong> on the server; client column names never reach raw SQL. Endpoints must authorize every query. <code>query()</code> and <code>columns()</code> are protected, so the browser cannot call them. Invalid URL state is dropped instead of failing the page; selected keys are only looked up inside <code>query()</code>. The view is plain Blade with the DOM renderer's <code>adt-*</code> class names, so the same optional <code>styles.css</code> styles both."},
     lang:"php", code:
@@ -369,8 +379,9 @@ class OrdersTable extends \\Livewire\\Component
     {
         return [
             Column::make('customer')->header('Müşteri')->sortable()->filterable()->searchUsing('customer_search'),
-            Column::make('total')->header('Tutar')->type('decimal')->sortable()->filterable(),
-            Column::make('created')->column('created_at')->header('Tarih')->type('datetime')->sortable(),
+            Column::make('total')->header('Tutar')->type('decimal')->sortable()->filterable()->priority(1),
+            Column::make('status')->header('Durum')->filterable()->view('orders.status-badge'),
+            Column::make('created')->column('created_at')->header('Tarih')->type('datetime')->sortable()->priority(3),
         ];
     }
 
@@ -380,6 +391,8 @@ class OrdersTable extends \\Livewire\\Component
     }
 
     protected function selectable(): bool { return true; }
+    protected function responsive(): string { return 'collapse'; } // cards, scroll, collapse, modal
+    protected function exportFormats(): array { return ['xlsx', 'csv']; }
 }
 
 // <livewire:orders-table />
@@ -406,14 +419,39 @@ Route::get('/orders/data', fn () => TableResponse::for(\\App\\Models\\Order::que
     $this->selectedQuery()->update(['status' => 'archived']);
     $this->clearSelection();
 }` },
+      { title:{tr:"Yerleşim ve metinler", en:"Layout and texts"},
+        desc:{tr:"Yalnızca değiştirdiğin çubuk bölgelerini döndür; diğerleri varsayılan kalır. Bir isim kendi Blade görünümünü dahil eder (değişkenler: $rows, $columns, $this).", en:"Return only the bar slots you change; the others keep their defaults. Any other name includes your own Blade view ($rows, $columns, $this)."}, lang:"php", code:
+`protected function tableLayout(): array
+{
+    return [
+        'topStart' => ['pageSize', 'search', 'orders.filters'], // your own view
+        'topEnd' => ['columns', 'tools'],                       // tools: export, print, import
+    ];
+}
+
+protected function pagingOptions(): array
+{
+    return ['siblings' => 1, 'boundaries' => 1, 'firstLast' => true];
+}
+
+protected function tableSize(): string { return 'sm'; } // sm, md, lg
+
+protected function texts(): array
+{
+    return ['page_info' => __('Toplam: :total personel üyesinin :from ile :to arasını gösteriyor')];
+}` },
+      { title:{tr:"Hücre görünümü", en:"Cell view"},
+        desc:{tr:"Column::view() ile hücreyi Blade ile çiz; $row, $value, $text ve $column gelir, {{ }} ile kaçışlanır. Dışa aktarma ve arama düz değeri kullanır.", en:"Column::view() renders the cell with Blade; you get $row, $value, $text and $column, escaped with {{ }}. Exports and search keep the plain value."}, lang:"xml", code:
+`{{-- resources/views/orders/status-badge.blade.php --}}
+<span class="badge badge--{{ $value }}">{{ $text }}</span>` },
       { title:{tr:"Görünümü değiştirmek", en:"Changing the markup"},
-        desc:{tr:"Görünümü yayınla veya kendi render() metodunda dahil et; metinler TR/EN.", en:"Publish the view or include it from your own render(); texts are TR/EN."}, lang:"bash", code:
+        desc:{tr:"Görünümleri (table, bar, feature, cell, details, import) ve beş dildeki metinleri yayınla.", en:"Publish the views (table, bar, feature, cell, details, import) and the texts in five languages."}, lang:"bash", code:
 `php artisan vendor:publish --tag=acun-datatable-views
 php artisan vendor:publish --tag=acun-datatable-lang` },
     ] },
   html:{ name:"HTML", pkg:"@acunsoft/datatable-dom", status:"ready",
-    lead:{tr:"Framework olmadan: çekirdek + DOM renderer ile erişilebilir, semantik bir <code>&lt;table&gt;</code>, sayfalama ve arama. Sunucu modunda http paketiyle birlikte çalışır.",
-          en:"No framework: the core + DOM renderer give an accessible, semantic <code>&lt;table&gt;</code>, pagination and search. Works with the HTTP package in server mode."},
+    lead:{tr:"Framework olmadan: <code>renderDataTable</code> tek çağrıda tabloyu, üst çubukta sayfa başı ve aramayı, altta kayıt aralığı ve numaralı sayfaları kurar; mobilde kart, kaydırma, açılır satır veya modal. Sunucu modunda http paketiyle birlikte çalışır.",
+          en:"No framework: one <code>renderDataTable</code> call builds the table, page size and search above it, the row range and numbered pages below; on phones cards, scrolling, collapsible rows or a dialog. Works with the HTTP package in server mode."},
     install:"npm install @acunsoft/datatable-core @acunsoft/datatable-dom",
     note:{tr:"Hücre içeriği <code>textContent</code> ile yazılır; güvenilmeyen HTML asla yorumlanmaz. Kontroller yerel <code>&lt;button&gt;</code>, <code>&lt;input&gt;</code> ve <code>&lt;select&gt;</code> olduğu için klavyeyle kullanılabilir.",
           en:"Cell content is written with <code>textContent</code>; untrusted HTML is never interpreted. Controls are native <code>&lt;button&gt;</code>, <code>&lt;input&gt;</code> and <code>&lt;select&gt;</code>, so they work from the keyboard."},
@@ -426,13 +464,22 @@ const table = createDataTable({
   data: orders,
   columns: [
     { id: 'customer', header: 'Müşteri', accessorKey: 'customer', enableSorting: true, enableFiltering: true },
-    { id: 'total', header: 'Tutar', accessorKey: 'total', type: 'decimal', enableSorting: true },
+    { id: 'total', header: 'Tutar', accessorKey: 'total', type: 'decimal', enableSorting: true, priority: 1 },
+    { id: 'city', header: 'Şehir', accessorKey: 'city', priority: 3 }, // hidden on tablets and phones
   ],
   locale: 'tr',
 });
 
 // Page size + search on top, row range + numbered pages below, Turkish texts.
-renderDataTable(document.querySelector('#orders'), table, { caption: 'Siparişler', selectable: true, locale: 'tr' });` },
+renderDataTable(document.querySelector('#orders'), table, {
+  caption: 'Siparişler',
+  selectable: true,
+  locale: 'tr',
+  responsive: 'collapse', // cards, scroll, collapse, modal
+  size: 'md',             // sm, md, lg
+  paging: { firstLast: true },
+  layout: { topEnd: [slot => { slot.append(newOrderButton); }, 'columns'] },
+});` },
   vue:{ name:"Vue", pkg:"@acunsoft/datatable-vue", status:"ready",
     install:"npm install vue @acunsoft/datatable-core @acunsoft/datatable-vue",
     lead:{tr:"Vue 3 bileşenleri ve composable'ları: erişilebilir tablo, sayfalama, arama, kolon menüsü ve toplu işlemler; özel hücreler için slot'lar. Render fonksiyonlarıyla yazıldı, ek derleme eklentisi gerekmez.",
@@ -464,7 +511,7 @@ const { table } = useDataTable({
       <AcunPageSize :table="table" :labels="labelsTr" />
       <div class="adt-feature--search"><AcunSearch :table="table" :labels="labelsTr" /></div>
     </div></div>
-    <AcunDataTable :table="table" caption="Siparişler" locale="tr" selectable :labels="labelsTr">
+    <AcunDataTable :table="table" caption="Siparişler" locale="tr" selectable :labels="labelsTr" responsive="collapse" size="md">
       <template #cell-total="{ text }"><strong>{{ text }} ₺</strong></template>
     </AcunDataTable>
     <div class="adt-bar adt-bottom">
@@ -498,7 +545,7 @@ export function Orders({ orders }: { orders: Order[] }) {
         <PageSize table={table} labels={labelsTr} />
         <div className="adt-feature--search"><Search table={table} labels={labelsTr} /></div>
       </div></div>
-      <DataTable table={table} caption="Siparişler" locale="tr" selectable labels={labelsTr}
+      <DataTable table={table} caption="Siparişler" locale="tr" selectable labels={labelsTr} responsive="modal" size="md"
         cells={{ total: ({ text }) => <strong>{text} ₺</strong> }} />
       <div className="adt-bar adt-bottom">
         <div className="adt-bar-start"><PageInfo table={table} labels={labelsTr} /></div>
@@ -517,11 +564,11 @@ const T = {
        s_install:"Kurulum", s_usage:"Kullanım", s_features:"Özellikler", s_examples:"Örnekler", s_api:"API",
        d_install:"Paketleri projene ekle.", d_usage:"İlk tabloyu oluştur.", d_features:"Adapter'ın sağladığı yetenekler.",
        d_examples:"Kopyalanıp uyarlanabilecek örnekler.", d_api:"Kullanılan çekirdek fonksiyonlar.",
-       preview:"planlanıyor", updated:"Son güncelleme · 23 Ekim 2026",
+       preview:"planlanıyor", updated:"Son güncelleme · 24 Ekim 2026",
        ex1:"Sıralama ve sayfalama", ex1d:"Çok kolonlu stable sıralama, ardından 1-tabanlı sayfa.",
        ex2:"Durumu dinlemek", ex2d:"State değişikliklerinde donmuş snapshot alırsın.",
        prevNote:"Bu paket henüz yazılmadı; aşağıdaki kod taslak bir API'dir ve değişebilir. Kurulum komutu yoktur. Örneklerdeki çekirdek fonksiyonlar bugün kullanılabilir.",
-       unpub:"npm'de yayında (0.2.0, MIT):", planned_install:"Bu paket henüz yok; kurulum komutu yayınla birlikte eklenecek.",
+       unpub:"npm'de yayında (0.3.0, MIT):", planned_install:"Bu paket henüz yok; kurulum komutu yayınla birlikte eklenecek.",
        feat_for:n=>`${n} adapter'ı aynı headless çekirdeği kullanır; aşağıdaki yetenekler her ortamda aynıdır.`,
        copy:"kopyala", copied:"kopyalandı",
        h_title:"Tablonun ortak çekirdeği.",
@@ -531,9 +578,9 @@ const T = {
        h_s1:"Nereden başlamalı?", h_s1d:"Framework'ünü seç; adımlar o sayfada.",
        h_s2:"Neler var?", h_s2d:"Her ortamda aynı çekirdek yetenekler.",
        h_s3:"Kod örneği", h_s3d:"Çekirdek bugün kullanılabilir.",
-       h_core_install:"npm'de yayında (0.2.0). Yalnızca çekirdek için:", go:"İncele →",
+       h_core_install:"npm'de yayında (0.3.0). Yalnızca çekirdek için:", go:"İncele →",
        fw_desc:{vue:"Hazır: composable\'lar ve bileşenler.",react:"Hazır: hook\'lar ve bileşenler.",html:"Hazır: framework olmadan DOM renderer.",laravel:"Hazır: Livewire tablosu ve JSON uç nokta, tek Composer paketi."},
-       api_title:"API referansı", api_lead:"Paketlerin genel API'si: çekirdek, HTTP, DOM, dışa/içe aktarma, Vue, React (npm'de 0.2.0) ve Laravel (Packagist'te 0.2.0).",
+       api_title:"API referansı", api_lead:"Paketlerin genel API'si: çekirdek, HTTP, DOM, dışa/içe aktarma, Vue, React (npm'de 0.3.0) ve Laravel (Packagist'te 0.4.0).",
        a_s1:"Fonksiyonlar", a_s1d:"İmza ve kısa açıklama.", a_s2:"Örnek", a_s2d:"Fonksiyonların birlikte kullanımı." },
   en:{ nav_start:"Getting started", nav_fw:"Frameworks", nav_api:"API", cta:"Get started",
        g_start:"Getting started", g_fw:"Frameworks", g_core:"Core",
@@ -541,11 +588,11 @@ const T = {
        s_install:"Installation", s_usage:"Usage", s_features:"Features", s_examples:"Examples", s_api:"API",
        d_install:"Add the packages to your project.", d_usage:"Create your first table.", d_features:"What the adapter provides.",
        d_examples:"Examples to copy and adapt.", d_api:"Core functions used.",
-       preview:"planned", updated:"Last updated · 23 October 2026",
+       preview:"planned", updated:"Last updated · 24 October 2026",
        ex1:"Sorting and pagination", ex1d:"Multi-column stable sorting, then a 1-based page.",
        ex2:"Listening to state", ex2d:"Every state change gives you a frozen snapshot.",
        prevNote:"This package is not written yet; the code below is a draft API and may change. There is no install command. The core functions in the examples are available today.",
-       unpub:"Published on npm (0.2.0, MIT):", planned_install:"This package does not exist yet; an install command will come with the release.",
+       unpub:"Published on npm (0.3.0, MIT):", planned_install:"This package does not exist yet; an install command will come with the release.",
        feat_for:n=>`The ${n} adapter uses the same headless core; these capabilities are identical everywhere.`,
        copy:"copy", copied:"copied",
        h_title:"The common core for tables.",
@@ -555,9 +602,9 @@ const T = {
        h_s1:"Where to start?", h_s1d:"Pick your framework; the steps are on its page.",
        h_s2:"What's inside?", h_s2d:"The same core capabilities everywhere.",
        h_s3:"Code example", h_s3d:"The core is available today.",
-       h_core_install:"Published on npm (0.2.0). Core only:", go:"Open →",
+       h_core_install:"Published on npm (0.3.0). Core only:", go:"Open →",
        fw_desc:{vue:"Ready: composables and components.",react:"Ready: hooks and components.",html:"Ready: DOM renderer, no framework.",laravel:"Ready: a Livewire table and a JSON endpoint, one Composer package."},
-       api_title:"API reference", api_lead:"Public API of the packages: core, HTTP, DOM, export/import, Vue, React (on npm, 0.2.0) and Laravel (on Packagist, 0.2.0).",
+       api_title:"API reference", api_lead:"Public API of the packages: core, HTTP, DOM, export/import, Vue, React (on npm, 0.3.0) and Laravel (on Packagist, 0.4.0).",
        a_s1:"Functions", a_s1d:"Signature and short description.", a_s2:"Example", a_s2d:"Using the functions together." }
 };
 

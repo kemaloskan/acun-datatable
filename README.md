@@ -7,8 +7,51 @@
 
 Documentation: **https://kemaloskan.github.io/acun-datatable/**
 
+A framework-independent data table for **Laravel + Livewire, Vue, React and
+plain HTML**: one headless TypeScript core, renderers that share the same
+accessible markup and stylesheet, and a Laravel package that runs the same
+query rules on the server. Free and MIT licensed, with no third-party runtime
+dependencies.
 
-Framework-independent TypeScript data table engine (early development scaffold).
+| Package | What it is |
+|---|---|
+| [`@acunsoft/datatable-core`](packages/core) | Headless engine: sorting, filters, Turkish-aware search, pages, selection, column visibility, server mode. No dependencies. |
+| [`@acunsoft/datatable-dom`](packages/renderer-dom) | Accessible renderer without a framework: `renderDataTable` with a DataTables-style layout, optional `styles.css`. |
+| [`@acunsoft/datatable-vue`](packages/vue) · [`@acunsoft/datatable-react`](packages/react) | Components and composables/hooks with the same markup. |
+| [`@acunsoft/datatable-http`](packages/datasource-http) | Server mode over `fetch`: latest request wins, abort, retry. |
+| [`@acunsoft/datatable-export`](packages/export) | Excel (.xlsx) and CSV export and import, written from scratch. |
+| [`acunsoft/datatable-laravel`](packages/adapter-laravel) | Livewire table and JSON endpoint; allowlisted columns, fast on millions of rows. |
+
+**What you get**
+
+- **DataTables-style layout:** page size and search above the table, the row
+  range ("Toplam: 5.000 kaydın 1 ile 25 arasını gösteriyor") and numbered
+  pages (`‹ 1 … 4 5 6 … 20 ›`) below; every part can be moved, removed or
+  replaced (`layout`, Livewire `tableLayout()`).
+- **Narrow screens your way:** cards, sideways scrolling, collapsible rows
+  (⊕ opens the hidden columns below the row) or a details dialog, with a
+  priority per column; sizes `sm`, `md`, `lg`; light and dark themes through
+  `--adt-*` custom properties.
+- **Large tables:** exact counts within a time budget (5,000,000 rows counted
+  in 57 ms on PostgreSQL), "10,000+" only when a count would be slow, a result
+  window against deep pages, index-friendly dates, sorting and Turkish search.
+- **Everything a back office needs:** row and bulk actions, "select all
+  matching", a column menu, Excel/CSV export, print and import with
+  line-numbered errors.
+- **Built-in texts** in English, Turkish, German, French and Spanish, with
+  plural forms and digit grouping; no i18n library needed.
+- **Safe and accessible by default:** values are always written as text, the
+  server only accepts declared columns, every control works from the keyboard
+  and has a screen-reader name; tested in Chromium, Firefox and WebKit.
+
+```bash
+npm install @acunsoft/datatable-core @acunsoft/datatable-dom   # or -vue / -react
+composer require acunsoft/datatable-laravel                     # Laravel + Livewire
+```
+
+The rest of this file documents the core API for contributors; the
+[documentation site](https://kemaloskan.github.io/acun-datatable/) and each
+package README cover usage.
 
 ## Setup
 
@@ -450,6 +493,26 @@ Hiding is presentation only: hidden columns still sort, filter and search (as
 in DataTables), the page stays the same and `getQuery()` does not change. At
 least one column always stays visible; unknown IDs, duplicates and columns
 with `enableHiding: false` are rejected.
+
+`priority` (`1 | 2 | 3`) is a separate, automatic kind of hiding for narrow
+screens: with a renderer's `responsive: 'collapse'` or `'modal'`, priority-2
+columns hide below 640px and priority-3 columns below 960px, and their values
+move into the row's details. By default the first visible column is `1`, the
+others `2`.
+
+## Numbered pages
+
+```ts
+import { getPageItems } from '@acunsoft/datatable-core';
+
+getPageItems(5, 20);                                // [1, 'gap', 4, 5, 6, 'gap', 20]
+getPageItems(50, 100, { siblings: 2, boundaries: 2 }); // [1, 2, 'gap', 48, 49, 50, 51, 52, 'gap', 99, 100]
+```
+
+The pager algorithm of every renderer (and of the Laravel package, in PHP).
+While there are more pages than fit, the list always has
+`2·boundaries + 2·siblings + 3` entries, so a pager never changes width; a gap
+always replaces at least two pages.
 
 ## License and disclaimer
 
