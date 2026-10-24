@@ -12,8 +12,8 @@
   :root{
     --brand:#794dff;
     --brand-soft:color-mix(in srgb,var(--brand) 7%,white);
-    --brand-text:var(--brand);
-    --ink:#141b2d; --text:#2b3142; --muted:#5b6273; --faint:#858b98;
+    --brand-text:#6d3fff;  /* 5:1 on --brand-soft (WCAG AA) */
+    --ink:#141b2d; --text:#2b3142; --muted:#5b6273; --faint:#646b78;
     --line:#e3e6eb; --line-strong:#d1d6de;
     --surface:#ffffff; --surface-subtle:#f7f8fa; --surface-hover:#f1f3f6;
     --code-bg:#141414; --code-line:#2e2e2e; --code-text:#e5e5e5;
@@ -41,6 +41,7 @@
     --surface:#0a0a0a; --surface-subtle:#141414; --surface-hover:#1f1f1f;
     color-scheme:dark;
   }
+  .hljs-comment,.hljs-quote{color:#8b929e}  /* 5.9:1 on --code-bg */
   *{box-sizing:border-box}
   html{scroll-behavior:smooth}
   body{margin:0;font:15px/1.65 var(--sans);color:var(--text);background:var(--surface);-webkit-font-smoothing:antialiased}
@@ -2075,7 +2076,7 @@ const ALIASES = { livewire: 'laravel' }; // Livewire is part of the Laravel pack
 const route = () => { let r = (location.hash.match(/^#\/([a-z]+)/) || [])[1]; r = ALIASES[r] || r; return (r && (r === 'home' || r === 'api' || FW[r] || GUIDES[r])) ? r : 'home'; };
 
 /* ======================= builders ======================= */
-const code = (src, l) => `<div class="codewrap"><pre><code class="language-${l}">${esc(src)}</code></pre><button class="copy">${T[lang].copy}</button></div>`;
+const code = (src, l) => `<div class="codewrap"><pre><code class="language-${l}" tabindex="0">${esc(src)}</code></pre><button class="copy">${T[lang].copy}</button></div>`;
 const sec = (id, n, title, desc, body) =>
   `<section id="${id}"><div class="sh"><span class="n">${String(n).padStart(2,'0')}</span><div><h2>${title}</h2>${desc ? `<p>${desc}</p>` : ''}</div></div><div class="body">${body}</div></section>`;
 /* Code tabs: the chosen tab (framework) is remembered and shown in every tab group. */

@@ -147,12 +147,32 @@ export function columnTools<TData>(container: HTMLElement, table: DataTable<TDat
   };
   const onDragEnd = (): void => { dragged = undefined; clearMarks(); };
 
+  // A focusable separator needs its value: the measured width until one is set.
+  const fillValues = (): void => {
+    for (const th of headers()) {
+      const handle = th.querySelector<HTMLElement>('.adt-resize');
+      if (handle && !handle.hasAttribute('aria-valuenow')) handle.setAttribute('aria-valuenow', String(clamp(th.getBoundingClientRect().width)));
+    }
+  };
+  const onFocus = (event: FocusEvent): void => {
+    const handle = (event.target as Element | null)?.closest?.<HTMLElement>('.adt-resize');
+    const th = handle?.closest('th');
+    if (handle && th) handle.setAttribute('aria-valuenow', String(clamp(th.getBoundingClientRect().width)));
+  };
+  const view = container.ownerDocument.defaultView;
+  const observer = options.resize && view && typeof view.MutationObserver === 'function'
+    ? new view.MutationObserver(() => fillValues())
+    : undefined;
+
   const listeners: [string, EventListener][] = [];
   const on = <K extends keyof HTMLElementEventMap>(type: K, listener: (event: HTMLElementEventMap[K]) => void): void => {
     container.addEventListener(type, listener as EventListener);
     listeners.push([type, listener as EventListener]);
   };
   if (options.resize) {
+    fillValues();
+    observer?.observe(container, { childList: true, subtree: true });
+    on('focusin', onFocus);
     on('pointerdown', onPointerDown);
     on('keydown', onKeyDown);
     on('dblclick', onDoubleClick);
@@ -164,6 +184,7 @@ export function columnTools<TData>(container: HTMLElement, table: DataTable<TDat
     on('dragend', onDragEnd);
   }
   return () => {
+    observer?.disconnect();
     finish(false);
     for (const [type, listener] of listeners) container.removeEventListener(type, listener);
   };
