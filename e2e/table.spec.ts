@@ -236,6 +236,42 @@ test('fixed columns stay in place while the table scrolls sideways', async ({ pa
   expect((await edit.boundingBox())!.x).toBeCloseTo(before.edit, 0);         // so do the actions
 });
 
+test.describe('resizing and moving columns', () => {
+  test.beforeEach(async ({ page }) => {
+    await page.setViewportSize({ width: 1100, height: 800 });
+    await page.goto('/e2e/fixtures/table.html?columns');
+    await expect(page.locator('body[data-ready=true]')).toBeAttached();
+  });
+  const order = (page: Page) => page.locator('thead th[data-column-id]').evaluateAll(cells => cells.map(cell => (cell as HTMLElement).dataset['columnId']));
+
+  test('drag a header edge, or use the arrow keys on it', async ({ page }) => {
+    const header = page.locator('th[data-column-id="customer"]');
+    const before = (await header.boundingBox())!.width;
+    const handle = page.getByRole('separator', { name: 'Resize Customer' });
+    const box = (await handle.boundingBox())!;
+    await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(box.x + box.width / 2 + 60, box.y + box.height / 2, { steps: 5 });
+    await page.mouse.up();
+    await expect.poll(async () => Math.round((await header.boundingBox())!.width)).toBe(Math.round(before + 60));
+    await handle.focus();
+    await page.keyboard.press('ArrowRight');
+    await expect.poll(async () => Math.round((await header.boundingBox())!.width)).toBe(Math.round(before + 76));
+    await expect(handle).toBeFocused();
+    expect(await order(page)).toEqual(['customer', 'total', 'city']); // a resize never moves the column
+  });
+
+  test('drag a header onto another, or use the column menu', async ({ page }) => {
+    await page.locator('th[data-column-id="city"]').dragTo(page.locator('th[data-column-id="customer"]'), { targetPosition: { x: 4, y: 10 } });
+    await expect.poll(() => order(page)).toEqual(['city', 'customer', 'total']);
+    await page.locator('summary', { hasText: /^Columns$/ }).click();
+    await page.getByRole('button', { name: 'Move Total up' }).click();
+    await expect.poll(() => order(page)).toEqual(['city', 'total', 'customer']);
+    await page.getByRole('button', { name: 'Reset columns' }).click();
+    await expect.poll(() => order(page)).toEqual(['customer', 'total', 'city']);
+  });
+});
+
 test.describe('child rows', () => {
   for (const width of [1280, 375]) {
     test(`load and open below the row at ${width}px`, async ({ page }) => {

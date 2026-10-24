@@ -44,6 +44,12 @@ export interface DataTableLabels {
   /** Column visibility menu. */
   readonly columns: string;
   readonly showColumns: string;
+  /** The resize handle of a column header. */
+  readonly resizeColumn: (name: string) => string;
+  readonly moveColumnUp: (name: string) => string;
+  readonly moveColumnDown: (name: string) => string;
+  /** Restores the column order and widths. */
+  readonly resetColumns: string;
   /** Responsive `collapse` / `modal`: the details button of a row and the dialog title. */
   readonly details: (name: string) => string;
   readonly close: string;
@@ -108,6 +114,10 @@ export const labelsEn: DataTableLabels = Object.freeze({
   clearSelection: 'Clear selection',
   columns: 'Columns',
   showColumns: 'Show columns',
+  resizeColumn: (name: string) => `Resize ${name}`,
+  moveColumnUp: (name: string) => `Move ${name} up`,
+  moveColumnDown: (name: string) => `Move ${name} down`,
+  resetColumns: 'Reset columns',
   details: (name: string) => `Details of ${name}`,
   close: 'Close',
   filters: 'Filters',
@@ -162,6 +172,10 @@ export const labelsTr: DataTableLabels = Object.freeze({
   clearSelection: 'Seçimi temizle',
   columns: 'Kolonlar',
   showColumns: 'Gösterilecek kolonlar',
+  resizeColumn: (name: string) => `${name} kolon genişliği`,
+  moveColumnUp: (name: string) => `${name} kolonunu yukarı taşı`,
+  moveColumnDown: (name: string) => `${name} kolonunu aşağı taşı`,
+  resetColumns: 'Kolonları sıfırla',
   details: (name: string) => `${name} ayrıntıları`,
   close: 'Kapat',
   filters: 'Filtreler',
@@ -216,6 +230,10 @@ export const labelsDe: DataTableLabels = Object.freeze({
   clearSelection: 'Auswahl aufheben',
   columns: 'Spalten',
   showColumns: 'Angezeigte Spalten',
+  resizeColumn: (name: string) => `Breite der Spalte ${name}`,
+  moveColumnUp: (name: string) => `Spalte ${name} nach oben verschieben`,
+  moveColumnDown: (name: string) => `Spalte ${name} nach unten verschieben`,
+  resetColumns: 'Spalten zurücksetzen',
   details: (name: string) => `Details zu ${name}`,
   close: 'Schließen',
   filters: 'Filter',
@@ -270,6 +288,10 @@ export const labelsFr: DataTableLabels = Object.freeze({
   clearSelection: 'Effacer la sélection',
   columns: 'Colonnes',
   showColumns: 'Colonnes affichées',
+  resizeColumn: (name: string) => `Largeur de la colonne ${name}`,
+  moveColumnUp: (name: string) => `Monter la colonne ${name}`,
+  moveColumnDown: (name: string) => `Descendre la colonne ${name}`,
+  resetColumns: 'Réinitialiser les colonnes',
   details: (name: string) => `Détails de ${name}`,
   close: 'Fermer',
   filters: 'Filtres',
@@ -324,6 +346,10 @@ export const labelsEs: DataTableLabels = Object.freeze({
   clearSelection: 'Borrar selección',
   columns: 'Columnas',
   showColumns: 'Columnas visibles',
+  resizeColumn: (name: string) => `Ancho de la columna ${name}`,
+  moveColumnUp: (name: string) => `Subir la columna ${name}`,
+  moveColumnDown: (name: string) => `Bajar la columna ${name}`,
+  resetColumns: 'Restablecer columnas',
   details: (name: string) => `Detalles de ${name}`,
   close: 'Cerrar',
   filters: 'Filtros',

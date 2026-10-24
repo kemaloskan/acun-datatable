@@ -14,10 +14,13 @@ const sameQuery = (left: TableQuery | undefined, right: TableQuery): boolean =>
  * Loading and error states stay on the runner. Returns a function that
  * disconnects both sides; it does not destroy either of them.
  */
+const PRESENTATION = new Set(['selection', 'result', 'columnVisibility', 'columnOrder', 'columnWidths']);
+
 export function connectTable<TData>(table: DataTable<TData>, runner: QueryRunner<TData>): () => void {
   if (table.getMode() !== 'server') throw new Error('connectTable requires a table created with mode: "server"');
   const offTable = table.subscribe((_, event) => {
-    if (event.type === 'selection' || event.type === 'result') return;
+    // Selection, results and the column layout (visibility, order, widths) do not change the query.
+    if (PRESENTATION.has(event.type)) return;
     void runner.run(table.getQuery());
   });
   const offRunner = runner.subscribe((state) => {

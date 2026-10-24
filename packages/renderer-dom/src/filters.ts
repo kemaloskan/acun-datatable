@@ -259,7 +259,8 @@ export function renderFilters<TData>(container: HTMLElement, table: DataTable<TD
     if (event.key === 'Escape' && root.open) { root.open = false; summary.focus(); }
   });
   const outside = (event: Event): void => {
-    if (root.open && !root.contains(event.target as Node)) root.open = false;
+    // The path at the time of the click: a control that re-rendered away still counts as inside.
+    if (root.open && !event.composedPath().includes(root)) root.open = false;
   };
   doc.addEventListener('click', outside);
 

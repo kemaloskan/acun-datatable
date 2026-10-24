@@ -67,6 +67,8 @@ export const ICONS = Object.freeze({
   more: 'M12 5.5h.01M12 12h.01M12 18.5h.01',
   copy: 'M9 9h11v11H9zM5 15H4V4h11v1',
   check: 'M20 6 9 17l-5-5',
+  up: 'M18 15l-6-6-6 6',
+  down: 'M6 9l6 6 6-6',
 } as const);
 
 /** A decorative stroke icon (hidden from screen readers; the control carries the name). */

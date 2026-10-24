@@ -249,6 +249,23 @@ describe('footer totals', () => {
   });
 });
 
+describe('columnResize and columnReorder', () => {
+  it('adds handles, draggable headers and menu buttons, kept by stateSave', async () => {
+    localStorage.clear();
+    const first = new AcunDataTable('#orders', { data: orders, columnResize: true, columnReorder: true, stateSave: true });
+    await first.ready;
+    expect(document.querySelectorAll('thead .adt-resize')).toHaveLength(3);
+    expect(document.querySelector('thead th[data-column-id="total"]')!.getAttribute('draggable')).toBe('true');
+    document.querySelector<HTMLButtonElement>('.adt-move[aria-label="Move Total up"]')!.click();
+    first.table!.setColumnWidth('customer', 260);
+    first.destroy();
+    const second = new AcunDataTable('#orders', { data: orders, stateSave: true });
+    await second.ready;
+    expect(second.table!.getState().columnOrder).toEqual(['id', 'total', 'customer']);
+    expect(second.table!.getState().columnWidths).toEqual({ customer: 260 });
+  });
+});
+
 describe('fixedColumns', () => {
   it('pins the first column while the table scrolls sideways', async () => {
     const dt = new AcunDataTable('#orders', { data: orders, fixedColumns: { start: 1 } });

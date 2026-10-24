@@ -24,7 +24,14 @@ export interface DataTableInitialState {
   readonly selectedIds?: readonly RowId[];
   /** Column IDs to hide at first. */
   readonly hiddenColumns?: readonly string[];
+  /** Display order of the column IDs; the rest follow in definition order. */
+  readonly columnOrder?: readonly string[];
+  /** Widths in pixels per column ID. */
+  readonly columnWidths?: Readonly<Record<string, number>>;
 }
+
+/** The narrowest and widest a column can be made, in pixels. */
+export const COLUMN_WIDTH_LIMITS = Object.freeze({ min: 48, max: 2000 });
 
 /** `'local'` transforms rows in memory; `'server'` lets the server do it. */
 export type DataTableMode = 'local' | 'server';
@@ -67,6 +74,10 @@ export interface DataTableState {
   readonly selectedIds: readonly RowId[];
   /** Hidden column IDs, in column order. Presentation only: not part of the query. */
   readonly hiddenColumns: readonly string[];
+  /** Every column ID in display order. Presentation only. */
+  readonly columnOrder: readonly string[];
+  /** Widths in pixels set by the user (resizing), per column ID. Presentation only. */
+  readonly columnWidths: Readonly<Record<string, number>>;
 }
 
 /** One event per effective action; the snapshot passed alongside is the result. */
@@ -80,7 +91,9 @@ export type DataTableEvent =
   /** Server mode: a page result was applied. `totalRows` is absent when unknown. */
   | { readonly type: 'result'; readonly rows: number; readonly totalRows?: number }
   | { readonly type: 'selection'; readonly change: Readonly<SelectionChange> }
-  | { readonly type: 'columnVisibility'; readonly hiddenColumns: readonly string[] };
+  | { readonly type: 'columnVisibility'; readonly hiddenColumns: readonly string[] }
+  | { readonly type: 'columnOrder'; readonly columnOrder: readonly string[] }
+  | { readonly type: 'columnWidths'; readonly columnWidths: Readonly<Record<string, number>> };
 
 export type DataTableListener = (state: Readonly<DataTableState>, event: Readonly<DataTableEvent>) => void;
 
@@ -100,8 +113,8 @@ export interface DataTable<TData> {
   getAggregates(): Readonly<Record<string, AggregateResult>>;
   getColumns(): readonly ColumnDef<TData>[];
   /**
-   * The columns to show, in definition order. Hidden columns still sort,
-   * filter and search (as in DataTables); hide them from the view only.
+   * The columns to show, in display order (`columnOrder`). Hidden columns
+   * still sort, filter and search (as in DataTables); hide them from the view only.
    */
   getVisibleColumns(): readonly ColumnDef<TData>[];
   /** All rows in data order, before sorting and filtering. */
@@ -126,6 +139,14 @@ export interface DataTable<TData> {
   setColumnVisibility(id: string, visible: boolean): void;
   /** Replace the hidden columns. At least one column stays visible. */
   setHiddenColumns(ids: readonly string[]): void;
+  /** Set the display order; IDs left out follow in definition order. `[]` restores it. */
+  setColumnOrder(ids: readonly string[]): void;
+  /** Move one column to a position of the display order (0 = first). */
+  moveColumn(id: string, toIndex: number): void;
+  /** Set (rounded, within `COLUMN_WIDTH_LIMITS`) or clear (`undefined`) one column's width. */
+  setColumnWidth(id: string, width: number | undefined): void;
+  /** Replace every width; `{}` returns all columns to their natural width. */
+  setColumnWidths(widths: Readonly<Record<string, number>>): void;
   isSelected(id: RowId): boolean;
   /** Defaults to the rows on the current page. */
   getSelectionStatus(ids?: readonly RowId[]): SelectionStatus;
@@ -235,6 +256,33 @@ export function createDataTable<TData>(options: DataTableOptions<TData>): DataTa
     if (columns.length > 0 && wanted.size === columns.length) throw new RangeError('at least one column must stay visible');
     return Object.freeze(columns.filter(column => wanted.has(column.id)).map(column => column.id));
   };
+  const definitionOrder = Object.freeze(columns.map(column => column.id));
+  const checkOrder = (ids: readonly string[]): readonly string[] => {
+    if (!Array.isArray(ids)) throw new TypeError('columnOrder must be an array');
+    const seen = new Set<string>();
+    for (const id of ids) {
+      if (typeof id !== 'string' || !byId.has(id)) throw new Error(`unknown column ID: ${String(id)}`);
+      if (seen.has(id)) throw new Error(`duplicate column ID in columnOrder: ${id}`);
+      seen.add(id);
+    }
+    return Object.freeze([...ids, ...definitionOrder.filter(id => !seen.has(id))]);
+  };
+  const checkWidth = (id: string, width: unknown): number => {
+    if (typeof id !== 'string' || !byId.has(id)) throw new Error(`unknown column ID: ${String(id)}`);
+    if (typeof width !== 'number' || !Number.isFinite(width)) throw new TypeError('a column width must be a finite number of pixels');
+    return Math.min(COLUMN_WIDTH_LIMITS.max, Math.max(COLUMN_WIDTH_LIMITS.min, Math.round(width)));
+  };
+  const checkWidths = (widths: Readonly<Record<string, number>>): Readonly<Record<string, number>> => {
+    if (!widths || typeof widths !== 'object' || Array.isArray(widths)) throw new TypeError('columnWidths must be an object of pixels per column ID');
+    const out: Record<string, number> = {};
+    for (const id of definitionOrder) if (Object.hasOwn(widths, id)) out[id] = checkWidth(id, widths[id]);
+    for (const id of Object.keys(widths)) if (!byId.has(id)) throw new Error(`unknown column ID: ${id}`);
+    return Object.freeze(out);
+  };
+  const sameWidths = (left: Readonly<Record<string, number>>, right: Readonly<Record<string, number>>): boolean => {
+    const keys = Object.keys(left);
+    return keys.length === Object.keys(right).length && keys.every(key => left[key] === right[key]);
+  };
   const checkKnown = (ids: readonly RowId[]): void => {
     if (server) return; // other pages' rows are not loaded
     for (const id of ids) if (typeof id === 'string' && !rowIds.has(id)) throw new Error(`unknown row ID: ${id}`);
@@ -251,9 +299,11 @@ export function createDataTable<TData>(options: DataTableOptions<TData>): DataTa
   let filters = copyFilters(init.filters ?? []);
   let globalSearch = checkSearch(init.globalSearch ?? '');
   let hiddenColumns = checkHidden(init.hiddenColumns ?? []);
+  let columnOrder = checkOrder(init.columnOrder ?? []);
+  let columnWidths = checkWidths(init.columnWidths ?? {});
   let visibleColumns = columns;
   const updateVisible = (): void => {
-    visibleColumns = Object.freeze(columns.filter(column => !hiddenColumns.includes(column.id)));
+    visibleColumns = Object.freeze(columnOrder.filter(id => !hiddenColumns.includes(id)).map(id => byId.get(id)!));
   };
   updateVisible();
   const selection = createRowSelection({
@@ -292,6 +342,8 @@ export function createDataTable<TData>(options: DataTableOptions<TData>): DataTa
       page, pageSize, sorting: currentSorting, filters, globalSearch,
       selectedIds: selection.getState().selectedIds,
       hiddenColumns,
+      columnOrder,
+      columnWidths,
     });
   };
   let state = snapshot();
@@ -432,6 +484,39 @@ export function createDataTable<TData>(options: DataTableOptions<TData>): DataTa
       hiddenColumns = next;
       updateVisible();
       emit({ type: 'columnVisibility', hiddenColumns });
+    },
+    setColumnOrder: (ids) => {
+      if (destroyed) return;
+      const next = checkOrder(ids);
+      if (next.every((id, index) => id === columnOrder[index])) return;
+      columnOrder = next;
+      updateVisible();
+      emit({ type: 'columnOrder', columnOrder });
+    },
+    moveColumn: (id, toIndex) => {
+      if (destroyed) return;
+      if (typeof id !== 'string' || !byId.has(id)) throw new Error(`unknown column ID: ${String(id)}`);
+      if (!Number.isInteger(toIndex)) throw new TypeError('toIndex must be a whole number');
+      const rest = columnOrder.filter(other => other !== id);
+      const index = Math.max(0, Math.min(rest.length, toIndex));
+      table.setColumnOrder([...rest.slice(0, index), id, ...rest.slice(index)]);
+    },
+    setColumnWidth: (id, width) => {
+      if (destroyed) return;
+      if (width === undefined) {
+        if (typeof id !== 'string' || !byId.has(id)) throw new Error(`unknown column ID: ${String(id)}`);
+        const { [id]: _removed, ...rest } = columnWidths;
+        table.setColumnWidths(rest);
+        return;
+      }
+      table.setColumnWidths({ ...columnWidths, [id]: checkWidth(id, width) });
+    },
+    setColumnWidths: (widths) => {
+      if (destroyed) return;
+      const next = checkWidths(widths);
+      if (sameWidths(next, columnWidths)) return;
+      columnWidths = next;
+      emit({ type: 'columnWidths', columnWidths });
     },
 
     isSelected: (id) => selection.isSelected(id),

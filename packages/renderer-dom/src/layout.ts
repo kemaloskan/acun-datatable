@@ -91,7 +91,7 @@ export function renderDataTable<TData>(
         part = renderSearch(node, table, { labels, ...options.search });
         break;
       case 'columns':
-        part = renderColumnToggle(node, table, { labels });
+        part = renderColumnToggle(node, table, { labels, reorderable: options.reorderableColumns === true });
         break;
       case 'filters':
         part = renderFilters(node, table, { labels, locale });

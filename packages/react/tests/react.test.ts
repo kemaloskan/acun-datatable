@@ -364,3 +364,29 @@ describe('fixed columns', () => {
     vi.restoreAllMocks();
   });
 });
+
+describe('resizable and movable columns', () => {
+  it('renders handles and widths, and moves columns from the menu', () => {
+    const table = make();
+    render(h(DataTableLayout<Order>, { table, resizableColumns: true, reorderableColumns: true }));
+    expect(host.querySelectorAll('thead .adt-resize')).toHaveLength(2);
+    expect(host.querySelector('thead th[data-column-id="customer"]')!.getAttribute('draggable')).toBe('true');
+    act(() => table.setColumnWidth('total', 180));
+    expect(host.querySelector<HTMLElement>('thead th[data-column-id="total"]')!.style.width).toBe('180px');
+    expect(host.querySelector('table')!.classList.contains('adt-fixed-layout')).toBe(true);
+    click(host.querySelector('.adt-move[aria-label="Move Tutar up"]'));
+    expect([...host.querySelectorAll<HTMLElement>('thead th[data-column-id]')].map(th => th.dataset['columnId'])).toEqual(['total', 'customer']);
+    click(host.querySelector('.adt-columns-reset'));
+    expect(table.getState().columnWidths).toEqual({});
+  });
+
+  it('resizes with the keyboard through the shared column tools', () => {
+    vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(() => ({ width: 120, left: 0 } as DOMRect));
+    const table = make();
+    render(h(DataTable<Order>, { table, resizableColumns: true }));
+    const handle = host.querySelector<HTMLElement>('.adt-resize[data-column-id="total"]')!;
+    act(() => { handle.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true })); });
+    expect(table.getState().columnWidths).toEqual({ customer: 120, total: 136 });
+    vi.restoreAllMocks();
+  });
+});

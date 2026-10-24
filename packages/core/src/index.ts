@@ -1,7 +1,7 @@
 export { createColumns, type ColumnDef, type ColumnFilter, type FilterOption } from './columns';
 export { createEmitter, reportListenerError, type Emitter, type ListenerErrorHandler } from './emitter';
 export {
-  createDataTable, type DataTable, type DataTableEvent, type DataTableInitialState,
+  COLUMN_WIDTH_LIMITS, createDataTable, type DataTable, type DataTableEvent, type DataTableInitialState,
   type DataTableListener, type DataTableMode, type DataTableOptions, type DataTableState,
 } from './data-table';
 export {

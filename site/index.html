@@ -724,6 +724,14 @@ const GUIDES = {
      [
       "fixedColumns",
       "fixedColumns: { start: 1, end: 1 }"
+     ],
+     [
+      "colReorder",
+      "columnReorder: true"
+     ],
+     [
+      "ColResize",
+      "columnResize: true"
      ]
     ]
    },
@@ -1136,6 +1144,34 @@ const GUIDES = {
       "Vue / React",
       "typescript",
       "\u003cAcunDataTable :table=\"table\" responsive=\"scroll\" :fixed-columns=\"{ start: 1, end: 1 }\" />\n\u003cDataTable table={table} responsive=\"scroll\" fixedColumns={{ start: 1, end: 1 }} />"
+     ]
+    ]
+   },
+   {
+    "id": "resize",
+    "title": {
+     "tr": "Kolon genişliği ve sırası",
+     "en": "Column widths and order"
+    },
+    "desc": {
+     "tr": "Başlığın kenarını sürükleyerek genişlik (klavyede ←/→, Delete ile sıfırlama); başlığı başka bir başlığın üstüne bırakarak sıra (klavyede Kolonlar menüsündeki ↑/↓). “Kolonları sıfırla” ikisini de geri alır; stateSave saklar.",
+     "en": "Drag a header edge for the width (←/→ on the keyboard, Delete to reset); drop a header on another for the order (↑/↓ in the Columns menu). “Reset columns” undoes both; stateSave keeps them."
+    },
+    "tabs": [
+     [
+      "AcunDataTable",
+      "typescript",
+      "new AcunDataTable('#orders', {\n  columnResize: true,\n  columnReorder: true,   // DataTables colReorder\n  stateSave: true,       // remembers widths and order too\n});"
+     ],
+     [
+      "Livewire",
+      "php",
+      "protected function resizableColumns(): bool { return true; }\nprotected function reorderableColumns(): bool { return true; }"
+     ],
+     [
+      "Vue / React",
+      "typescript",
+      "\u003cAcunDataTableLayout :table=\"table\" resizable-columns reorderable-columns />\n\u003cDataTableLayout table={table} resizableColumns reorderableColumns />"
      ]
     ]
    }

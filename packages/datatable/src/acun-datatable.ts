@@ -146,6 +146,13 @@ export interface AcunDataTableOptions {
   readonly detail?: (row: Data) => Node | string | null | undefined | Promise<Node | string | null | undefined>;
   /** Show the column menu. Default `true`. */
   readonly columnToggle?: boolean;
+  /** Drag a header's edge (or ←/→ on it) to set a column's width. Default `false`. */
+  readonly columnResize?: boolean;
+  /**
+   * Drag headers to move columns (DataTables `colReorder`); the column menu
+   * gets up/down buttons for the keyboard. Default `false`.
+   */
+  readonly columnReorder?: boolean;
   /**
    * The tools menu (DataTables `buttons`): `'excel'`, `'csv'`, `'copy'`,
    * `'print'` and your own `{ id, label, onSelect }`. Exports take the
@@ -433,6 +440,8 @@ export class AcunDataTable {
       ...(options.size ? { size: options.size } : {}),
       ...(options.fixedHeader ? { stickyHeader: true } : {}),
       ...(options.fixedColumns ? { fixedColumns: options.fixedColumns } : {}),
+      ...(options.columnResize ? { resizableColumns: true } : {}),
+      ...(options.columnReorder ? { reorderableColumns: true } : {}),
       ...(options.scrollY !== undefined ? { scrollY: options.scrollY } : {}),
       ...(sorting.multiSort === false ? { multiSort: false } : {}),
       ...(status ? { status } : {}),

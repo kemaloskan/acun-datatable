@@ -22,6 +22,23 @@ const orders = (...ids: number[]) => ids.map(id => ({ id, customer: `C${id}` }))
 const flush = () => new Promise(resolve => setTimeout(resolve, 0));
 
 describe('connectTable', () => {
+  it('does not re-query when only the column layout changes', async () => {
+    const twoColumns: readonly ColumnDef<Order & { city: string }>[] = [
+      { id: 'customer', header: '', accessorKey: 'customer' },
+      { id: 'city', header: '', accessorKey: 'city' },
+    ];
+    const calls: TableQuery[] = [];
+    const source: DataSource<Order & { city: string }> = { getPage: async query => { calls.push(query); return { rows: [], totalRows: 0 }; } };
+    const table = createDataTable<Order & { city: string }>({ mode: 'server', columns: twoColumns });
+    connectTable(table, createQueryRunner(source));
+    table.setColumnVisibility('city', false);
+    table.setColumnVisibility('city', true);
+    table.moveColumn('city', 0);
+    table.setColumnWidth('customer', 180);
+    await flush();
+    expect(calls).toHaveLength(1);
+  });
+
   it('loads the first page and applies the result', async () => {
     const { table, runner, calls } = setup();
     expect(calls).toHaveLength(1);

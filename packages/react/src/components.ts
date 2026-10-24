@@ -2,10 +2,10 @@ import {
   createElement as h, useCallback, useEffect, useId, useMemo, useRef, useState, useSyncExternalStore,
   type ChangeEvent, type CSSProperties, type KeyboardEvent, type RefObject, type MouseEvent, type ReactElement, type ReactNode,
 } from 'react';
-import { getPageItems, type ColumnDef, type DataTable, type Row } from '@acunsoft/datatable-core';
+import { COLUMN_WIDTH_LIMITS, getPageItems, type ColumnDef, type DataTable, type Row } from '@acunsoft/datatable-core';
 import {
   cellValue, checkPageSizes, checkResponsive, checkSize, confirmed, filterControls, splitActions, createCellText, ICONS, labelsEn, nextSorting, pageInfoText,
-  numeric, pageSizeChoices, pinColumns, priorityOf, rangeOf, renderBulkActions, renderFilterChips, renderFilters, renderMenu, rowName, scrollHeight,
+  columnsChanged, columnTools, numeric, pageSizeChoices, pinColumns, resetColumns, priorityOf, rangeOf, renderBulkActions, renderFilterChips, renderFilters, renderMenu, rowName, scrollHeight,
   checkFixedColumns, type FixedColumns, type MenuItem, type RenderedComponent, type ResponsiveMode, type TableSize,
   type BulkAction, type BulkSelection, type CellFormatter, type DataTableLabels, type RowAction, type StatusSource,
 } from '@acunsoft/datatable-dom';
@@ -65,6 +65,10 @@ export interface DataTableProps<TData> {
   readonly skeleton?: boolean;
   /** Columns that stay while the table scrolls sideways: `{ start: 1, end: 1 }` (DataTables `fixedColumns`). */
   readonly fixedColumns?: FixedColumns;
+  /** Drag a header's edge (or ←/→ on it) to set the column's width. */
+  readonly resizableColumns?: boolean;
+  /** Drag a header onto another to move the column. */
+  readonly reorderableColumns?: boolean;
 }
 
 /** Placeholder rows while the first rows load: as many as a page, at most this many. */
@@ -136,11 +140,18 @@ export function DataTable<TData>(props: DataTableProps<TData>): ReactElement {
     if (!wrap.current || (fixed.start === 0 && fixed.end === 0)) return undefined;
     return pinColumns(wrap.current, fixed);
   }, [fixed.start, fixed.end]);
+  // Resizing and moving: one listener set on the wrapper, whatever is re-rendered inside.
+  const resizable = props.resizableColumns === true;
+  const reorderable = props.reorderableColumns === true;
+  useEffect(() => {
+    if (!wrap.current || (!resizable && !reorderable)) return undefined;
+    return columnTools(wrap.current, table, { resize: resizable, reorder: reorderable });
+  }, [table, resizable, reorderable]);
   // One listener closes any open row "⋮" menu on a click outside it.
   useEffect(() => {
     const close = (event: Event): void => {
       wrap.current?.querySelectorAll<HTMLDetailsElement>('.adt-row-menu[open]').forEach(menu => {
-        if (!menu.contains(event.target as Node)) menu.open = false;
+        if (!event.composedPath().includes(menu)) menu.open = false;
       });
     };
     document.addEventListener('click', close);
@@ -231,17 +242,27 @@ export function DataTable<TData>(props: DataTableProps<TData>): ReactElement {
   for (const column of columns) {
     const index = state.sorting.findIndex(rule => rule.field === column.id);
     const rule = state.sorting[index];
+    const width = state.columnWidths[column.id];
     head.push(h('th', {
       scope: 'col', key: column.id,
       className: `adt-th${collapsible ? ` adt-col--p${priorityOf(column, columns.indexOf(column))}` : ''}${numeric(column) ? ' adt-num' : ''}`,
       'aria-sort': primary?.field === column.id ? (primary.direction === 'asc' ? 'ascending' : 'descending') : undefined,
+      'data-column-id': column.id, draggable: props.reorderableColumns ? true : undefined,
+      style: width !== undefined ? { width: `${width}px` } : undefined,
     }, column.enableSorting
       ? h('button', {
         type: 'button', className: rule ? `adt-sort adt-sort--${rule.direction}` : 'adt-sort',
         onClick: (event: MouseEvent) => table.setSorting(nextSorting(table.getState().sorting, column.id, event.shiftKey && props.multiSort !== false)),
       }, column.header, h('span', { className: 'adt-sort-mark', 'aria-hidden': 'true' },
         rule ? `${rule.direction === 'asc' ? '▲' : '▼'}${state.sorting.length > 1 ? index + 1 : ''}` : ''))
-      : column.header));
+      : column.header,
+    props.resizableColumns
+      ? h('span', {
+        className: 'adt-resize', role: 'separator', 'aria-orientation': 'vertical', tabIndex: 0,
+        'aria-label': labels.resizeColumn(column.header), 'data-column-id': column.id,
+        'aria-valuemin': COLUMN_WIDTH_LIMITS.min, 'aria-valuemax': COLUMN_WIDTH_LIMITS.max, 'aria-valuenow': width,
+      })
+      : null));
   }
   if (rowActions.length > 0) {
     head.push(h('th', { scope: 'col', className: collapsible ? 'adt-th adt-actions adt-col--p2' : 'adt-th adt-actions', key: '__actions' }, labels.actions));
@@ -346,7 +367,8 @@ export function DataTable<TData>(props: DataTableProps<TData>): ReactElement {
   const height = scrollHeight(props.scrollY);
   const wrapClass = ['adt-table-wrap', `adt-responsive--${responsive}`, size === 'md' ? '' : `adt-size--${size}`,
     props.stickyHeader === true ? 'adt-sticky-header' : '', height ? 'adt-scroll-y' : '', busy ? 'adt-loading' : '', skeleton ? 'adt-skeleton-on' : ''].filter(Boolean).join(' ');
-  const tableClass = ['adt-table', collapsible && levels.has(2) ? 'adt-has-p2' : '', collapsible && levels.has(3) ? 'adt-has-p3' : '', detail ? 'adt-has-detail' : '']
+  const tableClass = ['adt-table', collapsible && levels.has(2) ? 'adt-has-p2' : '', collapsible && levels.has(3) ? 'adt-has-p3' : '', detail ? 'adt-has-detail' : '',
+    Object.keys(state.columnWidths).length > 0 ? 'adt-fixed-layout' : '']
     .filter(Boolean).join(' ');
   return h('div', {
     className: wrapClass, ref: wrap, 'aria-busy': props.status ? busy : undefined,
@@ -505,26 +527,47 @@ export function Search({ table, placeholder, debounceMs = 250, labels: custom }:
 export interface ColumnToggleProps {
   readonly table: AnyTable;
   readonly labels?: Partial<DataTableLabels>;
+  /** Up/down buttons per column to change the order with the keyboard. */
+  readonly reorderable?: boolean;
 }
 
-/** A "Columns" menu (`<details>`) with a labelled checkbox per column. */
-export function ColumnToggle({ table, labels: custom }: ColumnToggleProps): ReactElement {
+/**
+ * A "Columns" menu (`<details>`) with a labelled checkbox per column, in
+ * display order; with `reorderable`, up/down buttons, and "Reset columns"
+ * once the order or widths changed.
+ */
+export function ColumnToggle({ table, labels: custom, reorderable = false }: ColumnToggleProps): ReactElement {
   const { state } = useTable(table);
   const labels = withLabels(custom);
   const columns = table.getColumns();
+  const byId = new Map(columns.map(column => [column.id, column]));
   const lastVisible = columns.length - state.hiddenColumns.length === 1;
   return h('details', { className: 'adt-columns' },
     h('summary', null, icon('columns'), labels.columns),
-    h('fieldset', null, h('legend', null, labels.showColumns), columns.map(column => {
-      const shown = !state.hiddenColumns.includes(column.id);
-      return h('label', { key: column.id },
+    h('fieldset', null, h('legend', null, labels.showColumns), state.columnOrder.map((id, index) => {
+      const column = byId.get(id)!;
+      const shown = !state.hiddenColumns.includes(id);
+      const checkbox = h('label', reorderable ? null : { key: id },
         h('input', {
-          type: 'checkbox', value: column.id, checked: shown,
+          type: 'checkbox', value: id, checked: shown,
           disabled: column.enableHiding === false || (lastVisible && shown),
-          onChange: (event: ChangeEvent<HTMLInputElement>) => table.setColumnVisibility(column.id, event.target.checked),
+          onChange: (event: ChangeEvent<HTMLInputElement>) => table.setColumnVisibility(id, event.target.checked),
         }),
         h('span', null, column.header));
-    })));
+      if (!reorderable) return checkbox;
+      const move = (direction: 'up' | 'down'): ReactElement => {
+        const to = direction === 'up' ? index - 1 : index + 1;
+        const disabled = to < 0 || to >= state.columnOrder.length;
+        return h('button', {
+          type: 'button', className: 'adt-move', 'aria-disabled': disabled ? true : undefined,
+          'aria-label': direction === 'up' ? labels.moveColumnUp(column.header) : labels.moveColumnDown(column.header),
+          onClick: () => { if (!disabled) table.moveColumn(id, to); },
+        }, icon(direction));
+      };
+      return h('div', { className: 'adt-column-item', key: id }, checkbox, move('up'), move('down'));
+    }), columnsChanged(table)
+      ? h('button', { type: 'button', className: 'adt-columns-reset', onClick: () => resetColumns(table) }, labels.resetColumns)
+      : null));
 }
 
 export interface BulkActionsProps<TData> {
@@ -631,7 +674,7 @@ export function DataTableLayout<TData>(props: DataTableLayoutProps<TData>): Reac
     ], [
       topEnd ?? null,
       hasFilters ? h(Filters, { key: 'filters', table, locale, ...(labels ? { labels } : {}) }) : null,
-      columnToggle ? h(ColumnToggle, { key: 'columns', table, ...(labels ? { labels } : {}) }) : null,
+      columnToggle ? h(ColumnToggle, { key: 'columns', table, reorderable: props.reorderableColumns === true, ...(labels ? { labels } : {}) }) : null,
       tools.length > 0 ? h(Tools, { key: 'tools', items: tools, ...(labels ? { labels } : {}) }) : null,
     ]),
     hasFilters ? h(FilterChips, { table, locale, ...(labels ? { labels } : {}) }) : null,

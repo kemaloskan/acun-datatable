@@ -1,7 +1,7 @@
 import type { DataTable } from './data-table';
 
 /** The parts of the state `persistState` keeps. */
-export type PersistedPart = 'page' | 'pageSize' | 'sorting' | 'filters' | 'globalSearch' | 'hiddenColumns';
+export type PersistedPart = 'page' | 'pageSize' | 'sorting' | 'filters' | 'globalSearch' | 'hiddenColumns' | 'columnOrder' | 'columnWidths';
 
 /** Where the state is stored: `localStorage`, `sessionStorage` or anything with the same two methods. */
 export interface StateStorage {
@@ -18,12 +18,12 @@ export interface PersistStateOptions {
   readonly include?: readonly PersistedPart[];
 }
 
-const ALL: readonly PersistedPart[] = ['page', 'pageSize', 'sorting', 'filters', 'globalSearch', 'hiddenColumns'];
+const ALL: readonly PersistedPart[] = ['page', 'pageSize', 'sorting', 'filters', 'globalSearch', 'hiddenColumns', 'columnOrder', 'columnWidths'];
 const VERSION = 1;
 
 /**
- * Remember a table's page, page size, sorting, filters, search and hidden
- * columns across reloads (DataTables `stateSave`). The saved state is applied
+ * Remember a table's page, page size, sorting, filters, search, hidden
+ * columns, column order and widths across reloads (DataTables `stateSave`). The saved state is applied
  * at once (each part on its own, so a part that no longer fits the columns is
  * skipped) and saved after every change. The page is applied again when the
  * first rows arrive, so it survives data that loads later. Returns `stop`.
@@ -51,6 +51,9 @@ export function persistState<TData>(table: DataTable<TData>, options: PersistSta
   };
   apply('pageSize', () => table.setPageSize(saved.pageSize as number));
   apply('hiddenColumns', () => table.setHiddenColumns(saved.hiddenColumns as string[]));
+  apply('columnOrder', () => table.setColumnOrder((saved.columnOrder as string[]).filter(id => table.getColumns().some(column => column.id === id))));
+  apply('columnWidths', () => table.setColumnWidths(Object.fromEntries(Object.entries(saved.columnWidths as Record<string, number>)
+    .filter(([id]) => table.getColumns().some(column => column.id === id)))));
   apply('sorting', () => table.setSorting(saved.sorting as never));
   apply('filters', () => table.setFilters(saved.filters as never));
   apply('globalSearch', () => table.setGlobalSearch(saved.globalSearch as string));

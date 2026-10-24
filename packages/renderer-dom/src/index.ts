@@ -1,5 +1,6 @@
 export { el, ICONS, type RenderedComponent } from './dom';
 export { checkFixedColumns, pinColumns, type FixedColumns } from './pin';
+export { columnTools, type ColumnToolsOptions } from './column-tools';
 export { printTable, renderMenu, type MenuItem, type RenderMenuOptions } from './menu';
 export {
   LABELS, labelsDe, labelsEn, labelsEs, labelsFr, labelsTr, resolveLabels, type DataTableLabels,
@@ -20,7 +21,7 @@ export {
   confirmed, renderBulkActions, splitActions,
   type ActionIcon, type BulkAction, type BulkSelection, type RenderBulkActionsOptions, type RowAction,
 } from './actions';
-export { renderColumnToggle, type RenderColumnToggleOptions } from './columns';
+export { columnsChanged, renderColumnToggle, resetColumns, type RenderColumnToggleOptions } from './columns';
 export {
   describeFilter, filterControls, filterRules, readFilter, renderFilterChips, renderFilters, replaceFilter,
   type FilterControl, type FilterKind, type FilterValues, type RenderFiltersOptions,

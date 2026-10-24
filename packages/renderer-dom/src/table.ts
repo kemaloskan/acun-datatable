@@ -1,9 +1,10 @@
-import type { ColumnDef, DataTable, Row } from '@acunsoft/datatable-core';
+import { COLUMN_WIDTH_LIMITS, type ColumnDef, type DataTable, type Row } from '@acunsoft/datatable-core';
 import { actionCell, checkActions, type RowAction } from './actions';
 import { cellValue, createCellText, nextSorting, rowName, type CellFormatter } from './cells';
 import { checkTarget, element, icon, keepFocus, type RenderedComponent } from './dom';
 import { labelsEn, type DataTableLabels } from './labels';
 import { checkFixedColumns, pinColumns, type FixedColumns } from './pin';
+import { columnTools } from './column-tools';
 
 export type { CellFormatter } from './cells';
 
@@ -96,6 +97,17 @@ export interface RenderTableOptions<TData> {
    * phone card layout, where nothing scrolls sideways.
    */
   readonly fixedColumns?: FixedColumns;
+  /**
+   * Drag the edge of a header to set a column's width (←/→ on the focused
+   * handle, Delete returns it to its natural width). Widths are in the
+   * table state (`columnWidths`), so `persistState` keeps them.
+   */
+  readonly resizableColumns?: boolean;
+  /**
+   * Drag a header onto another to move the column (`columnOrder`); the
+   * column menu offers the same with buttons for the keyboard.
+   */
+  readonly reorderableColumns?: boolean;
 }
 
 /** Placeholder rows while the first rows load: as many as a page, at most this many. */
@@ -210,7 +222,7 @@ export function renderTable<TData>(
   // One listener closes any open row "⋮" menu on a click outside it.
   const closeMenus = (event: Event): void => {
     root.querySelectorAll<HTMLDetailsElement>('.adt-row-menu[open]').forEach(menu => {
-      if (!menu.contains(event.target as Node)) menu.open = false;
+      if (!event.composedPath().includes(menu)) menu.open = false;
     });
   };
   doc.addEventListener('click', closeMenus);
@@ -350,7 +362,8 @@ export function renderTable<TData>(
     selectAll = undefined;
     rowParts = [];
 
-    const tableEl = element(doc, 'table', { class: 'adt-table' });
+    const widths = state.columnWidths;
+    const tableEl = element(doc, 'table', { class: Object.keys(widths).length > 0 ? 'adt-table adt-fixed-layout' : 'adt-table' });
     if (options.caption !== undefined) tableEl.append(element(doc, 'caption', {}, options.caption));
 
     const headRow = element(doc, 'tr');
@@ -382,7 +395,11 @@ export function renderTable<TData>(
     for (const column of columns) {
       const th = element(doc, 'th', {
         scope: 'col', class: `adt-th${collapsible ? ` adt-col--p${priorityOf(column, columns.indexOf(column))}` : ''}${numeric(column) ? ' adt-num' : ''}`,
+        'data-column-id': column.id,
+        ...(options.reorderableColumns ? { draggable: 'true' } : {}),
       });
+      const width = widths[column.id];
+      if (width !== undefined) th.style.width = `${width}px`;
       if (column.enableSorting) {
         const index = state.sorting.findIndex(rule => rule.field === column.id);
         const rule = state.sorting[index];
@@ -400,6 +417,14 @@ export function renderTable<TData>(
         th.append(button);
       } else {
         th.textContent = column.header;
+      }
+      if (options.resizableColumns) {
+        th.append(element(doc, 'span', {
+          class: 'adt-resize', role: 'separator', 'aria-orientation': 'vertical', tabindex: '0',
+          'aria-label': labels.resizeColumn(column.header), 'data-column-id': column.id, 'data-adt-focus': `resize:${column.id}`,
+          'aria-valuemin': String(COLUMN_WIDTH_LIMITS.min), 'aria-valuemax': String(COLUMN_WIDTH_LIMITS.max),
+          ...(width !== undefined ? { 'aria-valuenow': String(width) } : {}),
+        }));
       }
       headRow.append(th);
     }
@@ -557,6 +582,9 @@ export function renderTable<TData>(
   render();
   showStatus();
   const unpin = pinColumns(root, fixed);
+  const stopTools = options.resizableColumns || options.reorderableColumns
+    ? columnTools(root, table, { resize: options.resizableColumns === true, reorder: options.reorderableColumns === true })
+    : () => undefined;
   const unsubscribe = table.subscribe((_, event) => {
     if (event.type === 'selection') patchSelection();
     else render();
@@ -573,6 +601,7 @@ export function renderTable<TData>(
       unsubscribeStatus();
       closeDialog();
       unpin();
+      stopTools();
       doc.removeEventListener('click', closeMenus);
       root.remove();
     },

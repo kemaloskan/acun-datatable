@@ -387,3 +387,33 @@ describe('fixed columns', () => {
     vi.restoreAllMocks();
   });
 });
+
+describe('resizable and movable columns', () => {
+  it('renders handles and widths, and moves columns from the menu', async () => {
+    const table = make();
+    await mount(() => h(AcunDataTableLayout, { table, resizableColumns: true, reorderableColumns: true }));
+    expect(host.querySelectorAll('thead .adt-resize')).toHaveLength(2);
+    expect(host.querySelector('thead th[data-column-id="customer"]')!.getAttribute('draggable')).toBe('true');
+    table.setColumnWidth('total', 180);
+    await nextTick();
+    expect(host.querySelector<HTMLElement>('thead th[data-column-id="total"]')!.style.width).toBe('180px');
+    expect(host.querySelector('table')!.classList.contains('adt-fixed-layout')).toBe(true);
+    host.querySelector<HTMLButtonElement>('.adt-move[aria-label="Move Tutar up"]')!.click();
+    await nextTick();
+    expect([...host.querySelectorAll<HTMLElement>('thead th[data-column-id]')].map(th => th.dataset['columnId'])).toEqual(['total', 'customer']);
+    host.querySelector<HTMLButtonElement>('.adt-columns-reset')!.click();
+    await nextTick();
+    expect(table.getState().columnWidths).toEqual({});
+    expect([...host.querySelectorAll<HTMLElement>('thead th[data-column-id]')].map(th => th.dataset['columnId'])).toEqual(['customer', 'total']);
+  });
+
+  it('resizes with the keyboard through the shared column tools', async () => {
+    vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(() => ({ width: 120, left: 0 } as DOMRect));
+    const table = make();
+    await mount(() => h(AcunDataTable, { table, resizableColumns: true }));
+    const handle = host.querySelector<HTMLElement>('.adt-resize[data-column-id="total"]')!;
+    handle.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true }));
+    expect(table.getState().columnWidths).toEqual({ customer: 120, total: 136 });
+    vi.restoreAllMocks();
+  });
+});

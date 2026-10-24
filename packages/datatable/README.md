@@ -114,8 +114,10 @@ Route::match(['get', 'post'], '/api/products', fn () => TableResponse::for(Produ
 | `selectable`, `rowActions`, `bulkActions` | | `select`, buttons |
 | `detail` | | child rows (`row().child()`) |
 | `columnToggle` | `true` | `colvis` |
+| `columnResize` | `false`: drag a header's edge, or ←/→ on it | ColResize |
+| `columnReorder` | `false`: drag headers; ↑/↓ buttons in the column menu | `colReorder` |
 | `layout` | page size and search above, info and pages below | `layout` |
-| `stateSave` | `false`; `true` or `{ key, storage: 'session' }` | `stateSave` |
+| `stateSave` | `false`; `true` or `{ key, storage: 'session' }`; keeps page, sorting, search, filters, hidden columns, order and widths | `stateSave` |
 | `buttons` | | `buttons` |
 | `rowId` | `'id'` when rows have one | `rowId` |
 

@@ -2,10 +2,10 @@ import {
   computed, defineComponent, h, nextTick, onMounted, onScopeDispose, shallowRef, watch,
   type PropType, type SlotsType, type VNode,
 } from 'vue';
-import { getPageItems, type ColumnDef, type DataTable, type Row } from '@acunsoft/datatable-core';
+import { COLUMN_WIDTH_LIMITS, getPageItems, type ColumnDef, type DataTable, type Row } from '@acunsoft/datatable-core';
 import {
   cellValue, checkPageSizes, checkResponsive, checkSize, confirmed, filterControls, splitActions, createCellText, ICONS, labelsEn, nextSorting, pageInfoText,
-  numeric, pageSizeChoices, pinColumns, priorityOf, rangeOf, renderBulkActions, renderFilterChips, renderFilters, renderMenu, rowName, scrollHeight,
+  columnsChanged, columnTools, numeric, pageSizeChoices, pinColumns, resetColumns, priorityOf, rangeOf, renderBulkActions, renderFilterChips, renderFilters, renderMenu, rowName, scrollHeight,
   checkFixedColumns, type FixedColumns, type MenuItem, type RenderedComponent, type ResponsiveMode, type TableSize,
   type BulkAction, type BulkSelection, type CellFormatter, type DataTableLabels, type RowAction, type StatusSource,
 } from '@acunsoft/datatable-dom';
@@ -86,6 +86,10 @@ export const AcunDataTable = defineComponent({
     maxInlineActions: { type: Number, default: Infinity },
     /** Placeholder rows while a `status` source loads the first rows. Default `true`. */
     skeleton: { type: Boolean, default: true },
+    /** Drag a header's edge (or ←/→ on it) to set the column's width. */
+    resizableColumns: { type: Boolean, default: false },
+    /** Drag a header onto another to move the column. */
+    reorderableColumns: { type: Boolean, default: false },
     /** Columns that stay while the table scrolls sideways: `{ start: 1, end: 1 }` (DataTables `fixedColumns`). */
     fixedColumns: {
       type: Object as PropType<FixedColumns>, default: undefined,
@@ -152,7 +156,7 @@ export const AcunDataTable = defineComponent({
     const wrapEl = shallowRef<HTMLElement | null>(null);
     const closeMenus = (event: Event): void => {
       wrapEl.value?.querySelectorAll<HTMLDetailsElement>('.adt-row-menu[open]').forEach(menu => {
-        if (!menu.contains(event.target as Node)) menu.open = false;
+        if (!event.composedPath().includes(menu)) menu.open = false;
       });
     };
     onMounted(() => document.addEventListener('click', closeMenus));
@@ -163,6 +167,15 @@ export const AcunDataTable = defineComponent({
       unpin = node && props.fixedColumns ? pinColumns(node, props.fixedColumns) : undefined;
     }, { flush: 'post' });
     onScopeDispose(() => unpin?.());
+    // Resizing and moving: one listener set on the wrapper, whatever is re-rendered inside.
+    let stopTools: (() => void) | undefined;
+    watch([wrapEl, () => props.resizableColumns, () => props.reorderableColumns, () => props.table], ([node]) => {
+      stopTools?.();
+      stopTools = node && (props.resizableColumns || props.reorderableColumns)
+        ? columnTools(node, props.table, { resize: props.resizableColumns, reorder: props.reorderableColumns })
+        : undefined;
+    }, { flush: 'post' });
+    onScopeDispose(() => stopTools?.());
     onScopeDispose(() => { if (typeof document !== 'undefined') document.removeEventListener('click', closeMenus); });
     // Close the dialog when its row leaves the page.
     watch(() => binding.page.value, page => {
@@ -204,16 +217,28 @@ export const AcunDataTable = defineComponent({
       for (const column of columns) {
         const index = state.sorting.findIndex(rule => rule.field === column.id);
         const rule = state.sorting[index];
+        const width = state.columnWidths[column.id];
         head.push(h('th', {
           scope: 'col', class: `adt-th${level(column)}${numeric(column) ? ' adt-num' : ''}`, key: column.id,
           'aria-sort': primary?.field === column.id ? (primary.direction === 'asc' ? 'ascending' : 'descending') : undefined,
-        }, column.enableSorting
-          ? [h('button', {
-            type: 'button', class: rule ? `adt-sort adt-sort--${rule.direction}` : 'adt-sort',
-            onClick: (event: MouseEvent) => table.setSorting(nextSorting(table.getState().sorting, column.id, event.shiftKey && props.multiSort)),
-          }, [column.header, h('span', { class: 'adt-sort-mark', 'aria-hidden': 'true' },
-            rule ? `${rule.direction === 'asc' ? '▲' : '▼'}${state.sorting.length > 1 ? index + 1 : ''}` : '')])]
-          : column.header));
+          'data-column-id': column.id, draggable: props.reorderableColumns ? 'true' : undefined,
+          style: width !== undefined ? { width: `${width}px` } : undefined,
+        }, [
+          column.enableSorting
+            ? h('button', {
+              type: 'button', class: rule ? `adt-sort adt-sort--${rule.direction}` : 'adt-sort',
+              onClick: (event: MouseEvent) => table.setSorting(nextSorting(table.getState().sorting, column.id, event.shiftKey && props.multiSort)),
+            }, [column.header, h('span', { class: 'adt-sort-mark', 'aria-hidden': 'true' },
+              rule ? `${rule.direction === 'asc' ? '▲' : '▼'}${state.sorting.length > 1 ? index + 1 : ''}` : '')])
+            : column.header,
+          props.resizableColumns
+            ? h('span', {
+              class: 'adt-resize', role: 'separator', 'aria-orientation': 'vertical', tabindex: 0,
+              'aria-label': label.resizeColumn(column.header), 'data-column-id': column.id,
+              'aria-valuemin': COLUMN_WIDTH_LIMITS.min, 'aria-valuemax': COLUMN_WIDTH_LIMITS.max, 'aria-valuenow': width,
+            })
+            : null,
+        ]));
       }
       if (actions.length > 0) {
         head.push(h('th', { scope: 'col', class: `adt-th adt-actions${collapsible ? ' adt-col--p2' : ''}`, key: '__actions' }, label.actions));
@@ -380,7 +405,8 @@ export const AcunDataTable = defineComponent({
       const height = scrollHeight(props.scrollY);
       const wrapClass = ['adt-table-wrap', `adt-responsive--${responsive}`, props.size === 'md' ? '' : `adt-size--${props.size}`,
         props.stickyHeader ? 'adt-sticky-header' : '', height ? 'adt-scroll-y' : '', busy ? 'adt-loading' : '', skeleton ? 'adt-skeleton-on' : ''].filter(Boolean).join(' ');
-      const tableClass = ['adt-table', collapsible && levels.has(2) ? 'adt-has-p2' : '', collapsible && levels.has(3) ? 'adt-has-p3' : '', detailSlot ? 'adt-has-detail' : '']
+      const tableClass = ['adt-table', collapsible && levels.has(2) ? 'adt-has-p2' : '', collapsible && levels.has(3) ? 'adt-has-p3' : '', detailSlot ? 'adt-has-detail' : '',
+        Object.keys(state.columnWidths).length > 0 ? 'adt-fixed-layout' : '']
         .filter(Boolean).join(' ');
       return h('div', { ref: wrapEl, class: wrapClass, style: height ? { '--adt-scroll-y': height } : undefined, 'aria-busy': props.status ? String(busy) : undefined }, [
         notice,
@@ -553,27 +579,46 @@ export const AcunSearch = defineComponent({
 /** A "Columns" menu (`<details>`) with a labelled checkbox per column. */
 export const AcunColumnToggle = defineComponent({
   name: 'AcunColumnToggle',
-  props: { table: tableProp, labels: labelsProp },
+  props: {
+    table: tableProp, labels: labelsProp,
+    /** Up/down buttons per column to change the order with the keyboard. */
+    reorderable: { type: Boolean, default: false },
+  },
   setup(props) {
     const binding = useTable(props.table);
     return (): VNode => {
       const label = withLabels(props.labels);
-      const hidden = binding.state.value.hiddenColumns;
+      const { hiddenColumns: hidden, columnOrder } = binding.state.value;
       const columns = props.table.getColumns();
+      const byId = new Map(columns.map(column => [column.id, column]));
       const lastVisible = columns.length - hidden.length === 1;
       return h('details', { class: 'adt-columns' }, [
         h('summary', [iconNode('columns'), label.columns]),
-        h('fieldset', [h('legend', label.showColumns), ...columns.map(column => {
-          const shown = !hidden.includes(column.id);
-          return h('label', { key: column.id }, [
+        h('fieldset', [h('legend', label.showColumns), ...columnOrder.map((id, index) => {
+          const column = byId.get(id)!;
+          const shown = !hidden.includes(id);
+          const checkbox = h('label', props.reorderable ? {} : { key: id }, [
             h('input', {
-              type: 'checkbox', value: column.id, checked: shown,
+              type: 'checkbox', value: id, checked: shown,
               disabled: column.enableHiding === false || (lastVisible && shown),
-              onChange: (event: Event) => props.table.setColumnVisibility(column.id, (event.target as HTMLInputElement).checked),
+              onChange: (event: Event) => props.table.setColumnVisibility(id, (event.target as HTMLInputElement).checked),
             }),
             h('span', column.header),
           ]);
-        })]),
+          if (!props.reorderable) return checkbox;
+          const move = (direction: 'up' | 'down'): VNode => {
+            const to = direction === 'up' ? index - 1 : index + 1;
+            const disabled = to < 0 || to >= columnOrder.length;
+            return h('button', {
+              type: 'button', class: 'adt-move', 'aria-disabled': disabled ? 'true' : undefined,
+              'aria-label': direction === 'up' ? label.moveColumnUp(column.header) : label.moveColumnDown(column.header),
+              onClick: () => { if (!disabled) props.table.moveColumn(id, to); },
+            }, [iconNode(direction)]);
+          };
+          return h('div', { class: 'adt-column-item', key: id }, [checkbox, move('up'), move('down')]);
+        }), columnsChanged(props.table)
+          ? h('button', { type: 'button', class: 'adt-columns-reset', onClick: () => resetColumns(props.table) }, label.resetColumns)
+          : null]),
       ]);
     };
   },
@@ -667,6 +712,8 @@ export const AcunDataTableLayout = defineComponent({
     debounceMs: { type: Number, default: 250 },
     filters: { type: Boolean, default: true },
     columnToggle: { type: Boolean, default: true },
+    /** Drag headers to move columns; the column menu gets up/down buttons. */
+    reorderableColumns: { type: Boolean, default: false },
     tools: { type: Array as PropType<readonly MenuItem[]>, default: () => [] },
     bulkActions: { type: Array as PropType<readonly BulkAction<never>[]>, default: () => [] },
     paging: { type: Object as PropType<{ siblings?: number; boundaries?: number; firstLast?: boolean }>, default: () => ({}) },
@@ -690,12 +737,12 @@ export const AcunDataTableLayout = defineComponent({
         ], [
           slots['top-end']?.(),
           hasFilters ? h(AcunFilters, { ...common, locale: props.locale }) : null,
-          props.columnToggle ? h(AcunColumnToggle, common) : null,
+          props.columnToggle ? h(AcunColumnToggle, { ...common, reorderable: props.reorderableColumns }) : null,
           props.tools.length > 0 ? h(AcunTools, { items: props.tools, labels: props.labels }) : null,
         ]),
         hasFilters ? h(AcunFilterChips, { ...common, locale: props.locale }) : null,
         props.bulkActions.length > 0 ? h(AcunBulkActions, { ...common, actions: props.bulkActions }) : null,
-        h(AcunDataTable, { ...attrs, ...common, locale: props.locale }, tableSlots),
+        h(AcunDataTable, { ...attrs, ...common, locale: props.locale, reorderableColumns: props.reorderableColumns }, tableSlots),
         bar('bottom', [h(AcunPageInfo, common), slots['bottom-start']?.()], [slots['bottom-end']?.(), h(AcunPagination, { ...common, ...props.paging, locale: props.locale })]),
       ]);
     };

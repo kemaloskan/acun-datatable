@@ -194,6 +194,23 @@ table without the controls.
 draws cells yourself: return a DOM node (`el()` builds one without parsing
 HTML) or a string (shown as text). Sorting, search and exports keep the value.
 
+## Resizing and moving columns
+
+```ts
+renderDataTable(el, table, { resizableColumns: true, reorderableColumns: true });
+```
+
+`resizableColumns` puts a handle on the edge of each header (`role="separator"`):
+drag it (Escape cancels), use ←/→ on it (Shift for larger steps), Delete or a
+double click returns the column to its natural width. The first resize fixes
+every visible column at its current width, so nothing else jumps.
+`reorderableColumns` lets a header be dragged onto another; the column menu
+gets up/down buttons for the keyboard and "Reset columns". Order and widths
+are table state (`columnOrder`, `columnWidths`, `moveColumn`,
+`setColumnWidth`), so `persistState` keeps them and they never reach the
+server query. `columnTools(container, table, { resize, reorder })` adds the
+same behaviour to markup rendered elsewhere.
+
 ## Fixed columns
 
 `fixedColumns: { start: 1, end: 1 }` keeps the first data column (with the

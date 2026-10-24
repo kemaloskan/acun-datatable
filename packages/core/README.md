@@ -37,8 +37,10 @@ table.setFilters([{ field: 'total', operator: 'between', value: ['100', '500'] }
   phrases stay together), case-, accent- and Turkish-insensitive (`ayse` finds
   `Ayşe`, `istanbul` finds `İSTANBUL`); operators `contains`, `startsWith`, `eq`,
   `gt`, `gte`, `lt`, `lte`, `between`, `in`, `empty`, `notEmpty`.
-- **Column visibility:** `setColumnVisibility`, `getVisibleColumns`; hidden
-  columns still sort, filter and search.
+- **Column visibility, order and widths:** `setColumnVisibility`,
+  `moveColumn` / `setColumnOrder`, `setColumnWidth` / `setColumnWidths`
+  (within `COLUMN_WIDTH_LIMITS`); `getVisibleColumns()` follows the order.
+  Hidden columns still sort, filter and search; none of it changes the query.
 - **Pagination and selection,** local or server mode (`mode: 'server'` with
   `setPageResult`). `getPageItems(page, pageCount, { siblings, boundaries })`
   gives the numbers of a pager (`1 … 4 5 6 … 20`) with a fixed length, so it
@@ -46,8 +48,8 @@ table.setFilters([{ field: 'total', operator: 'between', value: ['100', '500'] }
 - **Responsive priority:** `priority: 1 | 2 | 3` on a column tells renderers
   which columns stay on phones (1) and tablets (2) when rows collapse.
 - **Remember the state:** `persistState(table, { key })` keeps page, page
-  size, sorting, filters, search and hidden columns in `localStorage` (or any
-  storage) across reloads, like DataTables `stateSave`.
+  size, sorting, filters, search, hidden columns, column order and widths in
+  `localStorage` (or any storage) across reloads, like DataTables `stateSave`.
 - **Footer totals:** `aggregate: 'sum' | 'avg' | 'min' | 'max' | 'count'` on a
   column; `getAggregates()` gives them over every matching row (exact decimal
   sums), or from the server's `totals` in server mode. `aggregateRows(rows,
