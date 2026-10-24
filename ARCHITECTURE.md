@@ -156,6 +156,56 @@ Directories are named by role (`renderer-dom`, `datasource-http`); published nam
 - ADR-004: Remote mode owns scalability; performance must be measured.
 - ADR-005: Accessibility and secure rendering are release criteria, not add-ons.
 - ADR-006: Acun DataTable manages data, not the database. Back ends and their database adapters run the queries; no database driver is ever a dependency (the Node package writes SQL text and values for PostgreSQL, MySQL, MariaDB, SQLite and SQL Server).
-- ADR-007: Wire protocol v1 is frozen (additive changes only), so the optional Acun DataEngine can be added to a server later without changing any front end. Its contracts — Capability Detection, Query Budget, Search-First, Index Advisor, queued operations — are in [DATAENGINE.md](DATAENGINE.md).
+- ADR-007: Wire protocol v1 is frozen: changes are additive only (new optional request parameters, new optional response fields older clients ignore), so servers can improve how they answer without any front end changing (§9).
+- ADR-008: No separate engine. Optimizations stay in the existing back-end adapters; Redis, caches, queues, OpenSearch and other services are optional, never dependencies (decided 2026-10-25, replacing the earlier DataEngine plan).
+
+## 9. Final decisions (2026-10-25)
+
+**Principle:** Acun DataTable manages the table only. How data is queried,
+filtered, sorted and optimized is decided by the back end. It works, as
+DataTables does, independently of front-end and back-end frameworks, in the
+browser (client side) and with a server (server side).
+
+| Area | Decision |
+|---|---|
+| Front ends | Laravel Livewire, React, Vue, vanilla JavaScript (and the `<acun-datatable>` element) |
+| Back ends | the Laravel and Node.js adapters; anything that speaks wire protocol v1 |
+| Databases | MySQL, MariaDB, PostgreSQL, SQLite, SQL Server — through the back end, never a driver dependency |
+| Pagination | numbered pages (default: first, previous, next, last); cursor/keyset paging optional for big data and deep pages; infinite scroll as an alternative presentation on top of OFFSET or cursor paging, not a paging engine of its own; virtual scrolling (only the visible rows are drawn) |
+| Counting | the back end gives the total, as in DataTables; the count with a time limit stays and is optional; exact count, limited count and paging without a total are possible; listing is never slowed by needless `COUNT(*)` |
+| Big data | server-side work stays in the adapters and uses the database's indexes; Redis, caches, queues, OpenSearch are optional |
+| Kept features | the count time limit, Scout search (`searchEngine()`), queued exports and bulk actions |
+| Priorities | 1. fix the remaining bugs and gaps; 2. verify the Laravel, Livewire, React, Vue and Node integrations; 3. security, performance and database-compatibility tests; 4. demo, docs, upgrade guide; 5. a first stable release ready to publish (push, tags and publishing only after the owner's approval) |
+
+No speed is promised without a measurement. Performance tests are prepared
+for 5 million, 100 million and 1 billion rows: a script seeds the table in
+the database itself, runs each request type (first page, a deep page by
+OFFSET and by cursor, filtered and sorted pages, search, the count) a fixed
+number of times and reports p50 / p95 with the query plan. 5 million runs
+locally; 100 million and 1 billion need a dedicated server and are run by
+hand.
+
+### Wire protocol v1
+
+Request (GET query, POST form or JSON), validated on the server:
+
+| Parameter | Meaning |
+|---|---|
+| `page`, `pageSize` | 1-based page; size within the server's maximum |
+| `sort` | `field:asc,field:desc` |
+| `filters[i][field\|op\|value]` | `contains startsWith eq gt gte lt lte between in empty notEmpty` |
+| `search` | smart search text (words, `"quoted phrases"`) |
+| `paging`, `cursor` | `paging=cursor`; `cursor` is the previous answer's `nextCursor` |
+| DataTables protocol | `draw`, `start`, `length`, `order[i]`, `columns[i]`, `search[value]` — answered in DataTables' format |
+
+Response:
+
+| Field | Meaning |
+|---|---|
+| `rows` | the page |
+| `totalRows` *or* `totalRowsAtLeast` | exact count, or a lower bound when counting was cut short; neither when not counted |
+| `nextCursor` | cursor paging, while there is a next page |
+| `totals` | footer totals per column ID |
+| errors | 422 `{ message, errors: { field: message } }` (DataTables: 200 with `error`) |
 
 Update this document when any boundary or design decision changes; don't silently deviate.
