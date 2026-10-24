@@ -126,6 +126,17 @@
   .codewrap:hover .copy,.copy:focus-visible{opacity:1}
   .copy:hover{background:#2a2a2a}
   @media (hover:none){.copy{opacity:1}}
+  .tabs{margin:12px 0 16px}
+  .tablist{display:flex;flex-wrap:wrap;gap:2px;border-bottom:1px solid var(--line);margin-bottom:-4px}
+  .tablist [role=tab]{font:inherit;font-size:13px;font-weight:600;color:var(--muted);background:none;border:0;border-bottom:2px solid transparent;padding:8px 12px;cursor:pointer;margin-bottom:-1px}
+  .tablist [role=tab]:hover{color:var(--ink)}
+  .tablist [role=tab][aria-selected=true]{color:var(--brand-text);border-bottom-color:var(--brand)}
+  .tabpanel .codewrap{margin-top:12px}
+  .gtable{border:1px solid var(--line);border-radius:var(--radius);overflow:auto;margin:12px 0 16px}
+  .gtable table{width:100%;border-collapse:collapse;font-size:14px}
+  .gtable th,.gtable td{text-align:left;padding:10px 14px;border-top:1px solid var(--line);vertical-align:top;color:var(--text)}
+  .gtable thead th{border-top:0;background:var(--surface-subtle);color:var(--muted);font-size:12px;font-weight:600;letter-spacing:.04em;text-transform:uppercase}
+  .gtable td code{font-family:var(--mono);font-size:12.5px;color:var(--ink)}
   .note{border:1px solid var(--line);border-left:3px solid var(--brand);background:var(--surface-subtle);border-radius:var(--radius);padding:11px 15px;color:var(--muted);font-size:14px;line-height:1.6;margin:12px 0}
   .note.warn{border-left-color:#c48214}
   .api{border:1px solid var(--line);border-radius:var(--radius);overflow:hidden}
@@ -206,6 +217,7 @@ const ICON = {
   vue:`<svg width="18" height="18" viewBox="0 0 196 170"><path d="M120 0 98 38 76 0H0l98 170L196 0z" fill="#41B883"/><path d="M120 0 98 38 76 0H38l60 104L158 0z" fill="#35495E"/></svg>`,
   react:`<svg width="20" height="20" viewBox="-11.5 -10.23 23 20.46" fill="none"><circle r="2.05" fill="#149eca"/><g stroke="#149eca" stroke-width="1"><ellipse rx="11" ry="4.2"/><ellipse rx="11" ry="4.2" transform="rotate(60)"/><ellipse rx="11" ry="4.2" transform="rotate(120)"/></g></svg>`,
   html:`<svg width="17" height="17" viewBox="0 0 512 512"><path fill="#E34F26" d="M71 460 30 0h452l-41 460-185 52z"/><path fill="#EF652A" d="M256 472l149-41 35-394H256z"/><path fill="#fff" d="M256 208h-75l-5-53h80v-52H119l15 157h122zm0 134-63-17-4-45h-52l7 89 112 31z"/><path fill="#EBEBEB" d="M256 208v52h70l-7 73-63 17v54l112-31 15-165zm0-105v52h132l4-52z"/></svg>`,
+  guide:`<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20V3H6.5A2.5 2.5 0 0 0 4 5.5z"/><path d="M4 19.5A2.5 2.5 0 0 0 6.5 22H20v-5"/></svg>`,
   livewire:`<svg width="18" height="18" viewBox="0 0 24 24" fill="#FB70A9"><path d="M13 2 4.5 13H11l-1 9 9-12h-6z"/></svg>`,
   laravel:`<svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#FF2D20" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"><path d="M3 7l4.5-2.5L12 7 7.5 9.5z"/><path d="M3 7v5l4.5 2.5V9.5"/><path d="M12 7v5l-4.5 2.5"/><path d="M12 7l4.5-2.5L21 7l-4.5 2.5z"/><path d="M16.5 9.5V15L12 17.5"/></svg>`
 };
@@ -246,8 +258,12 @@ const API = [
     ["validatePageResult(value, { pageSize })", {tr:"Sunucu yanıtını { rows, totalRows } kontratına göre denetler.", en:"Checks a server response against the { rows, totalRows } contract."}],
     ["normalizeValue(value, type) · splitSearchTerms(text)", {tr:"Kolon tipine göre değer okuma ve akıllı arama ayrıştırma; sunucu ve adapter'lar için.", en:"Read a value as a column type and split smart-search text; for servers and adapters."}],
   ]],
+  ['@acunsoft/datatable', [
+    ["new AcunDataTable(target, options)", {tr:"DataTables gibi tek çağrıda tablo: mevcut <table>, data, bir kez yüklenen ajax JSON'u veya serverSide. fixedHeader, processing, pagination, sorting, searching, language, responsive, size; <script> ile de kullanılır.", en:"A table in one call, like DataTables: an existing <table>, data, an ajax JSON loaded once, or serverSide. fixedHeader, processing, pagination, sorting, searching, language, responsive, size; also as a <script>."}],
+    ["ready · reload() · search() · page() · pageSize() · order() · selectedRows() · on() · destroy()", {tr:"Tabloyu yöneten metotlar; table özelliği headless çekirdek tablosudur.", en:"Methods that control the table; the table property is the headless core table."}],
+  ]],
   ['@acunsoft/datatable-http', [
-    ["createHttpDataSource({ url, headers?, parseResponse? })", {tr:"fetch ile salt okunur veri kaynağı; sayfa boyutu sınırı, HttpError, yanıt doğrulama.", en:"Read-only fetch data source; page-size limit, HttpError, response validation."}],
+    ["createHttpDataSource({ url, method?, headers?, parseResponse? })", {tr:"fetch ile salt okunur veri kaynağı; GET veya POST (form gövdesi), sayfa boyutu sınırı, HttpError, yanıt doğrulama.", en:"Read-only fetch data source; GET or POST (form body), page-size limit, HttpError, response validation."}],
     ["createQueryRunner(source)", {tr:"En son istek kazanır; iptal, yükleniyor/hata durumları, elle tekrar deneme.", en:"Latest request wins; abort, loading/error states, explicit retry."}],
     ["connectTable(table, runner)", {tr:"Sunucu modundaki tabloyu runner'a bağlar; ilk sayfayı yükler.", en:"Wires a server-mode table to the runner; loads the first page."}],
     ["serializeTableQuery(query) · formatLocalDate(date)", {tr:"Laravel/qs uyumlu sorgu parametreleri; tarihler yerel saatle.", en:"Laravel/qs-friendly query parameters; dates in local time."}],
@@ -255,6 +271,7 @@ const API = [
   ['@acunsoft/datatable-dom', [
     ["renderDataTable(container, table, options?)", {tr:"Hepsi bir arada: üst çubukta sayfa başı ve arama (solda), kolon menüsü (sağda); altta kayıt aralığı (solda) ve numaralı sayfalar (sağda). layout ile her parça taşınır, kaldırılır veya kendi kontrolünüz eklenir; locale metinleri seçer.", en:"All in one: page size and search top left, column menu top right; row range bottom left and numbered pages bottom right. Move, remove or add your own controls with layout; locale picks the texts."}],
     ["renderTable(container, table, options?)", {tr:"Erişilebilir <table>: sıralama butonları, seçim kutuları, satır işlemleri, odak koruma; sayılar sağa hizalı.", en:"Accessible <table>: sort buttons, selection checkboxes, row actions, focus kept; numbers right-aligned."}],
+    ["stickyHeader · scrollY · multiSort", {tr:"Sabit başlık (DataTables fixedHeader), sabit yükseklikte içte kaydırma (scrollY), tek kolonlu sıralama.", en:"Fixed header (DataTables fixedHeader), a fixed height scrolling inside (scrollY), single-column sorting."}],
     ["responsive: 'cards' | 'scroll' | 'collapse' | 'modal' · size: 'sm' | 'md' | 'lg'", {tr:"Dar ekran: kart, yana kaydırma, açılır satır (⊕) veya ayrıntı penceresi (<dialog>); boyut satır, yazı ve kontrolleri birlikte değiştirir.", en:"Narrow screens: cards, sideways scrolling, collapsible rows (⊕) or a details <dialog>; size changes rows, text and controls together."}],
     ["renderColumnToggle(container, table, options?)", {tr:"\"Kolonlar\" menüsü: her kolon için etiketli bir onay kutusu; son görünen kolon gizlenemez.", en:"\"Columns\" menu: a labelled checkbox per column; the last visible column cannot be hidden."}],
     ["renderBulkActions(container, table, { actions })", {tr:"Seçim varken görünen çubuk: \"3 seçili\", toplu işlem butonları, seçimi temizle. renderTable'a rowActions ile satır butonları eklenir.", en:"A bar shown while rows are selected: \"3 selected\", bulk action buttons, clear selection. renderTable's rowActions adds per-row buttons."}],
@@ -282,6 +299,7 @@ const API = [
     ["->view('orders.status-badge') · ->priority(1|2|3) · ->hideable() · ->hidden()", {tr:"Hücreyi kendi Blade görünümünle çiz (rozet, avatar; dışa aktarma metni kullanır); dar ekran önceliği; kolon menüsü.", en:"Render the cell with your Blade view (badge, avatar; exports keep the text); narrow-screen priority; column menu."}],
     ["tableLayout() · pagingOptions() · texts()", {tr:"Üst/alt çubuk yerleşimi (pageSize, search, columns, tools, info, paging veya kendi Blade görünümün); sayfalayıcı ayarları; tabloya özel metinler.", en:"Top/bottom bar layout (pageSize, search, columns, tools, info, paging or your own Blade view); pager options; texts for one table."}],
     ["responsive() · tableSize()", {tr:"cards, scroll, collapse veya modal; sm, md veya lg.", en:"cards, scroll, collapse or modal; sm, md or lg."}],
+    ["pageSizeOptions() · defaultPageSize() · stickyHeader() · scrollY() · multiSort()", {tr:"Sayfa başı seçenekleri ve başlangıç değeri; sabit başlık; içte kaydırma; tek kolonlu sıralama.", en:"Rows-per-page choices and starting size; fixed header; scrolling inside; single-column sorting."}],
     ["countLimit() · countTimeout() · maxResultWindow()", {tr:"Tam sayım: 10.000'e kadar her zaman, ötesinde 250 ms bütçeyle (PostgreSQL, MySQL, MariaDB), aşarsa \"10.000+\"; 100.000 satırdan derin sayfa yok.", en:"Exact counts: always up to 10,000, beyond that within 250 ms (PostgreSQL, MySQL, MariaDB), else \"10,000+\"; no pages deeper than 100,000 rows."}],
     ["use WithDataTable  (Livewire)", {tr:"columns() ve query() tanımla; arama, sıralama, filtre ve sayfa boyutu URL'de; seçim ve selectedQuery() toplu işlemler için.", en:"Declare columns() and query(); search, sorting, filters and page size in the URL; selection and selectedQuery() for bulk actions."}],
     ["setFilter($field, $op, $value) · removeFilter($i) · clearFilters()", {tr:"Livewire eylemleri; geçersiz kurallar eklenmez.", en:"Livewire actions; invalid rules are not added."}],
@@ -555,11 +573,687 @@ export function Orders({ orders }: { orders: Order[] }) {
   );
 }` }
 };
+const GUIDES = {
+ "quick": {
+  "title": {
+   "tr": "Tek çağrıda tablo",
+   "en": "A table in one call"
+  },
+  "lead": {
+   "tr": "\u003ccode>@acunsoft/datatable\u003c/code> çekirdeği, erişilebilir görüntüleyiciyi ve HTTP veri kaynağını tek pakette toplar: DataTables gibi \u003ccode>new AcunDataTable('#tablo', { … })\u003c/code>. jQuery ya da başka bir bağımlılık yok.",
+   "en": "\u003ccode>@acunsoft/datatable\u003c/code> bundles the core, the accessible renderer and the HTTP data source: \u003ccode>new AcunDataTable('#table', { … })\u003c/code>, like DataTables. No jQuery, no other dependency."
+  },
+  "sections": [
+   {
+    "id": "install",
+    "title": {
+     "tr": "Kurulum",
+     "en": "Installation"
+    },
+    "desc": {
+     "tr": "npm ile ya da derleme adımı olmadan tek bir \u003cscript> etiketiyle.",
+     "en": "With npm, or with a single \u003cscript> tag and no build step."
+    },
+    "tabs": [
+     [
+      "npm",
+      "typescript",
+      "// npm install @acunsoft/datatable\nimport { AcunDataTable } from '@acunsoft/datatable';\nimport '@acunsoft/datatable/styles.css';\n\nnew AcunDataTable('#myTable', {\n  fixedHeader: true,\n  processing: true,\n  serverSide: true,\n  ajax: { url: '/api/products', method: 'POST' },\n  pagination: { enabled: true, pageSize: 25, pageSizes: [10, 25, 50, 100] },\n  sorting: { enabled: true, multiSort: true },\n  searching: { enabled: true, debounce: 300 },\n  language: 'tr',\n});"
+     ],
+     [
+      "\u003cscript>",
+      "xml",
+      "\u003clink rel=\"stylesheet\" href=\"https://cdn.jsdelivr.net/npm/@acunsoft/datatable@0.3.0/dist/styles.css\">\n\u003cscript src=\"https://cdn.jsdelivr.net/npm/@acunsoft/datatable@0.3.0/dist/acun-datatable.min.js\">\u003c/script>\n\n\u003ctable id=\"myTable\">\u003c/table>\n\u003cscript>\n  new AcunDataTable('#myTable', {\n    fixedHeader: true,\n    serverSide: true,\n    ajax: { url: '/api/products', method: 'POST' },\n  });\n\u003c/script>"
+     ]
+    ]
+   },
+   {
+    "id": "sources",
+    "title": {
+     "tr": "Veri nereden gelir?",
+     "en": "Where do the rows come from?"
+    },
+    "desc": {
+     "tr": "Dört kaynak; kolonlar verilmezse tablonun başlığından ya da ilk satırın alanlarından alınır.",
+     "en": "Four sources; without columns they come from the table header or the fields of the first row."
+    },
+    "tabs": [
+     [
+      "Mevcut \u003ctable>",
+      "xml",
+      "\u003c!-- Like new DataTable('#orders'): the header gives the columns, the body the rows. -->\n\u003ctable id=\"orders\">\n  \u003cthead>\n    \u003ctr>\n      \u003cth data-column=\"customer\">Müşteri\u003c/th>\n      \u003cth data-column=\"total\" data-type=\"number\">Tutar\u003c/th>\n      \u003cth data-column=\"city\" data-priority=\"3\">Şehir\u003c/th>\n    \u003c/tr>\n  \u003c/thead>\n  \u003ctbody>\n    \u003ctr>\u003ctd>Ayşe Yılmaz\u003c/td>\u003ctd>1250\u003c/td>\u003ctd>İzmir\u003c/td>\u003c/tr>\n    \u003ctr>\u003ctd>Ali Kaya\u003c/td>\u003ctd>980\u003c/td>\u003ctd>Ankara\u003c/td>\u003c/tr>\n  \u003c/tbody>\n\u003c/table>\n\u003cscript>new AcunDataTable('#orders', { language: 'tr' });\u003c/script>"
+     ],
+     [
+      "data: [...]",
+      "typescript",
+      "new AcunDataTable('#orders', {\n  data: orders, // rows in the browser\n  columns: [\n    { data: 'name', title: 'Ürün' },\n    { data: 'price', title: 'Fiyat', type: 'decimal' },\n    { data: 'stock', title: 'Stok', type: 'number' },\n  ],\n});"
+     ],
+     [
+      "JSON dosyası",
+      "typescript",
+      "// Loaded once (DataTables: ajax: 'json/table-datatable.json'), then sorted,\n// searched and paged in the browser.\nnew AcunDataTable('#orders', {\n  ajax: { url: '/json/table-datatable.json', dataSrc: 'data' },\n});"
+     ],
+     [
+      "Sunucu",
+      "typescript",
+      "// The server sorts, searches and pages; the browser only holds one page.\nnew AcunDataTable('#orders', {\n  serverSide: true,\n  ajax: { url: '/api/orders', method: 'POST' },\n});"
+     ]
+    ]
+   },
+   {
+    "id": "datatables",
+    "title": {
+     "tr": "DataTables karşılıkları",
+     "en": "DataTables equivalents"
+    },
+    "desc": {
+     "tr": "Alışık olduğunuz seçeneklerin buradaki adları.",
+     "en": "The options you know, by their names here."
+    },
+    "table": [
+     [
+      {
+       "tr": "DataTables",
+       "en": "DataTables"
+      },
+      {
+       "tr": "Acun DataTable",
+       "en": "Acun DataTable"
+      }
+     ],
+     [
+      "serverSide, ajax.url, ajax.type",
+      "serverSide, ajax.url, ajax.method"
+     ],
+     [
+      "processing",
+      "processing"
+     ],
+     [
+      "paging, pageLength, lengthMenu",
+      "pagination.enabled, pagination.pageSize, pagination.pageSizes"
+     ],
+     [
+      "ordering, order",
+      "sorting.enabled, sorting.initial"
+     ],
+     [
+      "searching, searchDelay",
+      "searching.enabled, searching.debounce"
+     ],
+     [
+      "fixedHeader",
+      "fixedHeader"
+     ],
+     [
+      "scrollY",
+      "scrollY"
+     ],
+     [
+      "responsive",
+      "responsive: 'cards' | 'scroll' | 'collapse' | 'modal'"
+     ],
+     [
+      "columns.data, columns.title, columns.render",
+      "columns.data, columns.title, columns.render"
+     ],
+     [
+      "columns.visible, columns.responsivePriority",
+      "columns.visible, columns.priority"
+     ],
+     [
+      "language",
+      "language: 'tr' + labels"
+     ],
+     [
+      "layout",
+      "layout"
+     ],
+     [
+      "ajax.dataSrc",
+      "ajax.dataSrc"
+     ],
+     [
+      "rowId",
+      "rowId"
+     ]
+    ]
+   },
+   {
+    "id": "methods",
+    "title": {
+     "tr": "Metotlar",
+     "en": "Methods"
+    },
+    "desc": {
+     "tr": "Oluşturduğunuz nesne tabloyu yönetir.",
+     "en": "The object you create controls the table."
+    },
+    "code": [
+     "typescript",
+     "const table = new AcunDataTable('#orders', { serverSide: true, ajax: '/api/orders' });\n\nawait table.ready;                                  // the first rows are on screen\ntable.search('ayşe istanbul');                      // smart search: every word, \"quoted phrases\"\ntable.order([{ field: 'total', direction: 'desc' }]);\ntable.page(2);\ntable.pageSize(50);\ntable.reload();                                     // load the current page again\nconst off = table.on((state, event) => console.log(event.type));\ntable.selectedRows();\ntable.destroy();                                    // an original \u003ctable> is put back"
+    ]
+   }
+  ]
+ },
+ "server": {
+  "title": {
+   "tr": "Sunucu tarafı (server-side)",
+   "en": "Server side"
+  },
+  "lead": {
+   "tr": "Milyonlarca satırda tarayıcı yalnızca bir sayfa tutar; sıralama, arama, filtre ve sayfalama sunucuda yapılır. Laravel tarafı tek satırlık bir uç nokta, tarayıcı tarafı her framework için aşağıda.",
+   "en": "On millions of rows the browser holds one page; sorting, search, filters and paging run on the server. The Laravel side is a one-line endpoint; the browser side for every framework is below."
+  },
+  "sections": [
+   {
+    "id": "endpoint",
+    "title": {
+     "tr": "Laravel uç noktası",
+     "en": "Laravel endpoint"
+    },
+    "desc": {
+     "tr": "Yalnızca tanımlı kolonlar SQL'e ulaşır; GET ve POST aynı uç noktada.",
+     "en": "Only declared columns reach SQL; GET and POST on the same endpoint."
+    },
+    "code": [
+     "php",
+     "use Acunsoft\\DataTable\\Laravel\\Column;\nuse Acunsoft\\DataTable\\Laravel\\TableResponse;\n\nRoute::match(['get', 'post'], '/api/products', function () {\n    Gate::authorize('viewAny', Product::class);   // authorize every request\n\n    return TableResponse::for(Product::query())\n        ->columns([\n            Column::make('name')->sortable()->filterable()->searchUsing('name_search'),\n            Column::make('price')->type('decimal')->sortable()->filterable(),\n            Column::make('stock')->type('number')->sortable(),\n            Column::make('created')->column('created_at')->type('datetime')->sortable(),\n        ])\n        ->maxPageSize(100);   // the largest page a client may ask for\n});"
+    ]
+   },
+   {
+    "id": "browser",
+    "title": {
+     "tr": "Tarayıcı",
+     "en": "Browser"
+    },
+    "desc": {
+     "tr": "Aynı uç nokta, her framework.",
+     "en": "The same endpoint, every framework."
+    },
+    "tabs": [
+     [
+      "AcunDataTable",
+      "typescript",
+      "new AcunDataTable('#products', {\n  serverSide: true,\n  processing: true,                                // loading state while a page loads\n  ajax: { url: '/api/products', method: 'POST' },  // POST sends \u003cmeta name=\"csrf-token\">\n  columns: [\n    { data: 'name', title: 'Ürün' },\n    { data: 'price', title: 'Fiyat', type: 'decimal' },\n    { data: 'stock', title: 'Stok', type: 'number', searchable: false },\n  ],\n  language: 'tr',\n});"
+     ],
+     [
+      "Vue",
+      "xml",
+      "\u003cscript setup lang=\"ts\">\nimport { onBeforeUnmount } from 'vue';\nimport { createDataTable } from '@acunsoft/datatable-core';\nimport { connectTable, createHttpDataSource, createQueryRunner } from '@acunsoft/datatable-http';\nimport { AcunDataTable, AcunPageInfo, AcunPagination, labelsTr } from '@acunsoft/datatable-vue';\n\nconst table = createDataTable({ mode: 'server', columns, locale: 'tr', initialState: { pageSize: 25 } });\nconst runner = createQueryRunner(createHttpDataSource({ url: '/api/products' }));\nconst disconnect = connectTable(table, runner);   // loads page 1, then every change\nonBeforeUnmount(() => { disconnect(); table.destroy(); });\n\u003c/script>\n\n\u003ctemplate>\n  \u003cAcunDataTable :table=\"table\" :status=\"runner\" locale=\"tr\" :labels=\"labelsTr\" />\n  \u003cAcunPageInfo :table=\"table\" :labels=\"labelsTr\" />\n  \u003cAcunPagination :table=\"table\" :labels=\"labelsTr\" />\n\u003c/template>"
+     ],
+     [
+      "React",
+      "typescript",
+      "import { useEffect, useState } from 'react';\nimport { createDataTable } from '@acunsoft/datatable-core';\nimport { connectTable, createHttpDataSource, createQueryRunner } from '@acunsoft/datatable-http';\nimport { DataTable, PageInfo, Pagination, labelsTr } from '@acunsoft/datatable-react';\n\nexport function Products() {\n  const [table] = useState(() => createDataTable({ mode: 'server', columns, locale: 'tr' }));\n  const [runner] = useState(() => createQueryRunner(createHttpDataSource({ url: '/api/products' })));\n  useEffect(() => connectTable(table, runner), [table, runner]);   // returns the disconnect\n\n  return (\n    \u003c>\n      \u003cDataTable table={table} status={runner} locale=\"tr\" labels={labelsTr} />\n      \u003cPageInfo table={table} labels={labelsTr} />\n      \u003cPagination table={table} labels={labelsTr} />\n    \u003c/>\n  );\n}"
+     ],
+     [
+      "HTML (parçalar)",
+      "typescript",
+      "import { createDataTable } from '@acunsoft/datatable-core';\nimport { renderDataTable } from '@acunsoft/datatable-dom';\nimport { connectTable, createHttpDataSource, createQueryRunner } from '@acunsoft/datatable-http';\n\nconst table = createDataTable({ mode: 'server', columns, locale: 'tr' });\nconst runner = createQueryRunner(createHttpDataSource({\n  url: '/api/products',\n  method: 'POST',\n  headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content },\n}));\nconnectTable(table, runner);\nrenderDataTable(document.querySelector('#products'), table, { locale: 'tr', status: runner });"
+     ],
+     [
+      "Livewire",
+      "php",
+      "// Livewire tables are server side by nature: only the current page is queried.\nfinal class ProductsTable extends Component\n{\n    use WithDataTable;\n\n    protected function columns(): array\n    {\n        return [\n            Column::make('name')->header('Ürün')->sortable()->filterable(),\n            Column::make('price')->header('Fiyat')->type('decimal')->sortable(),\n        ];\n    }\n\n    protected function query(): Builder\n    {\n        return Product::query();\n    }\n}"
+     ]
+    ]
+   },
+   {
+    "id": "wire",
+    "title": {
+     "tr": "İstek ve yanıt",
+     "en": "Request and response"
+    },
+    "desc": {
+     "tr": "Kendi sunucunuzu yazarsanız beklenen biçim.",
+     "en": "The format to follow if you write your own server."
+    },
+    "code": [
+     "bash",
+     "# GET: parameters in the URL; POST: the same parameters as a form body\npage=2&pageSize=25\n&sort=price:desc,name:asc\n&filters[0][field]=price&filters[0][op]=between&filters[0][value][0]=100&filters[0][value][1]=500\n&search=kalem \"mavi mürekkep\"\n\n# Response: either\n{ \"rows\": [ { \"id\": 1, \"name\": \"Kalem\", \"price\": \"12.50\" } ], \"totalRows\": 185920 }\n# or Laravel's paginator { \"data\": [...], \"total\": 185920 }\n# or DataTables' { \"data\": [...], \"recordsFiltered\": 185920 }\n# Too many to count in time: send \"totalRowsAtLeast\": 10000 instead of totalRows."
+    ],
+    "note": {
+     "tr": "Arama \"akıllı aramadır\": her kelime bir kolonda geçmeli, tırnak içindeki ifade birlikte aranır, Türkçe harfler ve büyük/küçük harf fark etmez (ayse → Ayşe). Laravel paketi bunu sizin yerinize yapar.",
+     "en": "Search is \"smart search\": every word must match some column, quoted phrases stay together, Turkish letters and case do not matter (ayse → Ayşe). The Laravel package does this for you."
+    }
+   }
+  ]
+ },
+ "pagesize": {
+  "title": {
+   "tr": "Sayfa başı ve sayfalama",
+   "en": "Rows per page and pages"
+  },
+  "lead": {
+   "tr": "Sayfa başı seçenekleri, başlangıç değeri, numaralı sayfalayıcının görünümü ve sayfalamayı tamamen kapatmak.",
+   "en": "Rows-per-page choices, the starting size, the look of the numbered pager and turning paging off."
+  },
+  "sections": [
+   {
+    "id": "sizes",
+    "title": {
+     "tr": "Seçenekler ve başlangıç değeri",
+     "en": "Choices and starting size"
+    },
+    "desc": {
+     "tr": "Mevcut değer listede yoksa yine de gösterilir.",
+     "en": "The current size is listed even when it is not a choice."
+    },
+    "tabs": [
+     [
+      "AcunDataTable",
+      "typescript",
+      "new AcunDataTable('#orders', {\n  data: orders,\n  pagination: {\n    pageSize: 20,                 // at the start\n    pageSizes: [10, 20, 50, 100], // the select's choices\n    firstLast: true,              // « ‹ 1 … 4 5 6 … 20 › »\n    siblings: 2,                  // pages on each side of the current one\n  },\n});"
+     ],
+     [
+      "Livewire",
+      "php",
+      "protected function pageSizeOptions(): array\n{\n    return [10, 20, 50, 100];\n}\n\nprotected function defaultPageSize(): int\n{\n    return 20;   // ?pageSize=… only appears when it differs from this\n}\n\nprotected function pagingOptions(): array\n{\n    return ['siblings' => 2, 'boundaries' => 1, 'firstLast' => true];\n}"
+     ],
+     [
+      "Vue",
+      "xml",
+      "\u003cscript setup lang=\"ts\">\nconst { table } = useDataTable({ data: orders, columns, initialState: { pageSize: 20 } });\n\u003c/script>\n\n\u003ctemplate>\n  \u003cAcunPageSize :table=\"table\" :page-sizes=\"[10, 20, 50, 100]\" />\n  \u003cAcunDataTable :table=\"table\" />\n  \u003cAcunPagination :table=\"table\" first-last :siblings=\"2\" />\n\u003c/template>"
+     ],
+     [
+      "React",
+      "typescript",
+      "const { table } = useDataTable({ data: orders, columns, initialState: { pageSize: 20 } });\n\nreturn (\n  \u003c>\n    \u003cPageSize table={table} pageSizes={[10, 20, 50, 100]} />\n    \u003cDataTable table={table} />\n    \u003cPagination table={table} firstLast siblings={2} />\n  \u003c/>\n);"
+     ],
+     [
+      "HTML (parçalar)",
+      "typescript",
+      "const table = createDataTable({ data: orders, columns, initialState: { pageSize: 20 } });\n\nrenderDataTable(document.querySelector('#orders'), table, {\n  pageSizes: [10, 20, 50, 100],\n  paging: { firstLast: true, siblings: 2 },\n});"
+     ]
+    ]
+   },
+   {
+    "id": "off",
+    "title": {
+     "tr": "Sayfalamayı veya seçimi kapatmak",
+     "en": "Turning paging or the select off"
+    },
+    "desc": {
+     "tr": "Tüm satırlar tek sayfada ya da yalnızca sayfa başı seçimi gizli.",
+     "en": "Every row on one page, or only the select hidden."
+    },
+    "tabs": [
+     [
+      "AcunDataTable",
+      "typescript",
+      "// Every row on one page (up to 1,000; not with serverSide).\nnew AcunDataTable('#orders', { data: orders, pagination: false });\n\n// Pages stay, the rows-per-page select goes.\nnew AcunDataTable('#orders', { data: orders, layout: { topStart: ['search'] } });"
+     ],
+     [
+      "Livewire",
+      "php",
+      "protected function tableLayout(): array\n{\n    return ['topStart' => ['search']];   // no rows-per-page select\n}"
+     ],
+     [
+      "HTML (parçalar)",
+      "typescript",
+      "renderDataTable(el, table, { layout: { topStart: 'search', bottomEnd: null } }); // no select, no pager"
+     ]
+    ]
+   },
+   {
+    "id": "limits",
+    "title": {
+     "tr": "Sınırlar",
+     "en": "Limits"
+    },
+    "desc": null,
+    "note": {
+     "tr": "Bir sayfa en fazla 1.000 satırdır. Sunucu tarafında üst sınırı sunucu belirler: Laravel \u003ccode>maxPageSize(100)\u003c/code>, tarayıcı \u003ccode>createHttpDataSource({ maxPageSize })\u003c/code>. Livewire yalnızca \u003ccode>pageSizeOptions()\u003c/code> içindeki değerleri kabul eder; URL'de başka bir değer gelirse varsayılana döner.",
+     "en": "A page holds at most 1,000 rows. On the server side the server sets the limit: Laravel \u003ccode>maxPageSize(100)\u003c/code>, the browser \u003ccode>createHttpDataSource({ maxPageSize })\u003c/code>. Livewire accepts only the values of \u003ccode>pageSizeOptions()\u003c/code>; any other value in the URL falls back to the default."
+    }
+   }
+  ]
+ },
+ "mobile": {
+  "title": {
+   "tr": "Mobil görünüm",
+   "en": "Narrow screens"
+  },
+  "lead": {
+   "tr": "Telefonda tabloyu dört şekilde gösterebilirsiniz. Açılır satır ve modalda hangi kolonun ekranda kalacağını kolon önceliği belirler.",
+   "en": "Four ways to show a table on a phone. With collapsible rows and the dialog, a priority per column decides what stays on screen."
+  },
+  "sections": [
+   {
+    "id": "modes",
+    "title": {
+     "tr": "Dört seçenek",
+     "en": "Four modes"
+    },
+    "desc": null,
+    "table": [
+     [
+      {
+       "tr": "Seçenek",
+       "en": "Mode"
+      },
+      {
+       "tr": "640 px altında",
+       "en": "Below 640 px"
+      }
+     ],
+     [
+      "cards",
+      {
+       "tr": "Varsayılan. Her satır bir kart, her değerin yanında kolon adı.",
+       "en": "Default. Each row becomes a card, each value with its column name."
+      }
+     ],
+     [
+      "scroll",
+      {
+       "tr": "Tablo bozulmaz, kendi kutusunda yana kayar; sayfa taşmaz.",
+       "en": "The table keeps its columns and scrolls sideways in its box; the page never overflows."
+      }
+     ],
+     [
+      "collapse",
+      {
+       "tr": "Sığmayan kolonlar gizlenir; ⊕ butonu değerleri ve işlemleri satırın altında açar.",
+       "en": "Columns that do not fit hide; the ⊕ button opens their values and the actions below the row."
+      }
+     ],
+     [
+      "modal",
+      {
+       "tr": "⊕ butonu satırın tüm değerlerini bir pencerede gösterir (Esc veya ✕ kapatır).",
+       "en": "The ⊕ button shows every value of the row in a dialog (Escape or ✕ closes it)."
+      }
+     ]
+    ]
+   },
+   {
+    "id": "use",
+    "title": {
+     "tr": "Kullanım ve öncelik",
+     "en": "Usage and priority"
+    },
+    "desc": {
+     "tr": "priority: 1 her zaman, 2 telefonda gizli, 3 tablette de gizli. Varsayılan: ilk kolon 1, diğerleri 2.",
+     "en": "priority: 1 always, 2 hidden on phones, 3 hidden on tablets too. Default: the first column 1, the rest 2."
+    },
+    "tabs": [
+     [
+      "AcunDataTable",
+      "typescript",
+      "new AcunDataTable('#orders', {\n  data: orders,\n  responsive: 'collapse',   // 'cards' | 'scroll' | 'collapse' | 'modal'\n  columns: [\n    { data: 'customer', title: 'Müşteri' },                 // first column: always shown\n    { data: 'total', title: 'Tutar', priority: 1 },         // stays on phones\n    { data: 'email', title: 'E-posta', priority: 3 },       // hidden below 960 px\n    { data: 'city', title: 'Şehir' },                       // default 2: hidden below 640 px\n  ],\n});"
+     ],
+     [
+      "Livewire",
+      "php",
+      "protected function responsive(): string\n{\n    return 'collapse';   // cards, scroll, collapse, modal\n}\n\nprotected function columns(): array\n{\n    return [\n        Column::make('customer')->header('Müşteri'),\n        Column::make('total')->header('Tutar')->priority(1),\n        Column::make('email')->header('E-posta')->priority(3),\n        Column::make('city')->header('Şehir'),\n    ];\n}"
+     ],
+     [
+      "Vue",
+      "xml",
+      "\u003c!-- columns: { id: 'total', …, priority: 1 } -->\n\u003cAcunDataTable :table=\"table\" responsive=\"modal\" />"
+     ],
+     [
+      "React",
+      "typescript",
+      "// columns: { id: 'total', …, priority: 1 }\n\u003cDataTable table={table} responsive=\"collapse\" />"
+     ],
+     [
+      "HTML (parçalar)",
+      "typescript",
+      "renderDataTable(el, table, { responsive: 'scroll' });"
+     ]
+    ]
+   }
+  ]
+ },
+ "header": {
+  "title": {
+   "tr": "Sabit başlık ve kaydırma",
+   "en": "Fixed header and scrolling"
+  },
+  "lead": {
+   "tr": "Uzun listelerde başlık satırı görünür kalsın: sayfa kaydırılırken ekranın üstünde (fixedHeader) ya da sabit yükseklikteki tablonun içinde (scrollY).",
+   "en": "Keep the header row in view on long lists: at the top of the window while the page scrolls (fixedHeader), or inside a table of fixed height (scrollY)."
+  },
+  "sections": [
+   {
+    "id": "sticky",
+    "title": {
+     "tr": "fixedHeader ve scrollY",
+     "en": "fixedHeader and scrollY"
+    },
+    "desc": {
+     "tr": "İkisi birlikte verilirse scrollY geçerlidir.",
+     "en": "With both, scrollY wins."
+    },
+    "tabs": [
+     [
+      "AcunDataTable",
+      "typescript",
+      "new AcunDataTable('#orders', { data: orders, fixedHeader: true });   // sticks to the window\nnew AcunDataTable('#orders', { data: orders, scrollY: '60vh' });    // scrolls inside, 60% of the screen"
+     ],
+     [
+      "Livewire",
+      "php",
+      "protected function stickyHeader(): bool { return true; }\nprotected function scrollY(): ?string { return null; }   // or '60vh'"
+     ],
+     [
+      "Vue",
+      "xml",
+      "\u003cAcunDataTable :table=\"table\" sticky-header />\n\u003cAcunDataTable :table=\"table\" scroll-y=\"60vh\" />"
+     ],
+     [
+      "React",
+      "typescript",
+      "\u003cDataTable table={table} stickyHeader />\n\u003cDataTable table={table} scrollY={480} />"
+     ],
+     [
+      "HTML (parçalar)",
+      "typescript",
+      "renderDataTable(el, table, { stickyHeader: true });\nrenderDataTable(el, table, { scrollY: '480px' });"
+     ]
+    ]
+   },
+   {
+    "id": "topbar",
+    "title": {
+     "tr": "Sabit bir üst menünün altında",
+     "en": "Below a fixed top bar"
+    },
+    "desc": {
+     "tr": "Başlık, sayfanın sabit menüsünün altına hizalanır.",
+     "en": "The header lines up under your page's fixed bar."
+    },
+    "code": [
+     "css",
+     ".adt { --adt-sticky-top: 64px; }   /* the height of your top bar */"
+    ],
+    "note": {
+     "tr": "fixedHeader'da tablo yana kaymaz; çok geniş tablolarda \u003ccode>responsive: 'collapse'\u003c/code> ile kullanın ya da \u003ccode>scrollY\u003c/code> seçin.",
+     "en": "With fixedHeader the table does not scroll sideways; pair very wide tables with \u003ccode>responsive: 'collapse'\u003c/code> or use \u003ccode>scrollY\u003c/code>."
+    }
+   }
+  ]
+ },
+ "look": {
+  "title": {
+   "tr": "Boyut, tema ve yerleşim",
+   "en": "Size, theme and layout"
+  },
+  "lead": {
+   "tr": "Satır sıklığı, açık/koyu tema, renkler ve kontrollerin yerleri.",
+   "en": "Row density, light and dark themes, colours and where the controls go."
+  },
+  "sections": [
+   {
+    "id": "size",
+    "title": {
+     "tr": "Boyut: sm, md, lg",
+     "en": "Size: sm, md, lg"
+    },
+    "desc": {
+     "tr": "Satır yüksekliği, yazı ve kontroller birlikte değişir.",
+     "en": "Rows, text and controls change together."
+    },
+    "tabs": [
+     [
+      "AcunDataTable",
+      "typescript",
+      "new AcunDataTable('#orders', { data: orders, size: 'sm' });"
+     ],
+     [
+      "Livewire",
+      "php",
+      "protected function tableSize(): string { return 'sm'; }"
+     ],
+     [
+      "Vue",
+      "xml",
+      "\u003cAcunDataTable :table=\"table\" size=\"lg\" />"
+     ],
+     [
+      "React",
+      "typescript",
+      "\u003cDataTable table={table} size=\"sm\" />"
+     ]
+    ]
+   },
+   {
+    "id": "theme",
+    "title": {
+     "tr": "Tema ve renkler",
+     "en": "Theme and colours"
+    },
+    "desc": {
+     "tr": "Koyu tema bir üst öğedeki data-theme ile; renkler CSS değişkenleriyle.",
+     "en": "Dark mode through data-theme on an ancestor; colours through CSS custom properties."
+    },
+    "code": [
+     "css",
+     "/* \u003chtml data-theme=\"dark\"> or class=\"dark\"; data-theme=\"auto\" follows the system */\n.adt {\n  --adt-accent: #0f766e;         /* current page, focus, sort marks */\n  --adt-radius: 12px;            /* panels */\n  --adt-control-radius: 8px;     /* inputs, buttons, page numbers */\n  --adt-cell-padding: .6rem .75rem;\n  --adt-head-transform: none;    /* normal-case headers */\n}"
+    ]
+   },
+   {
+    "id": "layout",
+    "title": {
+     "tr": "Yerleşim",
+     "en": "Layout"
+    },
+    "desc": {
+     "tr": "Üst ve alt çubuktaki parçaları taşıyın, kaldırın veya kendi kontrolünüzü ekleyin.",
+     "en": "Move or remove the parts of the top and bottom bars, or add your own control."
+    },
+    "tabs": [
+     [
+      "AcunDataTable",
+      "typescript",
+      "new AcunDataTable('#orders', {\n  data: orders,\n  layout: {\n    topStart: ['pageSize', 'search'],\n    topEnd: [slot => { slot.append(newOrderButton); }, 'columns'],\n    bottomStart: 'info',\n    bottomEnd: 'paging',\n  },\n});"
+     ],
+     [
+      "Livewire",
+      "php",
+      "protected function tableLayout(): array\n{\n    return [\n        'topStart' => ['pageSize', 'search', 'orders.filters'],   // your own Blade view\n        'topEnd' => ['columns', 'tools'],                         // tools: export, print, import\n    ];\n}"
+     ]
+    ]
+   }
+  ]
+ },
+ "texts": {
+  "title": {
+   "tr": "Dil ve metinler",
+   "en": "Language and texts"
+  },
+  "lead": {
+   "tr": "Türkçe, İngilizce, Almanca, Fransızca ve İspanyolca yerleşik; tekil/çoğul ve basamak ayırıcı dile göre. Tek tek metinleri ya da bir tablonun cümlelerini değiştirebilirsiniz.",
+   "en": "Turkish, English, German, French and Spanish are built in, with plural forms and digit grouping. Change single texts, or the sentences of one table."
+  },
+  "sections": [
+   {
+    "id": "language",
+    "title": {
+     "tr": "Dil seçimi ve tek metin",
+     "en": "Language and single texts"
+    },
+    "desc": null,
+    "tabs": [
+     [
+      "AcunDataTable",
+      "typescript",
+      "new AcunDataTable('#staff', {\n  data: staff,\n  language: 'tr',\n  labels: {\n    pageInfo: (from, to, total) => 'Toplam: ' + total + ' personel üyesinin ' + from + ' ile ' + to + ' arasını gösteriyor',\n    search: 'Personel ara',\n  },\n});"
+     ],
+     [
+      "Livewire",
+      "php",
+      "// The app locale picks the language. One table's own sentences:\nprotected function texts(): array\n{\n    return [\n        'page_info' => __('Toplam: :total personel üyesinin :from ile :to arasını gösteriyor'),\n        'search_placeholder' => __('Personel ara…'),\n    ];\n}\n\n// Every table at once: php artisan vendor:publish --tag=acun-datatable-lang"
+     ],
+     [
+      "Vue / React",
+      "typescript",
+      "import { resolveLabels } from '@acunsoft/datatable-vue'; // or -react\n\nconst labels = resolveLabels('tr', { search: 'Personel ara' });\n// \u003cAcunDataTable :labels=\"labels\" locale=\"tr\" />  ·  \u003cDataTable labels={labels} locale=\"tr\" />"
+     ]
+    ]
+   }
+  ]
+ },
+ "bigdata": {
+  "title": {
+   "tr": "Büyük veri",
+   "en": "Large tables"
+  },
+  "lead": {
+   "tr": "5 milyon satırda ölçüldü (PostgreSQL 17): ilk sayfa ~1 ms, tam sayım 57 ms. Paketin yaptıkları ve sizin yapmanız gerekenler.",
+   "en": "Measured on 5 million rows (PostgreSQL 17): first page ~1 ms, exact count 57 ms. What the package does and what you do."
+  },
+  "sections": [
+   {
+    "id": "counts",
+    "title": {
+     "tr": "Tam sayım ve sınırlar",
+     "en": "Exact counts and limits"
+    },
+    "desc": {
+     "tr": "10.000'e kadar sayım her zaman tam; ötesinde 250 ms bütçe, aşarsa \"10.000+\".",
+     "en": "Counts are always exact up to 10,000; beyond that 250 ms, else \"10,000+\"."
+    },
+    "tabs": [
+     [
+      "Livewire",
+      "php",
+      "protected function countLimit(): ?int { return 10_000; }       // null: always count everything\nprotected function countTimeout(): ?int { return 250; }        // ms for an exact count past the limit\nprotected function maxResultWindow(): ?int { return 100_000; } // no pages deeper than this"
+     ],
+     [
+      "JSON uç noktası",
+      "php",
+      "TableResponse::for(Product::query())\n    ->columns([...])\n    ->countLimit(10_000)\n    ->countTimeout(250)\n    ->maxResultWindow(100_000);"
+     ]
+    ]
+   },
+   {
+    "id": "indexes",
+    "title": {
+     "tr": "İndeksler",
+     "en": "Indexes"
+    },
+    "desc": {
+     "tr": "Aramada sadeleştirilmiş kolon + trigram indeks, filtrelerde bileşik indeks.",
+     "en": "A folded column with a trigram index for search, composite indexes for filters."
+    },
+    "code": [
+     "php",
+     "// Folded copy for Turkish, case- and accent-insensitive search (ayse → Ayşe):\nSchema::table('orders', fn (Blueprint $table) => $table->string('customer_search')->index());\n// PostgreSQL: CREATE EXTENSION pg_trgm;\n// CREATE INDEX orders_customer_trgm ON orders USING gin (customer_search gin_trgm_ops);\n\n// Filters used together: equality first, then the range.\n// CREATE INDEX orders_status_ordered ON orders (status, ordered_at, id);\n\nColumn::make('customer')->sortable()->filterable()->searchUsing('customer_search');"
+    ]
+   }
+  ]
+ }
+};
+const GUIDE_ORDER = ["quick", "server", "pagesize", "mobile", "header", "look", "texts", "bigdata"];
 const FW_ORDER = ["laravel","html","vue","react"];
 
 const T = {
-  tr:{ nav_start:"Başlangıç", nav_fw:"Frameworkler", nav_api:"API", cta:"Kuruluma başla",
-       g_start:"Başlangıç", g_fw:"Frameworkler", g_core:"Çekirdek",
+  tr:{ nav_start:"Başlangıç", nav_fw:"Frameworkler", nav_guides:"Kılavuzlar", nav_api:"API", cta:"Kuruluma başla",
+       g_start:"Başlangıç", g_fw:"Frameworkler", g_guides:"Kılavuzlar", g_core:"Çekirdek",
        home:"Giriş", api:"API referansı", toc:"Bu sayfada",
        s_install:"Kurulum", s_usage:"Kullanım", s_features:"Özellikler", s_examples:"Örnekler", s_api:"API",
        d_install:"Paketleri projene ekle.", d_usage:"İlk tabloyu oluştur.", d_features:"Adapter'ın sağladığı yetenekler.",
@@ -580,10 +1274,10 @@ const T = {
        h_s3:"Kod örneği", h_s3d:"Çekirdek bugün kullanılabilir.",
        h_core_install:"npm'de yayında (0.3.0). Yalnızca çekirdek için:", go:"İncele →",
        fw_desc:{vue:"Hazır: composable\'lar ve bileşenler.",react:"Hazır: hook\'lar ve bileşenler.",html:"Hazır: framework olmadan DOM renderer.",laravel:"Hazır: Livewire tablosu ve JSON uç nokta, tek Composer paketi."},
-       api_title:"API referansı", api_lead:"Paketlerin genel API'si: çekirdek, HTTP, DOM, dışa/içe aktarma, Vue, React (npm'de 0.3.0) ve Laravel (Packagist'te 0.4.0).",
+       api_title:"API referansı", api_lead:"Paketlerin genel API'si: tek çağrılık AcunDataTable, çekirdek, HTTP, DOM, dışa/içe aktarma, Vue, React (npm'de 0.3.0) ve Laravel (Packagist'te 0.4.0).",
        a_s1:"Fonksiyonlar", a_s1d:"İmza ve kısa açıklama.", a_s2:"Örnek", a_s2d:"Fonksiyonların birlikte kullanımı." },
-  en:{ nav_start:"Getting started", nav_fw:"Frameworks", nav_api:"API", cta:"Get started",
-       g_start:"Getting started", g_fw:"Frameworks", g_core:"Core",
+  en:{ nav_start:"Getting started", nav_fw:"Frameworks", nav_guides:"Guides", nav_api:"API", cta:"Get started",
+       g_start:"Getting started", g_fw:"Frameworks", g_guides:"Guides", g_core:"Core",
        home:"Introduction", api:"API reference", toc:"On this page",
        s_install:"Installation", s_usage:"Usage", s_features:"Features", s_examples:"Examples", s_api:"API",
        d_install:"Add the packages to your project.", d_usage:"Create your first table.", d_features:"What the adapter provides.",
@@ -604,7 +1298,7 @@ const T = {
        h_s3:"Code example", h_s3d:"The core is available today.",
        h_core_install:"Published on npm (0.3.0). Core only:", go:"Open →",
        fw_desc:{vue:"Ready: composables and components.",react:"Ready: hooks and components.",html:"Ready: DOM renderer, no framework.",laravel:"Ready: a Livewire table and a JSON endpoint, one Composer package."},
-       api_title:"API reference", api_lead:"Public API of the packages: core, HTTP, DOM, export/import, Vue, React (on npm, 0.3.0) and Laravel (on Packagist, 0.4.0).",
+       api_title:"API reference", api_lead:"Public API of the packages: the one-call AcunDataTable, core, HTTP, DOM, export/import, Vue, React (on npm, 0.3.0) and Laravel (on Packagist, 0.4.0).",
        a_s1:"Functions", a_s1d:"Signature and short description.", a_s2:"Example", a_s2d:"Using the functions together." }
 };
 
@@ -615,12 +1309,25 @@ if (theme) document.documentElement.setAttribute('data-theme', theme);
 const $ = (s) => document.querySelector(s);
 const esc = (s) => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 const ALIASES = { livewire: 'laravel' }; // Livewire is part of the Laravel package
-const route = () => { let r = (location.hash.match(/^#\/([a-z]+)/) || [])[1]; r = ALIASES[r] || r; return (r && (r === 'home' || r === 'api' || FW[r])) ? r : 'home'; };
+const route = () => { let r = (location.hash.match(/^#\/([a-z]+)/) || [])[1]; r = ALIASES[r] || r; return (r && (r === 'home' || r === 'api' || FW[r] || GUIDES[r])) ? r : 'home'; };
 
 /* ======================= builders ======================= */
 const code = (src, l) => `<div class="codewrap"><pre><code class="language-${l}">${esc(src)}</code></pre><button class="copy">${T[lang].copy}</button></div>`;
 const sec = (id, n, title, desc, body) =>
   `<section id="${id}"><div class="sh"><span class="n">${String(n).padStart(2,'0')}</span><div><h2>${title}</h2>${desc ? `<p>${desc}</p>` : ''}</div></div><div class="body">${body}</div></section>`;
+/* Code tabs: the chosen tab (framework) is remembered and shown in every tab group. */
+let tabPref = null;
+try { tabPref = localStorage.getItem('adt-tab'); } catch (e) {}
+let tabSeq = 0;
+const tabs = (items) => {
+  const sel = Math.max(0, items.findIndex(([label]) => label === tabPref));
+  const id = 'tg' + (++tabSeq);
+  return `<div class="tabs"><div class="tablist" role="tablist">${items.map(([label], i) =>
+    `<button type="button" role="tab" id="${id}-t${i}" aria-controls="${id}-p${i}" aria-selected="${i === sel}" tabindex="${i === sel ? 0 : -1}" data-tab="${esc(label)}">${esc(label)}</button>`).join('')}</div>` +
+    items.map(([label, l, src], i) => `<div class="tabpanel" role="tabpanel" id="${id}-p${i}" aria-labelledby="${id}-t${i}" data-tab="${esc(label)}"${i === sel ? '' : ' hidden'}>${code(src, l)}</div>`).join('') + `</div>`;
+};
+const gtable = (rows) => `<div class="gtable"><table><thead><tr>${rows[0].map(h => `<th>${esc(typeof h === 'object' ? h[lang] : h)}</th>`).join('')}</tr></thead><tbody>${
+  rows.slice(1).map(r => `<tr>${r.map((c, i) => `<td>${i === 0 ? `<code>${esc(typeof c === 'object' ? c[lang] : c)}</code>` : esc(typeof c === 'object' ? c[lang] : c)}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`;
 const featCards = () => `<div class="cards">${FEATURES[lang].map(([h,p],i)=>`<div class="card${i===0?' feat':''}"><span class="lb">0${i+1}</span><h3>${esc(h)}</h3><p>${esc(p)}</p></div>`).join('')}</div>`;
 const apiList = (only) => API.filter(([pkg]) => !only || pkg === only).map(([pkg, items]) =>
   `${only ? '' : `<h3 class="sub">${esc(pkg)}</h3>`}<div class="api">${items.map(([sig,d])=>`<div class="r"><code>${esc(sig)}</code><span>${esc(d[lang])}</span></div>`).join('')}</div>`).join('');
@@ -642,6 +1349,14 @@ function page(r) {
       sec('a1',1,t.a_s1,t.a_s1d,apiList()) +
       sec('a2',2,t.a_s2,t.a_s2d,code(EX_TABLE,'typescript')+code(EX_SORT,'typescript')+code(EX_STATE,'typescript')) };
   }
+  if (GUIDES[r]) {
+    const g = GUIDES[r];
+    return { toc: g.sections.map(x => [x.id, x.title[lang]]), html:
+      `<h1><span class="hi">${ICON.guide}</span>${esc(g.title[lang])}</h1><p class="lead">${g.lead[lang]}</p><div class="meta"><span>${t.g_guides}</span><span>${t.updated}</span></div>` +
+      g.sections.map((x, i) => sec(x.id, i + 1, esc(x.title[lang]), x.desc ? esc(x.desc[lang]) : '',
+        (x.tabs ? tabs(x.tabs) : '') + (x.code ? code(x.code[1], x.code[0]) : '') + (x.table ? gtable(x.table) : '') +
+        (x.note ? `<div class="note">${x.note[lang]}</div>` : ''))).join('') };
+  }
   const f = FW[r];
   return { toc:[['install',t.s_install],['usage',t.s_usage],['features',t.s_features],['examples',t.s_examples],['api',t.s_api]], html:
     `<h1><span class="hi">${ICON[r]}</span>${f.name}${f.status === 'ready' ? '' : ` <span class="pill">${t.preview}</span>`}</h1><p class="lead">${f.lead[lang]}</p><div class="meta"><span>${esc(f.pkg)}</span><span>${t.updated}</span></div>` +
@@ -660,8 +1375,8 @@ function page(r) {
 function renderHeader(r) {
   const t = T[lang];
   const first = FW_ORDER[0];
-  const tn = [['home',t.nav_start],[first,t.nav_fw],['api',t.nav_api]];
-  const active = r === 'home' ? 'home' : r === 'api' ? 'api' : first;
+  const tn = [['home',t.nav_start],[first,t.nav_fw],[GUIDE_ORDER[0],t.nav_guides],['api',t.nav_api]];
+  const active = r === 'home' ? 'home' : r === 'api' ? 'api' : GUIDES[r] ? GUIDE_ORDER[0] : first;
   $('#tnav').innerHTML = tn.map(([id,l]) => `<a href="#/${id}" data-go="${id}" class="${id===active?'on':''}"${id===active?' aria-current="page"':''}>${l}</a>`).join('');
   $('#lang').innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg>${lang.toUpperCase()}`;
   const dark = document.documentElement.getAttribute('data-theme') === 'dark' ||
@@ -678,6 +1393,7 @@ function renderSide(r) {
   $('#side').innerHTML =
     `<div class="grp">${t.g_start}</div>${item('home',t.home,ICON.home)}` +
     `<div class="grp">${t.g_fw}</div>${FW_ORDER.map(id=>item(id,FW[id].name,ICON[id])).join('')}` +
+    `<div class="grp">${t.g_guides}</div>${GUIDE_ORDER.map(id=>item(id,GUIDES[id].title[lang],ICON.guide)).join('')}` +
     `<div class="grp">${t.g_core}</div>${item('api',t.api,ICON.api)}`;
 }
 let tocIds = [];
@@ -688,7 +1404,7 @@ function renderPage(r) {
   $('#content').innerHTML = chips + p.html + `<footer class="legal"><strong>${T[lang].legal_title}</strong><p>${T[lang].legal}</p></footer>`;
   $('#toc').innerHTML = `<h4>${t.toc}</h4><ul>${p.toc.map(([id,l]) => `<li><a href="#/${r}/${id}" data-to="${id}">${esc(l)}</a></li>`).join('')}</ul>`;
   document.querySelectorAll('#content pre code').forEach(b => { try { hljs.highlightElement(b); } catch (e) {} });
-  document.title = r === 'home' ? 'Acun DataTable' : (FW[r] ? FW[r].name : t.api) + ' — Acun DataTable';
+  document.title = r === 'home' ? 'Acun DataTable' : (FW[r] ? FW[r].name : GUIDES[r] ? GUIDES[r].title[lang] : t.api) + ' — Acun DataTable';
   spy();
 }
 /** `#/vue/install` deep-links to a section of a page. */
@@ -723,9 +1439,31 @@ document.addEventListener('click', (e) => {
   if (go) { e.preventDefault(); closeSide(); const id = go.dataset.go; if (route() === id && !sectionFromHash()) window.scrollTo({top:0}); else location.hash = '#/' + id; return; }
   const to = e.target.closest('[data-to]');
   if (to) { e.preventDefault(); history.replaceState(null, '', to.getAttribute('href')); const el = document.getElementById(to.dataset.to); if (el) el.scrollIntoView({ behavior:'smooth', block:'start' }); return; }
+  const tab = e.target.closest('[role="tab"]');
+  if (tab) { selectTab(tab.dataset.tab, tab); return; }
   const cp = e.target.closest('.copy');
   if (cp) { const txt = cp.parentElement.querySelector('code').textContent;
     navigator.clipboard?.writeText(txt).then(() => { cp.textContent = T[lang].copied; setTimeout(() => cp.textContent = T[lang].copy, 1200); }).catch(() => {}); }
+});
+function selectTab(label, focus) {
+  tabPref = label;
+  try { localStorage.setItem('adt-tab', label); } catch (e) {}
+  document.querySelectorAll('.tabs').forEach(group => {
+    const has = [...group.querySelectorAll('[role="tab"]')].some(b => b.dataset.tab === label);
+    if (!has && group !== focus?.closest('.tabs')) return; // that group has no such tab: keep it
+    group.querySelectorAll('[role="tab"]').forEach(b => { const on = b.dataset.tab === label; b.setAttribute('aria-selected', String(on)); b.tabIndex = on ? 0 : -1; });
+    group.querySelectorAll('[role="tabpanel"]').forEach(p => { p.hidden = p.dataset.tab !== label; });
+  });
+  if (focus) focus.focus();
+}
+document.addEventListener('keydown', (e) => {
+  const tab = e.target.closest?.('[role="tab"]');
+  if (!tab || !['ArrowLeft','ArrowRight','Home','End'].includes(e.key)) return;
+  const list = [...tab.parentElement.children];
+  const i = list.indexOf(tab);
+  const next = e.key === 'Home' ? list[0] : e.key === 'End' ? list[list.length - 1] : list[(i + (e.key === 'ArrowRight' ? 1 : -1) + list.length) % list.length];
+  e.preventDefault();
+  selectTab(next.dataset.tab, next);
 });
 $('#burger').onclick = () => { $('#side').classList.toggle('open'); $('#backdrop').classList.toggle('open'); };
 $('#backdrop').onclick = closeSide;

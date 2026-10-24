@@ -1,6 +1,7 @@
 // Minimal static server for the Playwright fixtures (no dependency).
 // Serves the repository root on 127.0.0.1 only, GET/HEAD only, and refuses
-// any path outside the repository.
+// any path outside the repository. One fake JSON API, POST /e2e/api/products,
+// answers server-side queries in the datatable-http wire format.
 import { createReadStream, statSync } from 'node:fs';
 import { createServer } from 'node:http';
 import { extname, join, resolve, sep } from 'node:path';
@@ -17,7 +18,41 @@ const types = {
   '.map': 'application/json; charset=utf-8',
 };
 
+const categories = ['Kırtasiye', 'Elektronik', 'Mutfak', 'Bahçe'];
+const products = Array.from({ length: 120 }, (_, i) => ({
+  id: i + 1,
+  name: `${['Kalem', 'Defter', 'Kulaklık', 'Tava', 'Hortum', 'Lamba'][i % 6]} ${i + 1}`,
+  category: categories[i % 4],
+  price: ((i * 37) % 900) + 10,
+}));
+
+function productsApi(request, response) {
+  let body = '';
+  request.on('data', chunk => { body += chunk; });
+  request.on('end', () => {
+    if (request.headers['x-csrf-token'] !== 'e2e-token') {
+      response.writeHead(419, { 'Content-Type': 'application/json' }).end('{"message":"CSRF token mismatch."}');
+      return;
+    }
+    const query = new URLSearchParams(body);
+    const page = Math.max(1, Number(query.get('page') ?? 1));
+    const size = Math.min(100, Math.max(1, Number(query.get('pageSize') ?? 25)));
+    const search = (query.get('search') ?? '').toLocaleLowerCase('tr');
+    let rows = products.filter(row => search === '' || `${row.name} ${row.category}`.toLocaleLowerCase('tr').includes(search));
+    const [field, direction] = (query.get('sort') ?? '').split(',')[0].split(':');
+    if (field && field in products[0]) {
+      rows = [...rows].sort((a, b) => (a[field] < b[field] ? -1 : a[field] > b[field] ? 1 : 0) * (direction === 'desc' ? -1 : 1));
+    }
+    response.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' })
+      .end(JSON.stringify({ rows: rows.slice((page - 1) * size, page * size), totalRows: rows.length }));
+  });
+}
+
 createServer((request, response) => {
+  if (request.method === 'POST' && request.url === '/e2e/api/products') {
+    productsApi(request, response);
+    return;
+  }
   if (request.method !== 'GET' && request.method !== 'HEAD') {
     response.writeHead(405).end();
     return;

@@ -76,6 +76,19 @@ describe('createHttpDataSource', () => {
     expect(new Headers(init!.headers).get('accept')).toBe('application/json');
   });
 
+  it('can send the same parameters as a POST form body', async () => {
+    const fetch = okFetch();
+    const source = createHttpDataSource({ url: '/api/orders?tenant=7', fetch, method: 'POST', headers: { 'X-CSRF-TOKEN': 'abc' } });
+    await source.getPage(query);
+    const [target, init] = fetch.mock.calls[0]!;
+    expect(target).toBe('/api/orders?tenant=7'); // nothing appended
+    expect(init).toMatchObject({ method: 'POST', body: 'page=2&pageSize=25' });
+    const headers = new Headers(init!.headers);
+    expect(headers.get('content-type')).toBe('application/x-www-form-urlencoded;charset=UTF-8');
+    expect(headers.get('x-csrf-token')).toBe('abc');
+    expect(() => createHttpDataSource({ url: '/a', fetch, method: 'PUT' as never })).toThrow('method must be GET or POST');
+  });
+
   it('appends to an existing query string and accepts URL objects', async () => {
     const fetch = okFetch();
     await createHttpDataSource({ url: '/api/orders?tenant=7', fetch }).getPage(query);

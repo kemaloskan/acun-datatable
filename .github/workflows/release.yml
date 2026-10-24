@@ -51,7 +51,7 @@ jobs:
         run: |
           git push --tags
           # Fail loudly if this release's tags did not reach GitHub.
-          for package in packages/core packages/datasource-http packages/renderer-dom packages/export packages/vue packages/react; do
+          for package in packages/core packages/datasource-http packages/renderer-dom packages/export packages/datatable packages/vue packages/react; do
             tag="$(node -p "const p=require('./$package/package.json'); p.name + '@' + p.version")"
             git ls-remote --exit-code --tags origin "refs/tags/$tag" > /dev/null || { echo "missing tag $tag"; exit 1; }
           done

@@ -53,6 +53,9 @@ and error states live on the runner. Without `connectTable`, call
   non-JSON bodies and bodies that break the `PageResult` contract (rows not an
   array of objects, more rows than requested, bad `totalRows`) are rejected.
   `maxPageSize` (default 100, at most 1000) is enforced before sending.
+- **GET or POST.** `method: 'POST'` sends the same parameters as a form body
+  (long filter lists, servers that expect POST). It is still a read. Laravel
+  POST routes need the CSRF token: `headers: { 'X-CSRF-TOKEN': token }`.
 - **Injectable.** `fetch`, `headers` (static or async per request),
   `serializeQuery`, `parseResponse` and `credentials` are all options.
 

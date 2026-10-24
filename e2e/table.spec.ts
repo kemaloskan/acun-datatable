@@ -226,3 +226,28 @@ test('styles stay light on a light page even when the system is dark', async ({ 
   await page.evaluate(() => document.documentElement.setAttribute('data-theme', 'dark'));
   expect(await label.evaluate(el => getComputedStyle(el).color)).toBe('rgb(230, 232, 236)'); // dark on request
 });
+
+test.describe('new AcunDataTable(...) from a <script> tag', () => {
+  test('server side over POST with a fixed header, as in DataTables', async ({ page }) => {
+    const requests: string[] = [];
+    page.on('request', request => { if (request.url().endsWith('/e2e/api/products')) requests.push(`${request.method()} ${request.postData()}`); });
+    await page.goto('/e2e/fixtures/script.html');
+    await expect(page.locator('body[data-ready=true]')).toBeAttached();
+    const info = page.locator('.adt-info');
+    await expect(info).toHaveText('Toplam: 120 kaydın 1 ile 25 arasını gösteriyor');
+    expect(requests.at(-1)).toMatch(/^POST page=1&pageSize=25$/);
+
+    // fixedHeader: the header row stays at the top of the window while the page scrolls.
+    await page.evaluate(() => window.scrollTo(0, 600));
+    await expect.poll(() => page.locator('thead th').first().evaluate(th => Math.round(th.getBoundingClientRect().top))).toBe(0);
+    await page.evaluate(() => window.scrollTo(0, 0));
+
+    await page.getByRole('button', { name: 'Sayfa 2' }).click();
+    await expect(info).toHaveText('Toplam: 120 kaydın 26 ile 50 arasını gösteriyor');
+    await page.getByRole('searchbox', { name: 'Ara' }).fill('kalem');
+    await expect(info).toHaveText('Toplam: 20 kaydın 1 ile 20 arasını gösteriyor');
+    await page.getByRole('button', { name: 'Price' }).click();
+    await expect(page.locator('tbody tr').first().locator('td').nth(3)).toHaveText('10');
+    expect(requests.at(-1)).toContain('sort=price%3Aasc');
+  });
+});

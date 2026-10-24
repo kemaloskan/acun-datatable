@@ -5,7 +5,7 @@ import {
 import { getPageItems, type ColumnDef, type DataTable, type Row } from '@acunsoft/datatable-core';
 import {
   cellValue, checkPageSizes, checkResponsive, checkSize, createCellText, ICONS, labelsEn, nextSorting, pageInfoText,
-  numeric, pageSizeChoices, priorityOf, rowName, type ResponsiveMode, type TableSize,
+  numeric, pageSizeChoices, priorityOf, rowName, scrollHeight, type ResponsiveMode, type TableSize,
   type BulkAction, type BulkSelection, type CellFormatter, type DataTableLabels, type RowAction, type StatusSource,
 } from '@acunsoft/datatable-dom';
 import { useTable } from './composables';
@@ -72,6 +72,15 @@ export const AcunDataTable = defineComponent({
     size: {
       type: String as PropType<TableSize>, default: 'md',
       validator: (value: unknown) => { try { checkSize(value); return true; } catch { return false; } },
+    },
+    /** Keep the header at the top of the window while the page scrolls (DataTables `fixedHeader`). */
+    stickyHeader: { type: Boolean, default: false },
+    /** Shift+click adds a second sort column. Default `true`. */
+    multiSort: { type: Boolean, default: true },
+    /** A fixed height to scroll inside, header in place (DataTables `scrollY`): `'60vh'`, `480`. */
+    scrollY: {
+      type: [String, Number] as PropType<string | number>, default: undefined,
+      validator: (value: unknown) => { try { scrollHeight(value); return true; } catch { return false; } },
     },
   },
   slots: Object as SlotsType<{ cell: CellSlotProps; empty: Record<string, never>; [name: `cell-${string}`]: CellSlotProps }>,
@@ -161,7 +170,7 @@ export const AcunDataTable = defineComponent({
         }, column.enableSorting
           ? [h('button', {
             type: 'button', class: rule ? `adt-sort adt-sort--${rule.direction}` : 'adt-sort',
-            onClick: (event: MouseEvent) => table.setSorting(nextSorting(table.getState().sorting, column.id, event.shiftKey)),
+            onClick: (event: MouseEvent) => table.setSorting(nextSorting(table.getState().sorting, column.id, event.shiftKey && props.multiSort)),
           }, [column.header, h('span', { class: 'adt-sort-mark', 'aria-hidden': 'true' },
             rule ? `${rule.direction === 'asc' ? '▲' : '▼'}${state.sorting.length > 1 ? index + 1 : ''}` : '')])]
           : column.header));
@@ -267,11 +276,12 @@ export const AcunDataTable = defineComponent({
               : null,
           ])
           : h('div', { class: 'adt-notice', role: 'status', 'aria-live': 'polite' });
-      const wrapClass = ['adt-table-wrap', `adt-responsive--${responsive}`, props.size === 'md' ? '' : `adt-size--${props.size}`, busy ? 'adt-loading' : '']
-        .filter(Boolean).join(' ');
+      const height = scrollHeight(props.scrollY);
+      const wrapClass = ['adt-table-wrap', `adt-responsive--${responsive}`, props.size === 'md' ? '' : `adt-size--${props.size}`,
+        props.stickyHeader ? 'adt-sticky-header' : '', height ? 'adt-scroll-y' : '', busy ? 'adt-loading' : ''].filter(Boolean).join(' ');
       const tableClass = ['adt-table', collapsible && levels.has(2) ? 'adt-has-p2' : '', collapsible && levels.has(3) ? 'adt-has-p3' : '']
         .filter(Boolean).join(' ');
-      return h('div', { class: wrapClass, 'aria-busy': props.status ? String(busy) : undefined }, [
+      return h('div', { class: wrapClass, style: height ? { '--adt-scroll-y': height } : undefined, 'aria-busy': props.status ? String(busy) : undefined }, [
         notice,
         h('div', { class: 'adt-scroll' }, [h('table', { class: tableClass }, [
           props.caption !== undefined ? h('caption', props.caption) : null,

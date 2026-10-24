@@ -12,6 +12,7 @@
     "packages/datasource-http",
     "packages/renderer-dom",
     "packages/export",
+    "packages/datatable",
     "packages/vue",
     "packages/react"
   ],

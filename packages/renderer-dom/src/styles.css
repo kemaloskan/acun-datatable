@@ -165,6 +165,17 @@
 }
 .adt-sort:hover .adt-sort-mark::before { opacity: 0.8; }
 
+/* Sticky header: with the page (stickyHeader, DataTables fixedHeader) or inside a fixed height (scrollY) */
+.adt-scroll-y .adt-scroll { max-height: var(--adt-scroll-y); overflow: auto; overscroll-behavior: contain; }
+.adt-sticky-header:not(.adt-scroll-y) .adt-scroll { overflow: visible; }
+:is(.adt-sticky-header, .adt-scroll-y) .adt-table thead :is(th, td) {
+  position: sticky; top: var(--adt-sticky-top, 0px); z-index: 3;
+  background: var(--adt-surface); box-shadow: inset 0 -1px 0 var(--adt-line);
+}
+.adt-scroll-y .adt-table thead :is(th, td) { top: 0; }
+:is(.adt-sticky-header, .adt-scroll-y) .adt-table thead tr > :first-child { border-top-left-radius: var(--adt-radius); }
+:is(.adt-sticky-header, .adt-scroll-y) .adt-table thead tr > :last-child { border-top-right-radius: var(--adt-radius); }
+
 /* Server-mode states */
 .adt-notice:empty { display: none; }
 .adt-notice { display: flex; align-items: center; gap: 0.75rem; padding: 0.625rem 1rem; margin-bottom: 0.5rem; color: var(--adt-muted); }
@@ -359,6 +370,7 @@
   .adt-page-gap { min-width: 1rem; }
 
   /* Cards (responsive: 'cards', the default): each row a card, each cell with its header */
+  .adt-responsive--cards .adt-table thead :is(th, td) { position: static; box-shadow: none; background: transparent; }
   .adt-responsive--cards .adt-scroll { border: 0; background: transparent; overflow: visible; box-shadow: none; }
   .adt-responsive--cards .adt-table, .adt-responsive--cards .adt-table tbody, .adt-responsive--cards .adt-table tr, .adt-responsive--cards .adt-table td { display: block; width: 100%; }
   .adt-responsive--cards .adt-table thead tr { display: flex; flex-wrap: wrap; gap: 0.25rem 0.75rem; padding: 0 0 0.75rem; }

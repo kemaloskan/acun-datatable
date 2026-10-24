@@ -15,6 +15,7 @@ dependencies.
 
 | Package | What it is |
 |---|---|
+| [`@acunsoft/datatable`](packages/datatable) | Everything in one call, like DataTables: `new AcunDataTable('#table', { serverSide: true, ajax: '/api/orders' })`; also a single `<script>`. |
 | [`@acunsoft/datatable-core`](packages/core) | Headless engine: sorting, filters, Turkish-aware search, pages, selection, column visibility, server mode. No dependencies. |
 | [`@acunsoft/datatable-dom`](packages/renderer-dom) | Accessible renderer without a framework: `renderDataTable` with a DataTables-style layout, optional `styles.css`. |
 | [`@acunsoft/datatable-vue`](packages/vue) · [`@acunsoft/datatable-react`](packages/react) | Components and composables/hooks with the same markup. |
@@ -45,7 +46,8 @@ dependencies.
   and has a screen-reader name; tested in Chromium, Firefox and WebKit.
 
 ```bash
-npm install @acunsoft/datatable-core @acunsoft/datatable-dom   # or -vue / -react
+npm install @acunsoft/datatable                                 # one call, like DataTables
+npm install @acunsoft/datatable-core @acunsoft/datatable-vue    # or -react, -dom
 composer require acunsoft/datatable-laravel                     # Laravel + Livewire
 ```
 

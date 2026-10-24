@@ -29,6 +29,13 @@ export interface HttpDataSourceOptions {
   /** Largest page size this client will request. Default 100, at most `MAX_PAGE_SIZE` (1000). */
   readonly maxPageSize?: number;
   readonly credentials?: RequestCredentials;
+  /**
+   * `'GET'` (default) sends the query in the URL. `'POST'` sends the same
+   * parameters as a form body (`application/x-www-form-urlencoded`), for long
+   * filter lists or servers that expect it. Still a read: the server must not
+   * change data. Laravel needs the CSRF token in `headers` for POST routes.
+   */
+  readonly method?: 'GET' | 'POST';
 }
 
 function encodeValue(value: unknown, field: string): string {
@@ -83,7 +90,7 @@ export function fromLaravelPaginator(body: unknown): unknown {
 }
 
 /**
- * A read-only `DataSource` over HTTP GET. Each request sends the validated
+ * A read-only `DataSource` over HTTP (GET, or POST with a form body). Each request sends the validated
  * query, honours the abort signal, rejects non-2xx responses with `HttpError`
  * and validates the body against the `PageResult` contract.
  */
@@ -100,6 +107,8 @@ export function createHttpDataSource<TData = Record<string, unknown>>(options: H
     throw new RangeError(`maxPageSize must be an integer from 1 to ${MAX_PAGE_SIZE}`);
   }
   const serialize = options.serializeQuery ?? serializeTableQuery;
+  const method = options.method ?? 'GET';
+  if (method !== 'GET' && method !== 'POST') throw new TypeError('method must be GET or POST');
 
   return {
     async getPage(input, requestOptions = {}) {
@@ -112,15 +121,17 @@ export function createHttpDataSource<TData = Record<string, unknown>>(options: H
       const hash = url.indexOf('#');
       const base = hash === -1 ? url : url.slice(0, hash);
       const fragment = hash === -1 ? '' : url.slice(hash);
-      const target = params ? `${base}${base.includes('?') ? '&' : '?'}${params}${fragment}` : url;
+      const target = params && method === 'GET' ? `${base}${base.includes('?') ? '&' : '?'}${params}${fragment}` : url;
 
       const headers = new Headers({ Accept: 'application/json' });
+      if (method === 'POST') headers.set('Content-Type', 'application/x-www-form-urlencoded;charset=UTF-8');
       const extra = typeof options.headers === 'function' ? await options.headers(query) : options.headers;
       if (extra !== undefined) new Headers(extra).forEach((value, key) => headers.set(key, value));
 
       const response = await fetchImpl(target, {
-        method: 'GET',
+        method,
         headers,
+        ...(method === 'POST' ? { body: params } : {}),
         ...(requestOptions.signal !== undefined ? { signal: requestOptions.signal as AbortSignal } : {}),
         ...(options.credentials !== undefined ? { credentials: options.credentials } : {}),
       });

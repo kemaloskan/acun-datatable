@@ -94,3 +94,18 @@ describe('sizes', () => {
     expect(() => renderTable(host, make(), { size: 'xl' as never })).toThrow('size must be sm, md or lg');
   });
 });
+
+describe('sticky header', () => {
+  it('sticks to the page or scrolls inside a fixed height', () => {
+    renderTable(host, make(), { stickyHeader: true });
+    expect(host.querySelector('.adt-table-wrap')!.classList.contains('adt-sticky-header')).toBe(true);
+    renderDataTable(host, make(), { scrollY: '60vh' });
+    const wrap = host.querySelector<HTMLElement>('.adt-table-wrap')!;
+    expect(wrap.classList.contains('adt-scroll-y')).toBe(true);
+    expect(wrap.style.getPropertyValue('--adt-scroll-y')).toBe('60vh');
+    renderTable(host, make(), { scrollY: 480 });
+    expect(host.querySelector<HTMLElement>('.adt-table-wrap')!.style.getPropertyValue('--adt-scroll-y')).toBe('480px');
+    expect(() => renderTable(host, make(), { scrollY: 'calc(100vh - 10px)' })).toThrow('scrollY must be');
+    expect(() => renderTable(host, make(), { scrollY: -1 })).toThrow('scrollY must be');
+  });
+});

@@ -1,11 +1,11 @@
 import {
   createElement as h, useCallback, useEffect, useId, useMemo, useRef, useState, useSyncExternalStore,
-  type ChangeEvent, type KeyboardEvent, type MouseEvent, type ReactElement, type ReactNode,
+  type ChangeEvent, type CSSProperties, type KeyboardEvent, type MouseEvent, type ReactElement, type ReactNode,
 } from 'react';
 import { getPageItems, type ColumnDef, type DataTable, type Row } from '@acunsoft/datatable-core';
 import {
   cellValue, checkPageSizes, checkResponsive, checkSize, createCellText, ICONS, labelsEn, nextSorting, pageInfoText,
-  numeric, pageSizeChoices, priorityOf, rowName, type ResponsiveMode, type TableSize,
+  numeric, pageSizeChoices, priorityOf, rowName, scrollHeight, type ResponsiveMode, type TableSize,
   type BulkAction, type BulkSelection, type CellFormatter, type DataTableLabels, type RowAction, type StatusSource,
 } from '@acunsoft/datatable-dom';
 import { useTable } from './hooks.js';
@@ -46,6 +46,12 @@ export interface DataTableProps<TData> {
   readonly responsive?: ResponsiveMode;
   /** Density: `sm`, `md` (default) or `lg`. */
   readonly size?: TableSize;
+  /** Keep the header at the top of the window while the page scrolls (DataTables `fixedHeader`). */
+  readonly stickyHeader?: boolean;
+  /** Shift+click adds a second sort column. Default `true`. */
+  readonly multiSort?: boolean;
+  /** A fixed height to scroll inside, header in place (DataTables `scrollY`): `'60vh'`, `480`. */
+  readonly scrollY?: string | number;
 }
 
 const noStatus = (): (() => void) => () => undefined;
@@ -168,7 +174,7 @@ export function DataTable<TData>(props: DataTableProps<TData>): ReactElement {
     }, column.enableSorting
       ? h('button', {
         type: 'button', className: rule ? `adt-sort adt-sort--${rule.direction}` : 'adt-sort',
-        onClick: (event: MouseEvent) => table.setSorting(nextSorting(table.getState().sorting, column.id, event.shiftKey)),
+        onClick: (event: MouseEvent) => table.setSorting(nextSorting(table.getState().sorting, column.id, event.shiftKey && props.multiSort !== false)),
       }, column.header, h('span', { className: 'adt-sort-mark', 'aria-hidden': 'true' },
         rule ? `${rule.direction === 'asc' ? '▲' : '▼'}${state.sorting.length > 1 ? index + 1 : ''}` : ''))
       : column.header));
@@ -245,11 +251,15 @@ export function DataTable<TData>(props: DataTableProps<TData>): ReactElement {
           ? h('button', { type: 'button', className: 'adt-retry', onClick: () => { void props.status!.retry!(); } }, labels.retry)
           : null)
       : h('div', { className: 'adt-notice', role: 'status', 'aria-live': 'polite' });
-  const wrapClass = ['adt-table-wrap', `adt-responsive--${responsive}`, size === 'md' ? '' : `adt-size--${size}`, busy ? 'adt-loading' : '']
-    .filter(Boolean).join(' ');
+  const height = scrollHeight(props.scrollY);
+  const wrapClass = ['adt-table-wrap', `adt-responsive--${responsive}`, size === 'md' ? '' : `adt-size--${size}`,
+    props.stickyHeader === true ? 'adt-sticky-header' : '', height ? 'adt-scroll-y' : '', busy ? 'adt-loading' : ''].filter(Boolean).join(' ');
   const tableClass = ['adt-table', collapsible && levels.has(2) ? 'adt-has-p2' : '', collapsible && levels.has(3) ? 'adt-has-p3' : '']
     .filter(Boolean).join(' ');
-  return h('div', { className: wrapClass, ref: wrap, 'aria-busy': props.status ? busy : undefined },
+  return h('div', {
+    className: wrapClass, ref: wrap, 'aria-busy': props.status ? busy : undefined,
+    style: height ? ({ '--adt-scroll-y': height } as CSSProperties) : undefined,
+  },
     notice,
     h('div', { className: 'adt-scroll' }, h('table', { className: tableClass },
       props.caption !== undefined ? h('caption', null, props.caption) : null,

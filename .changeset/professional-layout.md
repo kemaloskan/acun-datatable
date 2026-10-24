@@ -3,6 +3,8 @@
 "@acunsoft/datatable-dom": minor
 "@acunsoft/datatable-vue": minor
 "@acunsoft/datatable-react": minor
+"@acunsoft/datatable-http": minor
+"@acunsoft/datatable": minor
 ---
 
 Professional, DataTables-like layout.
@@ -40,3 +42,11 @@ Professional, DataTables-like layout.
 - `--adt-*` defaults are declared only on the outermost element, so values set
   on `.adt` now reach every part.
 - Number and decimal columns are right-aligned with tabular digits (`adt-num`).
+- New package `@acunsoft/datatable`: `new AcunDataTable('#table', { serverSide,
+  ajax: { url, method }, pagination, sorting, searching, language, fixedHeader,
+  … })` in the spirit of DataTables, on an existing `<table>`, rows, a JSON
+  file or a server; also a single `<script>` build (`acun-datatable.min.js`).
+- `@acunsoft/datatable-http`: `method: 'POST'` sends the query as a form body.
+- Sticky header: `stickyHeader` (DataTables `fixedHeader`) and `scrollY` (a
+  fixed height scrolling inside); `multiSort: false` sorts by one column only.
+

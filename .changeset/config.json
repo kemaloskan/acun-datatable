@@ -11,7 +11,8 @@
       "@acunsoft/datatable-dom",
       "@acunsoft/datatable-export",
       "@acunsoft/datatable-vue",
-      "@acunsoft/datatable-react"
+      "@acunsoft/datatable-react",
+      "@acunsoft/datatable"
     ]
   ],
   "linked": [],

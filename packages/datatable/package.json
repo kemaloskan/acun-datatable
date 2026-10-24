@@ -1,0 +1,69 @@
+{
+  "name": "@acunsoft/datatable",
+  "version": "0.2.1",
+  "description": "All-in-one data table: new AcunDataTable(\"#orders\", { serverSide: true, ajax: \"/api/orders\" }). Core, DOM renderer and HTTP in one package, also as a single <script>.",
+  "keywords": [
+    "datatable",
+    "data-table",
+    "datatables",
+    "table",
+    "server-side",
+    "ajax",
+    "vanilla",
+    "accessible"
+  ],
+  "homepage": "https://kemaloskan.github.io/acun-datatable/",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kemaloskan/acun-datatable.git",
+    "directory": "packages/datatable"
+  },
+  "bugs": {
+    "url": "https://github.com/kemaloskan/acun-datatable/issues"
+  },
+  "author": "Kemal OSKAN (https://github.com/kemaloskan)",
+  "license": "MIT",
+  "type": "module",
+  "sideEffects": [
+    "*.css",
+    "./dist/acun-datatable.min.js"
+  ],
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "unpkg": "./dist/acun-datatable.min.js",
+  "jsdelivr": "./dist/acun-datatable.min.js",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./styles.css": "./dist/styles.css",
+    "./acun-datatable.min.js": "./dist/acun-datatable.min.js"
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "check": "tsc -p tsconfig.check.json",
+    "test": "vitest run",
+    "build": "tsup && node -e \"require('node:fs').copyFileSync('../renderer-dom/src/styles.css','dist/styles.css')\""
+  },
+  "dependencies": {
+    "@acunsoft/datatable-core": "0.2.1",
+    "@acunsoft/datatable-dom": "0.2.1",
+    "@acunsoft/datatable-http": "0.2.1"
+  },
+  "devDependencies": {
+    "jsdom": "^30.1.3",
+    "tsup": "^8.0.0",
+    "typescript": "^5.0.0",
+    "vitest": "^5.0.5"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}

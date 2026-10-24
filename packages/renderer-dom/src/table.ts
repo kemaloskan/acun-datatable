@@ -50,6 +50,29 @@ export interface RenderTableOptions<TData> {
   readonly responsive?: ResponsiveMode;
   /** Density with the optional `styles.css`: `'sm'` compact, `'md'` (default), `'lg'` spacious. */
   readonly size?: TableSize;
+  /**
+   * Keep the header row at the top of the window while the page scrolls
+   * (DataTables `fixedHeader`). Below a fixed top bar set `--adt-sticky-top`.
+   * The table then grows instead of scrolling sideways; pair it with a
+   * `responsive` mode or use `scrollY` for very wide tables.
+   */
+  readonly stickyHeader?: boolean;
+  /**
+   * Give the table a fixed height and scroll it inside, with the header
+   * staying in place (DataTables `scrollY`): a CSS length such as `'60vh'` or
+   * `'480px'`, or a number of pixels.
+   */
+  readonly scrollY?: string | number;
+  /** Shift+click adds a second sort column. Default `true`; `false` always sorts by one column. */
+  readonly multiSort?: boolean;
+}
+
+/** The CSS length of a `scrollY` option, or `undefined` when it is not set. */
+export function scrollHeight(value: unknown): string | undefined {
+  if (value === undefined || value === null || value === false) return undefined;
+  if (typeof value === 'number' && Number.isFinite(value) && value > 0) return `${value}px`;
+  if (typeof value === 'string' && /^\d+(\.\d+)?(px|rem|em|vh|dvh|svh|%)$/.test(value.trim())) return value.trim();
+  throw new RangeError('scrollY must be a positive number of pixels or a CSS length such as "60vh"');
 }
 
 export type TableSize = 'sm' | 'md' | 'lg';
@@ -105,7 +128,12 @@ export function renderTable<TData>(
   const nameOf = (row: Row<TData>, cells: readonly string[]): string => rowName(row, cells[0] ?? '', options.rowLabel);
 
   const size = checkSize(options.size);
-  const root = element(doc, 'div', { class: `adt-table-wrap adt-responsive--${responsive}${size === 'md' ? '' : ` adt-size--${size}`}` });
+  const height = scrollHeight(options.scrollY);
+  const root = element(doc, 'div', {
+    class: ['adt-table-wrap', `adt-responsive--${responsive}`, size === 'md' ? '' : `adt-size--${size}`,
+      options.stickyHeader === true ? 'adt-sticky-header' : '', height ? 'adt-scroll-y' : ''].filter(Boolean).join(' '),
+  });
+  if (height) root.style.setProperty('--adt-scroll-y', height);
   const scroller = element(doc, 'div', { class: 'adt-scroll' });
   const notice = element(doc, 'div', { class: 'adt-notice', role: 'status', 'aria-live': 'polite' });
   root.append(notice, scroller);
@@ -237,7 +265,7 @@ export function renderTable<TData>(
         const mark = rule ? `${rule.direction === 'asc' ? '▲' : '▼'}${state.sorting.length > 1 ? index + 1 : ''}` : '';
         button.append(element(doc, 'span', { class: 'adt-sort-mark', 'aria-hidden': 'true' }, mark));
         button.addEventListener('click', event => {
-          table.setSorting(nextSorting(table.getState().sorting, column.id, event.shiftKey));
+          table.setSorting(nextSorting(table.getState().sorting, column.id, event.shiftKey && options.multiSort !== false));
         });
         th.append(button);
       } else {
