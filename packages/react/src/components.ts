@@ -5,8 +5,8 @@ import {
 import { getPageItems, type ColumnDef, type DataTable, type Row } from '@acunsoft/datatable-core';
 import {
   cellValue, checkPageSizes, checkResponsive, checkSize, confirmed, filterControls, splitActions, createCellText, ICONS, labelsEn, nextSorting, pageInfoText,
-  numeric, pageSizeChoices, priorityOf, rangeOf, renderBulkActions, renderFilterChips, renderFilters, renderMenu, rowName, scrollHeight,
-  type MenuItem, type RenderedComponent, type ResponsiveMode, type TableSize,
+  numeric, pageSizeChoices, pinColumns, priorityOf, rangeOf, renderBulkActions, renderFilterChips, renderFilters, renderMenu, rowName, scrollHeight,
+  checkFixedColumns, type FixedColumns, type MenuItem, type RenderedComponent, type ResponsiveMode, type TableSize,
   type BulkAction, type BulkSelection, type CellFormatter, type DataTableLabels, type RowAction, type StatusSource,
 } from '@acunsoft/datatable-dom';
 import { useTable } from './hooks.js';
@@ -63,6 +63,8 @@ export interface DataTableProps<TData> {
   readonly detail?: (row: Row<TData>) => ReactNode;
   /** Placeholder rows while a `status` source loads the first rows. Default `true`. */
   readonly skeleton?: boolean;
+  /** Columns that stay while the table scrolls sideways: `{ start: 1, end: 1 }` (DataTables `fixedColumns`). */
+  readonly fixedColumns?: FixedColumns;
 }
 
 /** Placeholder rows while the first rows load: as many as a page, at most this many. */
@@ -128,6 +130,12 @@ export function DataTable<TData>(props: DataTableProps<TData>): ReactElement {
       else node.removeAttribute('open');
     }
   }, [dialogVisible]);
+  // Fixed columns: sticky offsets measured after every render.
+  const fixed = checkFixedColumns(props.fixedColumns);
+  useEffect(() => {
+    if (!wrap.current || (fixed.start === 0 && fixed.end === 0)) return undefined;
+    return pinColumns(wrap.current, fixed);
+  }, [fixed.start, fixed.end]);
   // One listener closes any open row "⋮" menu on a click outside it.
   useEffect(() => {
     const close = (event: Event): void => {

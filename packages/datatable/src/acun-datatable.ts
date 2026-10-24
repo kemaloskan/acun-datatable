@@ -4,7 +4,7 @@ import {
 import {
   DEFAULT_LAYOUT, downloadFile, el, printTable, renderDataTable, resolveLabels,
   type BulkAction, type CellFormatter, type CellRenderer, type DataTableLabels, type DataTableLayout, type LayoutSlot,
-  type MenuItem, type RenderedComponent, type ResponsiveMode, type RowAction, type StatusSource, type TableSize,
+  type FixedColumns, type MenuItem, type RenderedComponent, type ResponsiveMode, type RowAction, type StatusSource, type TableSize,
 } from '@acunsoft/datatable-dom';
 import { tableToSheet, toCsv, toXlsx, type Sheet } from '@acunsoft/datatable-export';
 import { connectTable, createHttpDataSource, createQueryRunner, type QueryRunner } from '@acunsoft/datatable-http';
@@ -121,6 +121,12 @@ export interface AcunDataTableOptions {
   readonly labels?: Partial<DataTableLabels>;
   /** Keep the header at the top of the window while the page scrolls (DataTables `fixedHeader`). */
   readonly fixedHeader?: boolean;
+  /**
+   * Keep columns in place while the table scrolls sideways (DataTables
+   * `fixedColumns`): `start` data columns (with the checkbox and ⊕ before
+   * them) and `end` cells, counting the actions column.
+   */
+  readonly fixedColumns?: FixedColumns;
   /** A fixed height to scroll inside, header in place (DataTables `scrollY`): `'60vh'`, `480`. */
   readonly scrollY?: string | number;
   /** Narrow screens: `cards` (default), `scroll`, `collapse` or `modal`. */
@@ -426,6 +432,7 @@ export class AcunDataTable {
       ...(options.responsive ? { responsive: options.responsive } : {}),
       ...(options.size ? { size: options.size } : {}),
       ...(options.fixedHeader ? { stickyHeader: true } : {}),
+      ...(options.fixedColumns ? { fixedColumns: options.fixedColumns } : {}),
       ...(options.scrollY !== undefined ? { scrollY: options.scrollY } : {}),
       ...(sorting.multiSort === false ? { multiSort: false } : {}),
       ...(status ? { status } : {}),

@@ -720,6 +720,10 @@ const GUIDES = {
      [
       "row().child()",
       "detail: row => …"
+     ],
+     [
+      "fixedColumns",
+      "fixedColumns: { start: 1, end: 1 }"
      ]
     ]
    },
@@ -1042,12 +1046,12 @@ const GUIDES = {
  },
  "header": {
   "title": {
-   "tr": "Sabit başlık ve kaydırma",
-   "en": "Fixed header and scrolling"
+   "tr": "Sabit başlık, kolonlar ve kaydırma",
+   "en": "Fixed header, columns and scrolling"
   },
   "lead": {
-   "tr": "Uzun listelerde başlık satırı görünür kalsın: sayfa kaydırılırken ekranın üstünde (fixedHeader) ya da sabit yükseklikteki tablonun içinde (scrollY).",
-   "en": "Keep the header row in view on long lists: at the top of the window while the page scrolls (fixedHeader), or inside a table of fixed height (scrollY)."
+   "tr": "Uzun ve geniş listelerde önemli kısımlar görünür kalsın: başlık satırı sayfanın üstünde (fixedHeader) ya da sabit yükseklikteki tablonun içinde (scrollY); baştaki ve sondaki kolonlar tablo yana kayarken yerinde (fixedColumns).",
+   "en": "Keep the important parts in view on long and wide lists: the header at the top of the window (fixedHeader) or inside a table of fixed height (scrollY); the first and last columns while the table scrolls sideways (fixedColumns)."
   },
   "sections": [
    {
@@ -1106,6 +1110,34 @@ const GUIDES = {
      "tr": "fixedHeader'da tablo yana kaymaz; çok geniş tablolarda \u003ccode>responsive: 'collapse'\u003c/code> ile kullanın ya da \u003ccode>scrollY\u003c/code> seçin.",
      "en": "With fixedHeader the table does not scroll sideways; pair very wide tables with \u003ccode>responsive: 'collapse'\u003c/code> or use \u003ccode>scrollY\u003c/code>."
     }
+   },
+   {
+    "id": "fixed",
+    "title": {
+     "tr": "Sabit kolonlar",
+     "en": "Fixed columns"
+    },
+    "desc": {
+     "tr": "Tablo yana kayarken baştaki ve sondaki kolonlar yerinde kalır. Genişlikler başlıktan ölçülür; telefonda sabitler ekranın %60'ını geçerse önce sondakiler serbest kalır.",
+     "en": "The first and last columns stay while the table scrolls sideways. Widths come from the header; on a phone, if pins would pass 60% of the width, the end ones scroll again first."
+    },
+    "tabs": [
+     [
+      "AcunDataTable",
+      "typescript",
+      "new AcunDataTable('#orders', {\n  responsive: 'scroll',\n  fixedColumns: { start: 1, end: 1 },   // first data column (+ checkbox) and the actions\n});"
+     ],
+     [
+      "Livewire",
+      "php",
+      "protected function fixedColumns(): array\n{\n    return ['start' => 1, 'end' => 1];\n}"
+     ],
+     [
+      "Vue / React",
+      "typescript",
+      "\u003cAcunDataTable :table=\"table\" responsive=\"scroll\" :fixed-columns=\"{ start: 1, end: 1 }\" />\n\u003cDataTable table={table} responsive=\"scroll\" fixedColumns={{ start: 1, end: 1 }} />"
+     ]
+    ]
    }
   ]
  },

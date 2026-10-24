@@ -217,6 +217,25 @@ test.describe('responsive modes on a phone', () => {
   });
 });
 
+test('fixed columns stay in place while the table scrolls sideways', async ({ page }) => {
+  await page.setViewportSize({ width: 600, height: 800 });
+  await page.goto('/e2e/fixtures/table.html?fixed&responsive=scroll');
+  await expect(page.locator('body[data-ready=true]')).toBeAttached();
+  // Narrow the box and widen the data columns so the table must scroll sideways.
+  await page.addStyleTag({ content: '#orders { width: 520px } .adt-table :is(th.adt-th:not(.adt-actions), td[data-label]:not(.adt-actions)) { min-width: 9rem; white-space: nowrap }' });
+  const scroller = page.locator('.adt-scroll');
+  await expect.poll(() => scroller.evaluate(node => node.scrollWidth > node.clientWidth)).toBe(true);
+  const customer = page.getByRole('cell', { name: 'Ayşe', exact: true });
+  const edit = page.getByRole('button', { name: 'Edit: Ayşe' });
+  const city = page.getByRole('cell', { name: 'İstanbul' }).first();
+  const before = { customer: (await customer.boundingBox())!.x, edit: (await edit.boundingBox())!.x, city: (await city.boundingBox())!.x };
+  const moved = await scroller.evaluate(node => { node.scrollLeft = 120; return node.scrollLeft; });
+  expect(moved).toBeGreaterThan(20);
+  await expect.poll(async () => Math.round((await city.boundingBox())!.x)).toBe(Math.round(before.city - moved)); // the middle scrolls
+  expect((await customer.boundingBox())!.x).toBeCloseTo(before.customer, 0); // the first column stays
+  expect((await edit.boundingBox())!.x).toBeCloseTo(before.edit, 0);         // so do the actions
+});
+
 test.describe('child rows', () => {
   for (const width of [1280, 375]) {
     test(`load and open below the row at ${width}px`, async ({ page }) => {

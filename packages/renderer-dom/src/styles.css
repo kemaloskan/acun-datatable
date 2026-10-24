@@ -398,6 +398,18 @@
 .adt-detail-status--error { color: var(--adt-danger, #b42318); }
 .adt-dialog .adt-detail-content { padding: 0.75rem 1.25rem 1.25rem; border-top: 1px solid var(--adt-line); }
 
+/* Fixed columns (fixedColumns): cells stay in place while the table scrolls sideways */
+.adt-table .adt-pin { position: sticky; z-index: 1; background: var(--adt-surface); }
+.adt-table thead .adt-pin { z-index: 4; }
+.adt-table tfoot .adt-pin { background: var(--adt-surface); }
+.adt-row:hover > .adt-pin { background: var(--adt-hover); }
+.adt-row--expanded > .adt-pin { background: var(--adt-hover); }
+.adt-row--selected > .adt-pin { background: var(--adt-selected); }
+.adt-pin--edge-start { box-shadow: 8px 0 8px -8px rgb(16 24 40 / 0.18); }
+.adt-pin--edge-end { box-shadow: -8px 0 8px -8px rgb(16 24 40 / 0.18); }
+:is(.adt-sticky-header, .adt-scroll-y) .adt-table thead .adt-pin--edge-start { box-shadow: inset 0 -1px 0 var(--adt-line), 8px 0 8px -8px rgb(16 24 40 / 0.18); }
+:is(.adt-sticky-header, .adt-scroll-y) .adt-table thead .adt-pin--edge-end { box-shadow: inset 0 -1px 0 var(--adt-line), -8px 0 8px -8px rgb(16 24 40 / 0.18); }
+
 /* Responsive scroll: the table keeps its columns and scrolls sideways */
 @media (max-width: 640px) {
   .adt-responsive--scroll .adt-table :is(th, td) { white-space: nowrap; }
@@ -453,6 +465,7 @@
   .adt-page-gap { min-width: 1rem; }
 
   /* Cards (responsive: 'cards', the default): each row a card, each cell with its header */
+  .adt-responsive--cards .adt-table .adt-pin { position: static; box-shadow: none; background: transparent; }
   .adt-responsive--cards .adt-table thead :is(th, td) { position: static; box-shadow: none; background: transparent; }
   .adt-responsive--cards .adt-scroll { border: 0; background: transparent; overflow: visible; box-shadow: none; }
   .adt-responsive--cards .adt-table, .adt-responsive--cards .adt-table tbody, .adt-responsive--cards .adt-table tr, .adt-responsive--cards .adt-table td { display: block; width: 100%; }

@@ -1,4 +1,5 @@
 export { el, ICONS, type RenderedComponent } from './dom';
+export { checkFixedColumns, pinColumns, type FixedColumns } from './pin';
 export { printTable, renderMenu, type MenuItem, type RenderMenuOptions } from './menu';
 export {
   LABELS, labelsDe, labelsEn, labelsEs, labelsFr, labelsTr, resolveLabels, type DataTableLabels,

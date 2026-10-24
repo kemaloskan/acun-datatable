@@ -3,6 +3,7 @@ import { actionCell, checkActions, type RowAction } from './actions';
 import { cellValue, createCellText, nextSorting, rowName, type CellFormatter } from './cells';
 import { checkTarget, element, icon, keepFocus, type RenderedComponent } from './dom';
 import { labelsEn, type DataTableLabels } from './labels';
+import { checkFixedColumns, pinColumns, type FixedColumns } from './pin';
 
 export type { CellFormatter } from './cells';
 
@@ -88,6 +89,13 @@ export interface RenderTableOptions<TData> {
    * Later loads keep the current rows, dimmed. Default `true`.
    */
   readonly skeleton?: boolean;
+  /**
+   * Keep columns in place while the table scrolls sideways (DataTables
+   * `fixedColumns`): `start` data columns (with the checkbox and ⊕ columns
+   * before them) and `end` cells, counting the actions column. Not in the
+   * phone card layout, where nothing scrolls sideways.
+   */
+  readonly fixedColumns?: FixedColumns;
 }
 
 /** Placeholder rows while the first rows load: as many as a page, at most this many. */
@@ -187,6 +195,7 @@ export function renderTable<TData>(
     return target;
   };
 
+  const fixed = checkFixedColumns(options.fixedColumns);
   const size = checkSize(options.size);
   const height = scrollHeight(options.scrollY);
   const root = element(doc, 'div', {
@@ -547,6 +556,7 @@ export function renderTable<TData>(
 
   render();
   showStatus();
+  const unpin = pinColumns(root, fixed);
   const unsubscribe = table.subscribe((_, event) => {
     if (event.type === 'selection') patchSelection();
     else render();
@@ -562,6 +572,7 @@ export function renderTable<TData>(
       unsubscribe();
       unsubscribeStatus();
       closeDialog();
+      unpin();
       doc.removeEventListener('click', closeMenus);
       root.remove();
     },

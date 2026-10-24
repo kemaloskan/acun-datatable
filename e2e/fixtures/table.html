@@ -32,7 +32,7 @@ const table = createDataTable({
   initialState: { pageSize: 5 },
 });
 // Turkish number and date formats with the English texts.
-// ?responsive=collapse|modal|scroll and ?size=sm|lg try the other modes; ?detail adds child rows.
+// ?responsive=collapse|modal|scroll and ?size=sm|lg try the other modes; ?detail adds child rows, ?fixed pins columns.
 const params = new URLSearchParams(location.search);
 const detail = params.has('detail')
   ? row => new Promise(resolve => setTimeout(() => resolve(`Order lines of ${row.original.customer}`), 50))
@@ -42,6 +42,7 @@ renderDataTable(document.getElementById('orders'), table, {
   responsive: params.get('responsive') ?? 'cards', size: params.get('size') ?? 'md',
   rowActions: [{ id: 'edit', label: 'Edit', onSelect: row => { window.__edited = row.id; } }],
   ...(detail ? { detail } : {}),
+  ...(params.has('fixed') ? { fixedColumns: { start: 1, end: 1 } } : {}),
 });
 window.__table = table;
 document.body.dataset.ready = 'true';

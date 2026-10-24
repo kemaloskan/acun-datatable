@@ -249,6 +249,14 @@ describe('footer totals', () => {
   });
 });
 
+describe('fixedColumns', () => {
+  it('pins the first column while the table scrolls sideways', async () => {
+    const dt = new AcunDataTable('#orders', { data: orders, fixedColumns: { start: 1 } });
+    await dt.ready;
+    expect([...document.querySelectorAll('tbody tr:first-child > td')].map(td => td.classList.contains('adt-pin'))).toEqual([true, false, false]);
+  });
+});
+
 describe('detail', () => {
   it('opens a child row with content loaded for the row', async () => {
     const detail = vi.fn(async (row: Record<string, unknown>) => `Lines of order ${String(row['id'])}`);

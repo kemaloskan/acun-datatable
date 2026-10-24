@@ -5,8 +5,8 @@ import {
 import { getPageItems, type ColumnDef, type DataTable, type Row } from '@acunsoft/datatable-core';
 import {
   cellValue, checkPageSizes, checkResponsive, checkSize, confirmed, filterControls, splitActions, createCellText, ICONS, labelsEn, nextSorting, pageInfoText,
-  numeric, pageSizeChoices, priorityOf, rangeOf, renderBulkActions, renderFilterChips, renderFilters, renderMenu, rowName, scrollHeight,
-  type MenuItem, type RenderedComponent, type ResponsiveMode, type TableSize,
+  numeric, pageSizeChoices, pinColumns, priorityOf, rangeOf, renderBulkActions, renderFilterChips, renderFilters, renderMenu, rowName, scrollHeight,
+  checkFixedColumns, type FixedColumns, type MenuItem, type RenderedComponent, type ResponsiveMode, type TableSize,
   type BulkAction, type BulkSelection, type CellFormatter, type DataTableLabels, type RowAction, type StatusSource,
 } from '@acunsoft/datatable-dom';
 import { useTable } from './composables';
@@ -86,6 +86,11 @@ export const AcunDataTable = defineComponent({
     maxInlineActions: { type: Number, default: Infinity },
     /** Placeholder rows while a `status` source loads the first rows. Default `true`. */
     skeleton: { type: Boolean, default: true },
+    /** Columns that stay while the table scrolls sideways: `{ start: 1, end: 1 }` (DataTables `fixedColumns`). */
+    fixedColumns: {
+      type: Object as PropType<FixedColumns>, default: undefined,
+      validator: (value: unknown) => { try { checkFixedColumns(value); return true; } catch { return false; } },
+    },
     /** A fixed height to scroll inside, header in place (DataTables `scrollY`): `'60vh'`, `480`. */
     scrollY: {
       type: [String, Number] as PropType<string | number>, default: undefined,
@@ -151,6 +156,13 @@ export const AcunDataTable = defineComponent({
       });
     };
     onMounted(() => document.addEventListener('click', closeMenus));
+    // Fixed columns: sticky offsets measured after every render.
+    let unpin: (() => void) | undefined;
+    watch([wrapEl, () => props.fixedColumns?.start, () => props.fixedColumns?.end], ([node]) => {
+      unpin?.();
+      unpin = node && props.fixedColumns ? pinColumns(node, props.fixedColumns) : undefined;
+    }, { flush: 'post' });
+    onScopeDispose(() => unpin?.());
     onScopeDispose(() => { if (typeof document !== 'undefined') document.removeEventListener('click', closeMenus); });
     // Close the dialog when its row leaves the page.
     watch(() => binding.page.value, page => {

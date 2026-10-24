@@ -194,6 +194,17 @@ table without the controls.
 draws cells yourself: return a DOM node (`el()` builds one without parsing
 HTML) or a string (shown as text). Sorting, search and exports keep the value.
 
+## Fixed columns
+
+`fixedColumns: { start: 1, end: 1 }` keeps the first data column (with the
+checkbox and ⊕ columns before it) and the last cell (the actions) in place
+while the table scrolls sideways (DataTables `fixedColumns`). Offsets are
+measured from the header, so columns of any width line up, and follow
+re-renders and resizes. Pinned cells never take more than 60% of the visible
+width: on a phone the end cells scroll again first. The card layout does not
+pin. `pinColumns(container, { start, end })` does the same for any
+`.adt-table` markup and returns `stop`.
+
 ## Child rows
 
 ```ts

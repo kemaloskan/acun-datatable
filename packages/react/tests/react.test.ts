@@ -353,3 +353,14 @@ describe('skeleton', () => {
     expect(host.querySelectorAll('tbody .adt-row')).toHaveLength(3);
   });
 });
+
+describe('fixed columns', () => {
+  it('pins the first and last cells', () => {
+    vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(function (this: HTMLElement) { return { width: /^T[HD]$/.test(this.tagName) ? 80 : 2000 } as DOMRect; });
+    render(h(DataTable<Order>, { table: make(), selectable: true, fixedColumns: { start: 1, end: 1 } }));
+    const cells = [...host.querySelectorAll<HTMLElement>('tbody tr:first-child > td')];
+    expect(cells.map(cell => cell.classList.contains('adt-pin'))).toEqual([true, true, true]);
+    expect(cells.map(cell => cell.style.left || cell.style.right)).toEqual(['0px', '80px', '0px']);
+    vi.restoreAllMocks();
+  });
+});

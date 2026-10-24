@@ -107,6 +107,7 @@ Route::match(['get', 'post'], '/api/products', fn () => TableResponse::for(Produ
 | `language` | `'en'`; also `'tr'`, `'de'`, `'fr'`, `'es'` | `language` |
 | `labels` | | `language` texts |
 | `fixedHeader` | `false` | `fixedHeader` |
+| `fixedColumns` | `{ start: 0, end: 0 }`: columns that stay while the table scrolls sideways | `fixedColumns` |
 | `scrollY` | | `scrollY` |
 | `responsive` | `'cards'`; also `'scroll'`, `'collapse'`, `'modal'` | `responsive` |
 | `size` | `'md'`; also `'sm'`, `'lg'` | |
