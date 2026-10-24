@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createApp, defineComponent, h, nextTick, ref, type App, type Component } from 'vue';
 import { createDataTable, type ColumnDef, type Row } from '@acunsoft/datatable-core';
 import {
-  AcunBulkActions, AcunColumnToggle, AcunDataTable, AcunFilterChips, AcunFilters, AcunPageInfo, AcunPageSize, AcunPagination, AcunSearch, AcunTools, labelsTr, useDataTable, type BulkSelection,
+  AcunBulkActions, AcunColumnToggle, AcunDataTable, AcunDataTableLayout, AcunFilterChips, AcunFilters, AcunPageInfo, AcunPageSize, AcunPagination, AcunSearch, AcunTools, labelsTr, useDataTable, type BulkSelection,
 } from '../src/index';
 
 type Order = { id: number; customer: string; total: string; locked?: boolean };
@@ -278,5 +278,28 @@ describe('tools', () => {
     expect(host.querySelector('.adt-tools summary')!.textContent).toBe('Araçlar');
     host.querySelector<HTMLButtonElement>('[data-action="print"]')!.click();
     expect(onSelect).toHaveBeenCalledOnce();
+  });
+});
+
+describe('AcunDataTableLayout', () => {
+  it('arranges every control around the table and passes cell slots', async () => {
+    const table = createDataTable<Order>({ data: orders, columns: [
+      { id: 'customer', header: 'Müşteri', accessorKey: 'customer', enableFiltering: true },
+      { id: 'total', header: 'Tutar', accessorKey: 'total', type: 'decimal', enableFiltering: true, filter: true },
+    ] });
+    await mount(() => h(AcunDataTableLayout, { table, labels: labelsTr, locale: 'tr', size: 'sm', caption: 'Siparişler', tools: [{ id: 'x', label: 'X', onSelect: () => undefined }] }, {
+      'cell-customer': ({ text }: { text: string }) => h('strong', text),
+      'top-start': () => h('button', { class: 'mine' }, 'Yeni'),
+    }));
+    const root = host.querySelector('.adt')!;
+    expect(root.className).toBe('adt adt-size--sm');
+    expect(root.querySelector('.adt-top .adt-bar-start .adt-length')).not.toBeNull();
+    expect(root.querySelector('.adt-top .adt-bar-start .mine')).not.toBeNull();
+    expect(root.querySelector('.adt-top .adt-bar-end .adt-filters')).not.toBeNull();
+    expect(root.querySelector('.adt-top .adt-bar-end .adt-tools')).not.toBeNull();
+    expect(root.querySelector('caption')!.textContent).toBe('Siparişler');
+    expect(root.querySelector('tbody strong')!.textContent).toBe('Ayşe');
+    expect(root.querySelector('.adt-bottom .adt-info')!.textContent).toBe('Toplam: 3 kaydın 1 ile 3 arasını gösteriyor');
+    expect(root.querySelector('.adt-bottom .adt-paging')).not.toBeNull();
   });
 });

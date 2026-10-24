@@ -184,3 +184,20 @@ describe('buttons and custom cells', () => {
     await vi.waitFor(() => expect(small.element.querySelector('.adt-menu-status--error')!.textContent).toBe('Dışa aktarma 20 satırı aşıyor; filtreleri daraltın.'));
   });
 });
+
+describe('stateSave', () => {
+  it('restores page, sorting and search after a reload', async () => {
+    localStorage.clear();
+    const first = new AcunDataTable('#orders', { data: orders, stateSave: true, searching: { debounce: 0 } });
+    await first.ready;
+    first.search('ali');
+    first.order([{ field: 'total', direction: 'desc' }]);
+    first.page(2);
+    first.destroy();
+    const second = new AcunDataTable('#orders', { data: orders, stateSave: true });
+    await second.ready;
+    expect(second.table!.getState()).toMatchObject({ globalSearch: 'ali', sorting: [{ field: 'total', direction: 'desc' }], page: 1 });
+    // 15 "Ali" rows fit on one page of 25, so page 2 is clamped to 1
+    expect(document.querySelector<HTMLInputElement>('.adt-search input')!.value).toBe('ali');
+  });
+});

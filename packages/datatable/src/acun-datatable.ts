@@ -1,5 +1,5 @@
 import {
-  createDataTable, type ColumnDef, type ColumnType, type DataTable, type DataTableListener, type FilterOption, type Row, type SortRule,
+  createDataTable, persistState, type ColumnDef, type ColumnType, type DataTable, type DataTableListener, type FilterOption, type Row, type SortRule,
 } from '@acunsoft/datatable-core';
 import {
   DEFAULT_LAYOUT, downloadFile, printTable, renderDataTable, resolveLabels,
@@ -130,6 +130,12 @@ export interface AcunDataTableOptions {
   readonly exportFilename?: string;
   /** Server side: the most rows an export fetches. Default 10,000. */
   readonly exportLimit?: number;
+  /**
+   * Remember page, page size, sorting, filters, search and hidden columns
+   * across reloads (DataTables `stateSave`). `true` keys it by the page path
+   * and the element's ID; `{ key, storage: 'session' }` to choose.
+   */
+  readonly stateSave?: boolean | { readonly key?: string; readonly storage?: 'local' | 'session' };
   /** Place the controls yourself; merged over the layout the options above give. */
   readonly layout?: DataTableLayout;
 }
@@ -163,6 +169,7 @@ export class AcunDataTable {
   #destroyed = false;
   #listeners = new Set<DataTableListener>();
   #unsubscribe: (() => void) | undefined;
+  #stopSaving: (() => void) | undefined;
 
   constructor(target: string | HTMLElement, options: AcunDataTableOptions = {}) {
     const node = typeof target === 'string' ? document.querySelector<HTMLElement>(target) : target;
@@ -289,6 +296,16 @@ export class AcunDataTable {
     } as Parameters<typeof createDataTable<Data>>[0]);
     this.table = table;
     this.#unsubscribe = table.subscribe((state, event) => this.#listeners.forEach(listener => listener(state, event)));
+    if (options.stateSave) {
+      const config = typeof options.stateSave === 'object' ? options.stateSave : {};
+      const key = config.key ?? `${location.pathname}#${this.#original?.id || this.element.id || 'table'}`;
+      try {
+        const storage = config.storage === 'session' ? sessionStorage : localStorage;
+        this.#stopSaving = persistState(table, { key, storage });
+      } catch {
+        // storage blocked (private mode, sandboxed frame): the table works without it
+      }
+    }
     return table;
   }
 
@@ -461,6 +478,7 @@ export class AcunDataTable {
     this.#disconnect?.();
     this.#runner?.cancel();
     this.#unsubscribe?.();
+    this.#stopSaving?.();
     this.#rendered?.destroy();
     this.table?.destroy();
     this.#listeners.clear();

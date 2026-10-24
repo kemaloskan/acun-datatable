@@ -45,6 +45,9 @@ table.setFilters([{ field: 'total', operator: 'between', value: ['100', '500'] }
   never changes width.
 - **Responsive priority:** `priority: 1 | 2 | 3` on a column tells renderers
   which columns stay on phones (1) and tablets (2) when rows collapse.
+- **Remember the state:** `persistState(table, { key })` keeps page, page
+  size, sorting, filters, search and hidden columns in `localStorage` (or any
+  storage) across reloads, like DataTables `stateSave`.
 - **Immutable:** frozen snapshots; your data is never mutated or cloned.
 - **Events in order:** a throwing listener never stops the others
   (`onListenerError`).

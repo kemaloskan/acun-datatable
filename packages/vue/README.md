@@ -72,6 +72,8 @@ const bulk = [{ id: 'archive', label: 'Arşivle', onSelect: ({ ids }) => archive
 
 | Component | Props |
 |---|---|
+| `AcunDataTableLayout` | `table`, `labels`, `locale`, `pageSizes`, `search`, `searchPlaceholder`, `debounceMs`, `filters`, `columnToggle`, `tools`, `bulkActions`, `paging`, `size`; other attributes and the cell slots go to `AcunDataTable`; slots `top-start`, `top-end`, `bottom-start`, `bottom-end` |
+| `AcunFilters` · `AcunFilterChips` · `AcunTools` | `table`, `labels`, `locale` · `items` |
 | `AcunDataTable` | `table`, `caption`, `selectable`, `locale`, `labels`, `format`, `rowLabel`, `rowActions`, `status`, `responsive`, `size` |
 | `AcunPagination` | `table`, `siblings`, `boundaries`, `firstLast`, `locale`, `labels` |
 | `AcunPageSize` | `table`, `pageSizes`, `labels` |

@@ -106,6 +106,8 @@ Route::match(['get', 'post'], '/api/products', fn () => TableResponse::for(Produ
 | `selectable`, `rowActions`, `bulkActions` | | `select`, buttons |
 | `columnToggle` | `true` | `colvis` |
 | `layout` | page size and search above, info and pages below | `layout` |
+| `stateSave` | `false`; `true` or `{ key, storage: 'session' }` | `stateSave` |
+| `buttons` | | `buttons` |
 | `rowId` | `'id'` when rows have one | `rowId` |
 
 `pagination: false` shows every row on one page (up to 1,000; not with

@@ -4,7 +4,7 @@ import {
 } from 'react';
 import { getPageItems, type ColumnDef, type DataTable, type Row } from '@acunsoft/datatable-core';
 import {
-  cellValue, checkPageSizes, checkResponsive, checkSize, createCellText, ICONS, labelsEn, nextSorting, pageInfoText,
+  cellValue, checkPageSizes, checkResponsive, checkSize, filterControls, createCellText, ICONS, labelsEn, nextSorting, pageInfoText,
   numeric, pageSizeChoices, priorityOf, renderFilterChips, renderFilters, renderMenu, rowName, scrollHeight,
   type MenuItem, type RenderedComponent, type ResponsiveMode, type TableSize,
   type BulkAction, type BulkSelection, type CellFormatter, type DataTableLabels, type RowAction, type StatusSource,
@@ -487,4 +487,59 @@ export interface ToolsProps {
 export function Tools({ items, label, labels }: ToolsProps): ReactElement {
   const host = useDomControl(el => renderMenu(el, { items, labels: withLabels(labels), ...(label ? { label } : {}) }), [items, label, JSON.stringify(labels ?? {})]);
   return h('div', { ref: host, className: 'adt-feature' });
+}
+
+export interface DataTableLayoutProps<TData> extends DataTableProps<TData> {
+  /** Choices of the rows-per-page select. Default `[10, 25, 50, 100]`. */
+  readonly pageSizes?: readonly number[];
+  /** Show the search box. Default `true`. */
+  readonly search?: boolean;
+  readonly searchPlaceholder?: string;
+  readonly debounceMs?: number;
+  /** The filters menu and chips, for columns with `filter`. Default `true`. */
+  readonly filters?: boolean;
+  /** The column menu. Default `true`. */
+  readonly columnToggle?: boolean;
+  /** The tools menu items (export, copy, print, your own). */
+  readonly tools?: readonly MenuItem[];
+  readonly bulkActions?: readonly BulkAction<TData>[];
+  readonly paging?: { readonly siblings?: number; readonly boundaries?: number; readonly firstLast?: boolean };
+  /** Your own controls in the bars. */
+  readonly topStart?: ReactNode;
+  readonly topEnd?: ReactNode;
+  readonly bottomStart?: ReactNode;
+  readonly bottomEnd?: ReactNode;
+}
+
+/**
+ * The table and its controls in a bar above and a bar below, like
+ * `renderDataTable`: page size, search, filters, column menu and tools on
+ * top; filter chips and bulk actions; the table; info and pages below.
+ */
+export function DataTableLayout<TData>(props: DataTableLayoutProps<TData>): ReactElement {
+  const {
+    pageSizes, search = true, searchPlaceholder, debounceMs, filters = true, columnToggle = true, tools = [], bulkActions = [],
+    paging = {}, topStart, topEnd, bottomStart, bottomEnd, size = 'md', ...tableProps
+  } = props;
+  const { table, labels, locale = 'en' } = props;
+  const hasFilters = filters && filterControls(table.getColumns()).length > 0;
+  const bar = (position: 'top' | 'bottom', start: ReactNode[], end: ReactNode[]): ReactElement =>
+    h('div', { className: `adt-bar adt-${position}` }, h('div', { className: 'adt-bar-start' }, ...start), h('div', { className: 'adt-bar-end' }, ...end));
+  return h('div', { className: size === 'md' ? 'adt' : `adt adt-size--${size}` },
+    bar('top', [
+      h(PageSize, { key: 'size', table, ...(pageSizes ? { pageSizes } : {}), ...(labels ? { labels } : {}) }),
+      search ? h('div', { key: 'search', className: 'adt-feature adt-feature--search' },
+        h(Search, { table, ...(searchPlaceholder ? { placeholder: searchPlaceholder } : {}), ...(debounceMs !== undefined ? { debounceMs } : {}), ...(labels ? { labels } : {}) })) : null,
+      topStart ?? null,
+    ], [
+      topEnd ?? null,
+      hasFilters ? h(Filters, { key: 'filters', table, locale, ...(labels ? { labels } : {}) }) : null,
+      columnToggle ? h(ColumnToggle, { key: 'columns', table, ...(labels ? { labels } : {}) }) : null,
+      tools.length > 0 ? h(Tools, { key: 'tools', items: tools, ...(labels ? { labels } : {}) }) : null,
+    ]),
+    hasFilters ? h(FilterChips, { table, locale, ...(labels ? { labels } : {}) }) : null,
+    bulkActions.length > 0 ? h(BulkActions<TData>, { table, actions: bulkActions, ...(labels ? { labels } : {}) }) : null,
+    h(DataTable<TData>, tableProps as DataTableProps<TData>),
+    bar('bottom', [h(PageInfo, { key: 'info', table, ...(labels ? { labels } : {}) }), bottomStart ?? null],
+      [bottomEnd ?? null, h(Pagination, { key: 'paging', table, locale, ...paging, ...(labels ? { labels } : {}) })]));
 }

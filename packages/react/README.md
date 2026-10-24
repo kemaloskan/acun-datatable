@@ -66,6 +66,8 @@ on every table event through `useSyncExternalStore`.
 
 | Component | Props |
 |---|---|
+| `DataTableLayout` | every `DataTable` prop plus `pageSizes`, `search`, `searchPlaceholder`, `debounceMs`, `filters`, `columnToggle`, `tools`, `bulkActions`, `paging`, `topStart`, `topEnd`, `bottomStart`, `bottomEnd` |
+| `Filters` · `FilterChips` · `Tools` | `table`, `labels`, `locale` · `items` |
 | `DataTable` | `table`, `caption`, `selectable`, `locale`, `labels`, `format`, `cells`, `empty`, `rowLabel`, `rowActions`, `status`, `responsive`, `size` |
 | `Pagination` | `table`, `siblings`, `boundaries`, `firstLast`, `locale`, `labels` |
 | `PageSize` | `table`, `pageSizes`, `labels` |

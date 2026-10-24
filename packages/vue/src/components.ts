@@ -4,7 +4,7 @@ import {
 } from 'vue';
 import { getPageItems, type ColumnDef, type DataTable, type Row } from '@acunsoft/datatable-core';
 import {
-  cellValue, checkPageSizes, checkResponsive, checkSize, createCellText, ICONS, labelsEn, nextSorting, pageInfoText,
+  cellValue, checkPageSizes, checkResponsive, checkSize, filterControls, createCellText, ICONS, labelsEn, nextSorting, pageInfoText,
   numeric, pageSizeChoices, priorityOf, renderFilterChips, renderFilters, renderMenu, rowName, scrollHeight,
   type MenuItem, type RenderedComponent, type ResponsiveMode, type TableSize,
   type BulkAction, type BulkSelection, type CellFormatter, type DataTableLabels, type RowAction, type StatusSource,
@@ -529,5 +529,61 @@ export const AcunTools = defineComponent({
     watch(() => [props.items, props.label], mount);
     onScopeDispose(() => part?.destroy());
     return (): VNode => h('div', { ref: host, class: 'adt-feature' });
+  },
+});
+
+/**
+ * The table and its controls in a bar above and a bar below, like
+ * `renderDataTable`: page size, search, filters, column menu and tools on
+ * top; filter chips and bulk actions; the table; info and pages below. Other
+ * attributes go to `AcunDataTable` (caption, selectable, rowActions,
+ * responsive, stickyHeader, …), and so do its cell slots. Slots `top-start`,
+ * `top-end`, `bottom-start` and `bottom-end` add your own controls.
+ */
+export const AcunDataTableLayout = defineComponent({
+  name: 'AcunDataTableLayout',
+  inheritAttrs: false,
+  props: {
+    table: tableProp,
+    labels: labelsProp,
+    locale: { type: String, default: 'en' },
+    pageSizes: { type: Array as PropType<readonly number[]>, default: () => [10, 25, 50, 100] },
+    search: { type: Boolean, default: true },
+    searchPlaceholder: { type: String, default: undefined },
+    debounceMs: { type: Number, default: 250 },
+    filters: { type: Boolean, default: true },
+    columnToggle: { type: Boolean, default: true },
+    tools: { type: Array as PropType<readonly MenuItem[]>, default: () => [] },
+    bulkActions: { type: Array as PropType<readonly BulkAction<never>[]>, default: () => [] },
+    paging: { type: Object as PropType<{ siblings?: number; boundaries?: number; firstLast?: boolean }>, default: () => ({}) },
+    size: {
+      type: String as PropType<TableSize>, default: 'md',
+      validator: (value: unknown) => { try { checkSize(value); return true; } catch { return false; } },
+    },
+  },
+  setup(props, { attrs, slots }) {
+    return (): VNode => {
+      const common = { table: props.table, labels: props.labels };
+      const hasFilters = props.filters && filterControls(props.table.getColumns()).length > 0;
+      const tableSlots = Object.fromEntries(Object.entries(slots).filter(([name]) => name === 'cell' || name === 'empty' || name.startsWith('cell-')));
+      const bar = (position: 'top' | 'bottom', start: (VNode | null | VNode[] | undefined)[], end: (VNode | null | VNode[] | undefined)[]): VNode =>
+        h('div', { class: `adt-bar adt-${position}` }, [h('div', { class: 'adt-bar-start' }, start.flat()), h('div', { class: 'adt-bar-end' }, end.flat())]);
+      return h('div', { class: props.size === 'md' ? 'adt' : `adt adt-size--${props.size}` }, [
+        bar('top', [
+          h(AcunPageSize, { ...common, pageSizes: props.pageSizes }),
+          props.search ? h('div', { class: 'adt-feature adt-feature--search' }, [h(AcunSearch, { ...common, debounceMs: props.debounceMs, ...(props.searchPlaceholder !== undefined ? { placeholder: props.searchPlaceholder } : {}) })]) : null,
+          slots['top-start']?.(),
+        ], [
+          slots['top-end']?.(),
+          hasFilters ? h(AcunFilters, { ...common, locale: props.locale }) : null,
+          props.columnToggle ? h(AcunColumnToggle, common) : null,
+          props.tools.length > 0 ? h(AcunTools, { items: props.tools, labels: props.labels }) : null,
+        ]),
+        hasFilters ? h(AcunFilterChips, { ...common, locale: props.locale }) : null,
+        props.bulkActions.length > 0 ? h(AcunBulkActions, { ...common, actions: props.bulkActions }) : null,
+        h(AcunDataTable, { ...attrs, ...common, locale: props.locale }, tableSlots),
+        bar('bottom', [h(AcunPageInfo, common), slots['bottom-start']?.()], [slots['bottom-end']?.(), h(AcunPagination, { ...common, ...props.paging, locale: props.locale })]),
+      ]);
+    };
   },
 });

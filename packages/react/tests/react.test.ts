@@ -3,7 +3,7 @@ import { act, createElement as h, StrictMode, useState, type ReactElement } from
 import { createRoot, type Root } from 'react-dom/client';
 import { createDataTable, type ColumnDef, type Row } from '@acunsoft/datatable-core';
 import {
-  BulkActions, ColumnToggle, DataTable, FilterChips, Filters, PageInfo, PageSize, Pagination, Search, Tools, labelsTr, useDataTable, type BulkSelection,
+  BulkActions, ColumnToggle, DataTable, DataTableLayout, FilterChips, Filters, PageInfo, PageSize, Pagination, Search, Tools, labelsTr, useDataTable, type BulkSelection,
 } from '../src/index';
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
@@ -258,5 +258,24 @@ describe('tools', () => {
     expect(host.querySelector('.adt-tools summary')!.textContent).toBe('Araçlar');
     click(host.querySelector('[data-action="print"]'));
     expect(onSelect).toHaveBeenCalledOnce();
+  });
+});
+
+describe('DataTableLayout', () => {
+  it('arranges every control around the table', () => {
+    const table = createDataTable<Order>({ data: orders, columns: [
+      { id: 'customer', header: 'Müşteri', accessorKey: 'customer', enableFiltering: true },
+      { id: 'total', header: 'Tutar', accessorKey: 'total', type: 'decimal', enableFiltering: true, filter: true },
+    ] });
+    render(h(DataTableLayout<Order>, {
+      table, labels: labelsTr, locale: 'tr', size: 'lg', caption: 'Siparişler', topEnd: h('button', { className: 'mine' }, 'Yeni'),
+      cells: { customer: ({ text }) => h('strong', null, text) },
+    }));
+    const root = host.querySelector('.adt')!;
+    expect(root.className).toBe('adt adt-size--lg');
+    expect(root.querySelector('.adt-top .adt-bar-end .mine')).not.toBeNull();
+    expect(root.querySelector('.adt-top .adt-bar-end .adt-filters')).not.toBeNull();
+    expect(root.querySelector('tbody strong')!.textContent).toBe('Ayşe');
+    expect(root.querySelector('.adt-bottom .adt-info')!.textContent).toBe('Toplam: 3 kaydın 1 ile 3 arasını gösteriyor');
   });
 });
