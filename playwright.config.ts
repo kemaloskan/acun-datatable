@@ -1,4 +1,8 @@
+import { existsSync } from 'node:fs';
 import { defineConfig, devices } from '@playwright/test';
+
+// The Livewire browser tests need the Laravel package's dependencies (composer install).
+const livewire = existsSync('packages/adapter-laravel/vendor/autoload.php');
 
 // Browser tests for the DOM renderer (SPEC M3). They load the real build output,
 // so `npm run e2e` builds first. Chromium covers Chrome/Edge, WebKit covers
@@ -13,11 +17,20 @@ export default defineConfig({
     baseURL: 'http://127.0.0.1:4173',
     trace: 'retain-on-failure',
   },
-  webServer: {
-    command: 'node e2e/server.mjs',
-    url: 'http://127.0.0.1:4173/e2e/fixtures/table.html',
-    reuseExistingServer: !process.env.CI,
-  },
+  webServer: [
+    {
+      command: 'node e2e/server.mjs',
+      url: 'http://127.0.0.1:4173/e2e/fixtures/table.html',
+      reuseExistingServer: !process.env.CI,
+    },
+    // Livewire tables from the test fixtures (packages/adapter-laravel/workbench).
+    ...(livewire ? [{
+      command: 'php vendor/bin/testbench serve --port=8123',
+      cwd: 'packages/adapter-laravel',
+      url: 'http://127.0.0.1:8123/',
+      reuseExistingServer: !process.env.CI,
+    }] : []),
+  ],
   projects: [
     { name: 'chromium', use: { ...devices['Desktop Chrome'] } },
     {

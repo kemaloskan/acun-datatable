@@ -49,6 +49,14 @@ jobs:
       # --with-deps installs the OS libraries the browsers need (cached browsers
       # still need them on a fresh runner).
       - run: npx playwright install --with-deps chromium firefox webkit
+      # The Livewire browser tests run the Laravel package's workbench app (testbench serve).
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.5'
+          extensions: intl, mbstring, pdo_sqlite, zip
+          coverage: none
+      - run: composer update --no-interaction --no-progress --prefer-dist
+        working-directory: packages/adapter-laravel
       - run: npm run e2e
       - name: Keep traces of failed tests
         if: failure()
