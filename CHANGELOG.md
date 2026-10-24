@@ -45,6 +45,11 @@ npm package's `CHANGELOG.md` has its own notes.
 
 #### Fixed (review before release)
 
+- **MariaDB count time limit:** restoring `max_statement_time` after a count
+  past `countLimit()` failed on MariaDB (it refuses the bound text value), so
+  such a page answered with an error. Found by running the tests on MariaDB
+  10.11; MySQL 8.0 was not affected.
+
 - **Queued tasks:** the worker no longer keeps the user of a job for the jobs
   after it; a guest's task belongs to the guest's session (a leaked link is
   not enough); one task at a time per table and `queuedTaskLimit()` per

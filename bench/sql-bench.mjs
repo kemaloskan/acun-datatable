@@ -202,8 +202,6 @@ async function seed() {
   } else {
     await db.run(`CREATE TABLE adt_perf (id bigint PRIMARY KEY, customer varchar(60), customer_search varchar(60), city varchar(40),
       total decimal(12,2), status varchar(20), ordered_at datetime(3)) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci`);
-    await db.run('CREATE TEMPORARY TABLE adt_digits (d int)');
-    await db.run('INSERT INTO adt_digits VALUES (0),(1),(2),(3),(4),(5),(6),(7),(8),(9)');
   }
   const CHUNK = 1_000_000;
   for (let from = 1; from <= ROWS; from += CHUNK) {
@@ -211,9 +209,11 @@ async function seed() {
     if (dialect === 'postgres') {
       await db.run(`INSERT INTO adt_perf SELECT ${values('n')} FROM generate_series(${from}::bigint, ${to}::bigint) AS n`);
     } else {
-      // A million numbers from six digits (MySQL has no generate_series; the same SQL runs on MariaDB).
+      // A million numbers from six digits (MySQL has no generate_series, and cannot open a temporary
+      // table twice in one query: a CTE; the same SQL runs on MariaDB).
       const n = `(${from} + a.d + b.d * 10 + c.d * 100 + d.d * 1000 + e.d * 10000 + f.d * 100000)`;
-      await db.run(`INSERT INTO adt_perf SELECT ${values(n)} FROM adt_digits a, adt_digits b, adt_digits c, adt_digits d, adt_digits e, adt_digits f WHERE ${n} <= ${to}`);
+      const digits = 'WITH digits (d) AS (SELECT 0 UNION ALL SELECT 1 UNION ALL SELECT 2 UNION ALL SELECT 3 UNION ALL SELECT 4 UNION ALL SELECT 5 UNION ALL SELECT 6 UNION ALL SELECT 7 UNION ALL SELECT 8 UNION ALL SELECT 9)';
+      await db.run(`INSERT INTO adt_perf ${digits} SELECT ${values(n)} FROM digits a, digits b, digits c, digits d, digits e, digits f WHERE ${n} <= ${to}`);
     }
     console.error(`  ${to.toLocaleString('en')} rows`);
   }
