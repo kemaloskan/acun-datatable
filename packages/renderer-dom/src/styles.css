@@ -406,6 +406,26 @@
 .adt-detail-status--error { color: var(--adt-danger, #b42318); }
 .adt-dialog .adt-detail-content { padding: 0.75rem 1.25rem 1.25rem; border-top: 1px solid var(--adt-line); }
 
+/* A queued task (Livewire: large export, queued bulk action) */
+.adt-task {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 0.625rem; margin-bottom: 0.75rem; padding: 0.625rem 0.875rem;
+  color: var(--adt-fg); background: var(--adt-surface); border: 1px solid var(--adt-line); border-radius: var(--adt-radius);
+}
+.adt-task--ready { border-color: color-mix(in srgb, var(--adt-accent) 40%, var(--adt-line)); }
+.adt-task--failed { color: var(--adt-danger); border-color: currentColor; }
+.adt-task-spinner {
+  width: 1rem; height: 1rem; border: 2px solid var(--adt-line); border-top-color: var(--adt-accent); border-radius: 999px;
+  animation: adt-spin 0.8s linear infinite;
+}
+@keyframes adt-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .adt-task-spinner { animation: none; } }
+.adt-task-link { font-weight: 600; color: var(--adt-accent); }
+.adt-task-close {
+  display: inline-flex; margin-left: auto; padding: 0.25rem; color: var(--adt-muted); background: none; border: 0;
+  border-radius: var(--adt-control-radius); cursor: pointer;
+}
+.adt-task-close:hover { color: var(--adt-fg); background: var(--adt-hover); }
+
 /* Editing in place (editable columns, onEdit) */
 .adt-table td.adt-editable { position: relative; }
 .adt-edit {

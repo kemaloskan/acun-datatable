@@ -1411,6 +1411,24 @@ const GUIDES = {
       "TableResponse::for(Order::query())\n    ->columns([...])\n    ->searchEngine(fn (string $search) => Order::search($search)->take(10_000)->keys());"
      ]
     ]
+   },
+   {
+    "id": "queue",
+    "title": {
+     "tr": "Kuyrukta dışa aktarma ve toplu işlem",
+     "en": "Exports and bulk actions in the queue"
+    },
+    "desc": {
+     "tr": "Sınırı aşan dışa aktarma (veya queued() toplu işlem) bir kuyruk işinde, işi başlatan kullanıcı olarak çalışır; kullanıcı çalışmaya devam eder. Dosya hazır olunca yalnızca o kullanıcıya açık, bir saat geçerli imzalı bir indirme bağlantısı çıkar; dosya indirilince silinir.",
+     "en": "An export past the limit (or a queued() bulk action) runs in a queued job as the user who started it, who keeps working. When the file is ready a signed link, valid for an hour and only for that user, appears; the file is deleted once downloaded."
+    },
+    "tabs": [
+     [
+      "Livewire",
+      "php",
+      "protected function queuedExports(): bool { return true; }\nprotected function queuedExportLimit(): int { return 1_000_000; }\n\nprotected function bulkActions(): array\n{\n    return [Action::make('archive')->label('Arşivle')->queued()->handle(fn ($selected) => $selected->update(['archived' => true]))];\n}\n\n// Run a queue worker; schedule: php artisan acun-datatable:prune (daily)"
+     ]
+    ]
    }
   ]
  },
