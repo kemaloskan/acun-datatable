@@ -56,6 +56,10 @@ The rest of this file documents the core API for contributors; the
 [documentation site](https://kemaloskan.github.io/acun-datatable/) and each
 package README cover usage.
 
+## Upgrading
+
+From npm 0.2.x or `acunsoft/datatable-laravel` 0.4: see [UPGRADING.md](UPGRADING.md).
+
 ## Setup
 
 The development standard is **Node.js 24 LTS**, pinned in [`.nvmrc`](.nvmrc).
