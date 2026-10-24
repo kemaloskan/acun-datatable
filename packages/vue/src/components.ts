@@ -4,8 +4,8 @@ import {
 } from 'vue';
 import { getPageItems, type ColumnDef, type DataTable, type Row } from '@acunsoft/datatable-core';
 import {
-  cellValue, checkPageSizes, checkResponsive, checkSize, filterControls, createCellText, ICONS, labelsEn, nextSorting, pageInfoText,
-  numeric, pageSizeChoices, priorityOf, renderFilterChips, renderFilters, renderMenu, rowName, scrollHeight,
+  cellValue, checkPageSizes, checkResponsive, checkSize, confirmed, filterControls, splitActions, createCellText, ICONS, labelsEn, nextSorting, pageInfoText,
+  numeric, pageSizeChoices, priorityOf, rangeOf, renderBulkActions, renderFilterChips, renderFilters, renderMenu, rowName, scrollHeight,
   type MenuItem, type RenderedComponent, type ResponsiveMode, type TableSize,
   type BulkAction, type BulkSelection, type CellFormatter, type DataTableLabels, type RowAction, type StatusSource,
 } from '@acunsoft/datatable-dom';
@@ -20,7 +20,6 @@ type AnyColumn = ColumnDef<any>;
  * it. Inside, they are called with the table's rows.
  */
 type LooseAction = RowAction<unknown>;
-type LooseBulk = BulkAction<unknown>;
 
 let tables = 0;
 const tableProp = {
@@ -78,6 +77,8 @@ export const AcunDataTable = defineComponent({
     stickyHeader: { type: Boolean, default: false },
     /** Shift+click adds a second sort column. Default `true`. */
     multiSort: { type: Boolean, default: true },
+    /** Row actions shown as buttons in the row; the rest go into a "⋮" menu. Default: all. */
+    maxInlineActions: { type: Number, default: Infinity },
     /** A fixed height to scroll inside, header in place (DataTables `scrollY`): `'60vh'`, `480`. */
     scrollY: {
       type: [String, Number] as PropType<string | number>, default: undefined,
@@ -101,6 +102,7 @@ export const AcunDataTable = defineComponent({
     }, { immediate: true });
     onScopeDispose(() => stopStatus?.());
     const uid = `adt-vue-${++tables}`;
+    let anchor: string | undefined;
     // Responsive collapse: open rows. Modal: the row shown in the dialog.
     const expanded = shallowRef<ReadonlySet<string>>(new Set());
     const dialogRow = shallowRef<string | undefined>();
@@ -127,6 +129,15 @@ export const AcunDataTable = defineComponent({
       const buttons = dialog.value?.closest('.adt-table-wrap')?.querySelectorAll<HTMLElement>('.adt-expand') ?? [];
       [...buttons].find(button => button.dataset['row'] === id)?.focus();
     };
+    // One listener closes any open row "⋮" menu on a click outside it.
+    const wrapEl = shallowRef<HTMLElement | null>(null);
+    const closeMenus = (event: Event): void => {
+      wrapEl.value?.querySelectorAll<HTMLDetailsElement>('.adt-row-menu[open]').forEach(menu => {
+        if (!menu.contains(event.target as Node)) menu.open = false;
+      });
+    };
+    onMounted(() => document.addEventListener('click', closeMenus));
+    onScopeDispose(() => { if (typeof document !== 'undefined') document.removeEventListener('click', closeMenus); });
     // Close the dialog when its row leaves the page.
     watch(() => binding.page.value, page => {
       if (dialogRow.value !== undefined && !page.rows.some(row => row.id === dialogRow.value)) closeDialog();
@@ -180,14 +191,45 @@ export const AcunDataTable = defineComponent({
         head.push(h('th', { scope: 'col', class: `adt-th adt-actions${collapsible ? ' adt-col--p2' : ''}`, key: '__actions' }, label.actions));
       }
       const span = columns.length + (props.selectable ? 1 : 0) + (actions.length > 0 ? 1 : 0) + (collapsible ? 1 : 0);
-      const actionButtons = (row: AnyRow, name: string): VNode[] => actions.filter(action => action.hidden?.(row) !== true).map(action => {
-        const disabled = action.disabled?.(row) === true;
-        return h('button', {
-          type: 'button', class: 'adt-action', 'data-action': action.id, key: action.id,
-          'aria-label': label.rowAction(action.label, name), 'aria-disabled': disabled ? 'true' : undefined,
-          onClick: () => { if (!disabled) action.onSelect(row); },
-        }, action.label);
-      });
+      // Buttons in the row, the rest in a "⋮" menu; icons, danger colour and a confirm question.
+      const actionButtons = (row: AnyRow, name: string, maxInline = props.maxInlineActions): VNode[] => {
+        const { inline, menu } = splitActions(actions, row, maxInline);
+        const run = (action: LooseAction, disabled: boolean): void => { if (!disabled && confirmed(action, row)) action.onSelect(row); };
+        const buttons: VNode[] = inline.map(action => {
+          const disabled = action.disabled?.(row) === true;
+          const iconOnly = action.iconOnly === true && action.icon !== undefined;
+          return h('button', {
+            type: 'button', key: action.id, 'data-action': action.id,
+            class: ['adt-action', iconOnly ? 'adt-action--icon' : '', action.danger ? 'adt-action--danger' : ''].filter(Boolean).join(' '),
+            'aria-label': label.rowAction(action.label, name), title: iconOnly ? action.label : undefined,
+            'aria-disabled': disabled ? 'true' : undefined, onClick: () => run(action, disabled),
+          }, [action.icon ? iconNode(action.icon) : null, iconOnly ? null : h('span', action.label)]);
+        });
+        if (menu.length > 0) {
+          buttons.push(h('details', {
+            class: 'adt-row-menu', key: '__menu',
+            onKeydown: (event: KeyboardEvent) => {
+              const details = event.currentTarget as HTMLDetailsElement;
+              if (event.key === 'Escape' && details.open) { details.open = false; details.querySelector('summary')?.focus(); }
+            },
+          }, [
+            h('summary', { class: 'adt-action adt-action--icon', 'aria-label': label.moreActions(name), title: label.moreActions(name) }, [iconNode('more')]),
+            h('div', { class: 'adt-menu-list' }, menu.map(action => {
+              const disabled = action.disabled?.(row) === true;
+              return h('button', {
+                type: 'button', key: action.id, 'data-action': action.id, class: action.danger ? 'adt-menu-item adt-menu-item--danger' : 'adt-menu-item',
+                'aria-label': label.rowAction(action.label, name), 'aria-disabled': disabled ? 'true' : undefined,
+                onClick: (event: MouseEvent) => {
+                  const details = (event.currentTarget as HTMLElement).closest('details');
+                  if (details) details.open = false;
+                  run(action, disabled);
+                },
+              }, [action.icon ? iconNode(action.icon) : null, h('span', action.label)]);
+            })),
+          ]));
+        }
+        return buttons;
+      };
       const contentOf = (column: AnyColumn, row: AnyRow, text: string): unknown => {
         const slot = slots[`cell-${column.id}`] ?? slots.cell;
         return slot ? slot({ column, row, value: cellValue(column, row), text }) : text;
@@ -203,7 +245,7 @@ export const AcunDataTable = defineComponent({
         }),
         actions.length > 0
           ? h('div', { class: all ? 'adt-detail-item' : 'adt-detail-item adt-col--p2', key: '__actions' }, [
-            h('dt', label.actions), h('dd', { class: 'adt-detail-actions' }, actionButtons(row, name)),
+            h('dt', label.actions), h('dd', { class: 'adt-detail-actions' }, actionButtons(row, name, Infinity)),
           ])
           : null,
       ]);
@@ -243,7 +285,19 @@ export const AcunDataTable = defineComponent({
         }
         if (props.selectable) {
           cells.push(h('td', { class: 'adt-select' }, [h('input', {
-            type: 'checkbox', 'aria-label': label.selectRow(name), checked: selected, onChange: () => table.toggleRow(row.id),
+            type: 'checkbox', 'aria-label': label.selectRow(name), checked: selected,
+            // Shift+click selects (or clears) every row between the last clicked one and this one.
+            onClick: (event: MouseEvent) => {
+              const from = anchor;
+              anchor = row.id;
+              if (event.shiftKey && from !== undefined && from !== row.id && table.getSelectionMode() === 'multiple') {
+                const ids = rangeOf(pageIds, from, row.id);
+                if ((event.currentTarget as HTMLInputElement).checked) table.selectRows(ids);
+                else table.setSelectedRows(table.getState().selectedIds.filter(id => !ids.includes(id)));
+              } else {
+                table.toggleRow(row.id);
+              }
+            },
           })]));
         }
         columns.forEach((column, index) => {
@@ -282,7 +336,7 @@ export const AcunDataTable = defineComponent({
         props.stickyHeader ? 'adt-sticky-header' : '', height ? 'adt-scroll-y' : '', busy ? 'adt-loading' : ''].filter(Boolean).join(' ');
       const tableClass = ['adt-table', collapsible && levels.has(2) ? 'adt-has-p2' : '', collapsible && levels.has(3) ? 'adt-has-p3' : '']
         .filter(Boolean).join(' ');
-      return h('div', { class: wrapClass, style: height ? { '--adt-scroll-y': height } : undefined, 'aria-busy': props.status ? String(busy) : undefined }, [
+      return h('div', { ref: wrapEl, class: wrapClass, style: height ? { '--adt-scroll-y': height } : undefined, 'aria-busy': props.status ? String(busy) : undefined }, [
         notice,
         h('div', { class: 'adt-scroll' }, [h('table', { class: tableClass }, [
           props.caption !== undefined ? h('caption', props.caption) : null,
@@ -300,10 +354,10 @@ export const AcunDataTable = defineComponent({
   },
 });
 
-const iconNode = (name: keyof typeof ICONS): VNode => h('svg', {
+const iconNode = (name: keyof typeof ICONS | { readonly path: string }): VNode => h('svg', {
   class: 'adt-icon', viewBox: '0 0 24 24', width: 16, height: 16, fill: 'none', stroke: 'currentColor', 'stroke-width': 2,
   'stroke-linecap': 'round', 'stroke-linejoin': 'round', 'aria-hidden': 'true', focusable: 'false',
-}, [h('path', { d: ICONS[name] })]);
+}, [h('path', { d: typeof name === 'string' ? ICONS[name] : name.path })]);
 
 /**
  * Numbered pages: `‹ 1 … 4 5 6 … 20 ›`, with a fixed number of buttons while
@@ -460,33 +514,28 @@ export const AcunColumnToggle = defineComponent({
   },
 });
 
-/** A bar for the selected rows: "3 selected", action buttons, "Clear selection". Hidden without a selection. */
+/**
+ * A bar for actions on the selected rows (see `renderBulkActions`): "N
+ * selected", the actions, "Select all N matching" and "Clear selection".
+ */
 export const AcunBulkActions = defineComponent({
   name: 'AcunBulkActions',
   props: {
     table: tableProp,
-    actions: { type: Array as PropType<readonly BulkAction<never>[]>, required: true as const },
+    actions: { type: Array as PropType<readonly BulkAction<never>[]>, required: true },
     labels: labelsProp,
   },
   setup(props) {
-    const binding = useTable(props.table);
-    return (): VNode => {
-      const label = withLabels(props.labels);
-      const ids = binding.state.value.selectedIds;
-      const selection: BulkSelection<unknown> = { ids, rows: props.table.getSelectedRows() };
-      return h('div', { class: 'adt-selection', role: 'group', 'aria-label': label.bulkActions, hidden: ids.length === 0 }, [
-        h('span', { class: 'adt-selection-count', role: 'status', 'aria-live': 'polite' }, ids.length === 0 ? '' : label.selectedCount(ids.length)),
-        ...(props.actions as readonly LooseBulk[]).map(action => {
-          const disabled = action.disabled?.(selection) === true;
-          return h('button', {
-            type: 'button', class: 'adt-bulk-action', 'data-action': action.id, key: action.id,
-            'aria-disabled': disabled ? 'true' : undefined,
-            onClick: () => { if (!disabled) action.onSelect(selection); },
-          }, action.label);
-        }),
-        h('button', { type: 'button', class: 'adt-clear-selection', onClick: () => props.table.clearSelection() }, label.clearSelection),
-      ]);
+    const host = shallowRef<HTMLElement | null>(null);
+    let part: RenderedComponent | undefined;
+    const mount = (): void => {
+      part?.destroy();
+      if (host.value) part = renderBulkActions(host.value, props.table, { actions: props.actions as readonly BulkAction<unknown>[], labels: withLabels(props.labels) });
     };
+    onMounted(mount);
+    watch(() => [props.actions, props.labels], mount);
+    onScopeDispose(() => part?.destroy());
+    return (): VNode => h('div', { ref: host, class: 'adt-feature' });
   },
 });
 

@@ -4,8 +4,8 @@ import {
 } from 'react';
 import { getPageItems, type ColumnDef, type DataTable, type Row } from '@acunsoft/datatable-core';
 import {
-  cellValue, checkPageSizes, checkResponsive, checkSize, filterControls, createCellText, ICONS, labelsEn, nextSorting, pageInfoText,
-  numeric, pageSizeChoices, priorityOf, renderFilterChips, renderFilters, renderMenu, rowName, scrollHeight,
+  cellValue, checkPageSizes, checkResponsive, checkSize, confirmed, filterControls, splitActions, createCellText, ICONS, labelsEn, nextSorting, pageInfoText,
+  numeric, pageSizeChoices, priorityOf, rangeOf, renderBulkActions, renderFilterChips, renderFilters, renderMenu, rowName, scrollHeight,
   type MenuItem, type RenderedComponent, type ResponsiveMode, type TableSize,
   type BulkAction, type BulkSelection, type CellFormatter, type DataTableLabels, type RowAction, type StatusSource,
 } from '@acunsoft/datatable-dom';
@@ -51,6 +51,8 @@ export interface DataTableProps<TData> {
   readonly stickyHeader?: boolean;
   /** Shift+click adds a second sort column. Default `true`. */
   readonly multiSort?: boolean;
+  /** Row actions shown as buttons in the row; the rest go into a "⋮" menu. Default: all. */
+  readonly maxInlineActions?: number;
   /** A fixed height to scroll inside, header in place (DataTables `scrollY`): `'60vh'`, `480`. */
   readonly scrollY?: string | number;
 }
@@ -100,6 +102,7 @@ export function DataTable<TData>(props: DataTableProps<TData>): ReactElement {
   const [dialogRow, setDialogRow] = useState<string | undefined>();
   const dialog = useRef<HTMLDialogElement>(null);
   const wrap = useRef<HTMLDivElement>(null);
+  const anchor = useRef<string | undefined>(undefined);
   const dialogVisible = dialogRow !== undefined && pageIds.includes(dialogRow);
   useEffect(() => {
     const node = dialog.current;
@@ -112,6 +115,16 @@ export function DataTable<TData>(props: DataTableProps<TData>): ReactElement {
       else node.removeAttribute('open');
     }
   }, [dialogVisible]);
+  // One listener closes any open row "⋮" menu on a click outside it.
+  useEffect(() => {
+    const close = (event: Event): void => {
+      wrap.current?.querySelectorAll<HTMLDetailsElement>('.adt-row-menu[open]').forEach(menu => {
+        if (!menu.contains(event.target as Node)) menu.open = false;
+      });
+    };
+    document.addEventListener('click', close);
+    return () => document.removeEventListener('click', close);
+  }, []);
   const closeDialog = (): void => {
     const node = dialog.current;
     if (node?.open && typeof node.close === 'function') node.close();
@@ -126,14 +139,43 @@ export function DataTable<TData>(props: DataTableProps<TData>): ReactElement {
   const levels = new Set(columns.map((column, index) => priorityOf(column, index)));
   if (rowActions.length > 0) levels.add(2);
   const span = columns.length + (selectable ? 1 : 0) + (rowActions.length > 0 ? 1 : 0) + (collapsible ? 1 : 0);
-  const actionButtons = (row: Row<TData>, name: string): ReactNode[] => rowActions.filter(action => action.hidden?.(row) !== true).map(action => {
-    const disabled = action.disabled?.(row) === true;
-    return h('button', {
-      type: 'button', className: 'adt-action', 'data-action': action.id, key: action.id,
-      'aria-label': labels.rowAction(action.label, name), 'aria-disabled': disabled ? 'true' : undefined,
-      onClick: () => { if (!disabled) action.onSelect(row); },
-    }, action.label);
-  });
+  // Buttons in the row, the rest in a "⋮" menu; icons, danger colour and a confirm question.
+  const actionButtons = (row: Row<TData>, name: string, maxInline = props.maxInlineActions ?? Infinity): ReactNode[] => {
+    const { inline, menu } = splitActions(rowActions, row, maxInline);
+    const run = (action: RowAction<TData>, disabled: boolean): void => { if (!disabled && confirmed(action, row)) action.onSelect(row); };
+    const buttons: ReactNode[] = inline.map(action => {
+      const disabled = action.disabled?.(row) === true;
+      const iconOnly = action.iconOnly === true && action.icon !== undefined;
+      return h('button', {
+        type: 'button', key: action.id, 'data-action': action.id,
+        className: ['adt-action', iconOnly ? 'adt-action--icon' : '', action.danger ? 'adt-action--danger' : ''].filter(Boolean).join(' '),
+        'aria-label': labels.rowAction(action.label, name), title: iconOnly ? action.label : undefined,
+        'aria-disabled': disabled ? 'true' : undefined, onClick: () => run(action, disabled),
+      }, action.icon ? icon(action.icon) : null, iconOnly ? null : h('span', null, action.label));
+    });
+    if (menu.length > 0) {
+      buttons.push(h('details', {
+        className: 'adt-row-menu', key: '__menu',
+        onKeyDown: (event: KeyboardEvent<HTMLDetailsElement>) => {
+          if (event.key === 'Escape' && event.currentTarget.open) { event.currentTarget.open = false; event.currentTarget.querySelector('summary')?.focus(); }
+        },
+      },
+      h('summary', { className: 'adt-action adt-action--icon', 'aria-label': labels.moreActions(name), title: labels.moreActions(name) }, icon('more')),
+      h('div', { className: 'adt-menu-list' }, menu.map(action => {
+        const disabled = action.disabled?.(row) === true;
+        return h('button', {
+          type: 'button', key: action.id, 'data-action': action.id, className: action.danger ? 'adt-menu-item adt-menu-item--danger' : 'adt-menu-item',
+          'aria-label': labels.rowAction(action.label, name), 'aria-disabled': disabled ? 'true' : undefined,
+          onClick: (event: MouseEvent) => {
+            const details = (event.currentTarget as HTMLElement).closest('details');
+            if (details) details.open = false;
+            run(action, disabled);
+          },
+        }, action.icon ? icon(action.icon) : null, h('span', null, action.label));
+      }))));
+    }
+    return buttons;
+  };
   const contentOf = (column: ColumnDef<TData>, row: Row<TData>, value: string): ReactNode => {
     const render = props.cells?.[column.id];
     return render ? render({ column, row, value: cellValue(column, row), text: value }) : value;
@@ -148,7 +190,7 @@ export function DataTable<TData>(props: DataTableProps<TData>): ReactElement {
     }),
     rowActions.length > 0
       ? h('div', { className: all ? 'adt-detail-item' : 'adt-detail-item adt-col--p2', key: '__actions' },
-        h('dt', null, labels.actions), h('dd', { className: 'adt-detail-actions' }, actionButtons(row, name)))
+        h('dt', null, labels.actions), h('dd', { className: 'adt-detail-actions' }, actionButtons(row, name, Infinity)))
       : null);
 
   const head: ReactNode[] = [];
@@ -220,7 +262,19 @@ export function DataTable<TData>(props: DataTableProps<TData>): ReactElement {
     }
     if (selectable) {
       cells.push(h('td', { className: 'adt-select', key: '__select' }, h('input', {
-        type: 'checkbox', 'aria-label': labels.selectRow(name), checked: selected, onChange: () => table.toggleRow(row.id),
+        type: 'checkbox', 'aria-label': labels.selectRow(name), checked: selected, onChange: () => undefined,
+        // Shift+click selects (or clears) every row between the last clicked one and this one.
+        onClick: (event: MouseEvent<HTMLInputElement>) => {
+          const from = anchor.current;
+          anchor.current = row.id;
+          if (event.shiftKey && from !== undefined && from !== row.id && table.getSelectionMode() === 'multiple') {
+            const ids = rangeOf(pageIds, from, row.id);
+            if (event.currentTarget.checked) table.selectRows(ids);
+            else table.setSelectedRows(table.getState().selectedIds.filter(id => !ids.includes(id)));
+          } else {
+            table.toggleRow(row.id);
+          }
+        },
       })));
     }
     columns.forEach((column, index) => {
@@ -274,10 +328,10 @@ export function DataTable<TData>(props: DataTableProps<TData>): ReactElement {
       : null);
 }
 
-const icon = (name: keyof typeof ICONS): ReactElement => h('svg', {
+const icon = (name: keyof typeof ICONS | { readonly path: string }): ReactElement => h('svg', {
   className: 'adt-icon', viewBox: '0 0 24 24', width: 16, height: 16, fill: 'none', stroke: 'currentColor', strokeWidth: 2,
   strokeLinecap: 'round', strokeLinejoin: 'round', 'aria-hidden': 'true', focusable: 'false',
-}, h('path', { d: ICONS[name] }));
+}, h('path', { d: typeof name === 'string' ? ICONS[name] : name.path }));
 
 export interface PaginationProps {
   readonly table: AnyTable;
@@ -426,23 +480,13 @@ export interface BulkActionsProps<TData> {
   readonly labels?: Partial<DataTableLabels>;
 }
 
-/** A bar for the selected rows: "3 selected", action buttons, "Clear selection". Hidden without a selection. */
-export function BulkActions<TData>({ table, actions, labels: custom }: BulkActionsProps<TData>): ReactElement {
-  const { state } = useTable(table);
-  const labels = withLabels(custom);
-  const ids = state.selectedIds;
-  const selection: BulkSelection<TData> = { ids, rows: table.getSelectedRows() };
-  return h('div', { className: 'adt-selection', role: 'group', 'aria-label': labels.bulkActions, hidden: ids.length === 0 },
-    h('span', { className: 'adt-selection-count', role: 'status', 'aria-live': 'polite' }, ids.length === 0 ? '' : labels.selectedCount(ids.length)),
-    actions.map(action => {
-      const disabled = action.disabled?.(selection) === true;
-      return h('button', {
-        type: 'button', className: 'adt-bulk-action', 'data-action': action.id, key: action.id,
-        'aria-disabled': disabled ? 'true' : undefined,
-        onClick: () => { if (!disabled) action.onSelect(selection); },
-      }, action.label);
-    }),
-    h('button', { type: 'button', className: 'adt-clear-selection', onClick: () => table.clearSelection() }, labels.clearSelection));
+/**
+ * A bar for actions on the selected rows (see `renderBulkActions`): "N
+ * selected", the actions, "Select all N matching" and "Clear selection".
+ */
+export function BulkActions<TData>({ table, actions, labels }: BulkActionsProps<TData>): ReactElement {
+  const host = useDomControl(el => renderBulkActions(el, table, { actions, labels: withLabels(labels) }), [table, actions, JSON.stringify(labels ?? {})]);
+  return h('div', { ref: host, className: 'adt-feature' });
 }
 
 export interface FiltersProps {

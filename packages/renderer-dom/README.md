@@ -122,8 +122,19 @@ renderBulkActions(document.querySelector('#bulk')!, table, {
   "3 selected" status, the action buttons and "Clear selection". `onSelect`
   receives `{ ids, rows }`: every selected ID (also on other pages in server
   mode) and the selected rows the table holds.
-- Asking for confirmation, authorization and the actual change are up to your
-  handler; the renderer never deletes anything itself.
+- **Icons, danger and confirm:** `icon: 'view' | 'edit' | 'delete' | 'copy' |
+  'check' | 'download'` or `{ path }` (your own 24×24 SVG path), `iconOnly`
+  (the label becomes the accessible name and tooltip), `danger` (red) and
+  `confirm: 'Delete?'` or `row => …` (asked with the browser's confirm).
+- **`maxInlineActions: 2`** keeps the first actions as buttons and moves the
+  rest into a "⋮" menu (Escape or a click outside closes it).
+- **Selection:** Shift+click on a row checkbox selects or clears the range
+  from the last clicked row. Once the whole page is selected and more rows
+  match, the bar offers "Select all N matching": locally it selects them; in
+  server mode `onSelect` then gets `{ allMatching: true, query }` so you can
+  apply the action on the server with the same filters.
+- Authorization and the actual change are up to your handler; the renderer
+  never deletes anything itself.
 
 ## `renderColumnToggle(container, table, options?)`
 

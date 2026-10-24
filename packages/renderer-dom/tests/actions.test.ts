@@ -126,3 +126,84 @@ describe('renderBulkActions', () => {
     expect(bar.children).toHaveLength(0);
   });
 });
+
+describe('row action icons, danger, confirm and the overflow menu', () => {
+  it('shows icons, keeps the first actions in the row and moves the rest into a ⋮ menu', async () => {
+    const { createDataTable } = await import('@acunsoft/datatable-core');
+    const { renderTable } = await import('../src/index');
+    const host = document.body.appendChild(document.createElement('div'));
+    const remove = vi.fn();
+    const archive = vi.fn();
+    const table = createDataTable({ data: [{ id: 1, name: 'Ayşe' }], columns: [{ id: 'name', header: 'Name', accessorKey: 'name' }] });
+    renderTable(host, table, {
+      maxInlineActions: 1,
+      rowActions: [
+        { id: 'view', label: 'View', icon: 'view', iconOnly: true, onSelect: vi.fn() },
+        { id: 'archive', label: 'Archive', icon: { path: 'M1 1h22' }, onSelect: archive },
+        { id: 'delete', label: 'Delete', icon: 'delete', danger: true, confirm: row => `Delete ${String((row.original as { name: string }).name)}?`, onSelect: remove },
+      ],
+    });
+    const view = host.querySelector<HTMLButtonElement>('[data-action="view"]')!;
+    expect(view.className).toBe('adt-action adt-action--icon');
+    expect(view.getAttribute('title')).toBe('View');
+    expect(view.textContent).toBe('');
+    const more = host.querySelector('.adt-row-menu summary')!;
+    expect(more.getAttribute('aria-label')).toBe('More actions: Ayşe');
+    expect([...host.querySelectorAll('.adt-row-menu .adt-menu-item')].map(item => item.textContent)).toEqual(['Archive', 'Delete']);
+    expect(host.querySelector('.adt-row-menu [data-action="delete"]')!.className).toBe('adt-menu-item adt-menu-item--danger');
+
+    const confirm = vi.spyOn(window, 'confirm').mockReturnValueOnce(false).mockReturnValueOnce(true);
+    host.querySelector<HTMLButtonElement>('.adt-row-menu [data-action="delete"]')!.click();
+    expect(confirm).toHaveBeenLastCalledWith('Delete Ayşe?');
+    expect(remove).not.toHaveBeenCalled();
+    host.querySelector<HTMLButtonElement>('.adt-row-menu [data-action="delete"]')!.click();
+    expect(remove).toHaveBeenCalledOnce();
+    host.querySelector<HTMLDetailsElement>('.adt-row-menu')!.open = true;
+    document.body.click();
+    expect(host.querySelector<HTMLDetailsElement>('.adt-row-menu')!.open).toBe(false); // a click outside closes it
+  });
+});
+
+describe('range selection and every matching row', () => {
+  it('selects a range with Shift+click and offers every matching row', async () => {
+    const { createDataTable } = await import('@acunsoft/datatable-core');
+    const { renderBulkActions, renderTable, labelsTr } = await import('../src/index');
+    const host = document.body.appendChild(document.createElement('div'));
+    const bar = document.body.appendChild(document.createElement('div'));
+    const rows = Array.from({ length: 30 }, (_, i) => ({ id: i + 1, name: `R${i + 1}` }));
+    const table = createDataTable({ data: rows, columns: [{ id: 'name', header: 'Name', accessorKey: 'name', enableFiltering: true }], initialState: { pageSize: 10 } });
+    renderTable(host, table, { selectable: true });
+    renderBulkActions(bar, table, { actions: [{ id: 'go', label: 'Go', onSelect: () => undefined }], labels: labelsTr });
+    const boxes = () => [...host.querySelectorAll<HTMLInputElement>('tbody input[type="checkbox"]')];
+    boxes()[1]!.click();
+    boxes()[5]!.dispatchEvent(new MouseEvent('click', { shiftKey: true, bubbles: true, cancelable: true }));
+    expect(table.getState().selectedIds).toEqual(['2', '3', '4', '5', '6']);
+    boxes()[3]!.dispatchEvent(new MouseEvent('click', { shiftKey: true, bubbles: true, cancelable: true })); // unticks 6 → 4
+    expect(table.getState().selectedIds).toEqual(['2', '3']);
+
+    host.querySelector<HTMLInputElement>('thead input[type="checkbox"]')!.click(); // the whole page
+    const matching = bar.querySelector<HTMLButtonElement>('.adt-select-matching')!;
+    expect(matching.hidden).toBe(false);
+    expect(matching.textContent).toBe('Eşleşen 30 kaydın tümünü seç');
+    matching.click(); // local: selects them
+    expect(table.getState().selectedIds).toHaveLength(30);
+    expect(matching.hidden).toBe(true);
+  });
+
+  it('passes allMatching and the query to bulk actions in server mode', async () => {
+    const { createDataTable } = await import('@acunsoft/datatable-core');
+    const { renderBulkActions, labelsTr } = await import('../src/index');
+    const bar = document.body.appendChild(document.createElement('div'));
+    const table = createDataTable<{ id: number }>({ mode: 'server', columns: [{ id: 'id', header: 'ID', accessorKey: 'id', enableFiltering: true }], initialState: { pageSize: 2 } });
+    table.setPageResult({ rows: [{ id: 1 }, { id: 2 }], totalRows: 500 });
+    const onSelect = vi.fn();
+    renderBulkActions(bar, table, { actions: [{ id: 'go', label: 'Go', onSelect }], labels: labelsTr });
+    table.selectRows(['1', '2']);
+    bar.querySelector<HTMLButtonElement>('.adt-select-matching')!.click();
+    expect(bar.querySelector('.adt-selection-count')!.textContent).toBe('Eşleşen 500 kaydın tümü seçili');
+    bar.querySelector<HTMLButtonElement>('[data-action="go"]')!.click();
+    expect(onSelect).toHaveBeenCalledWith(expect.objectContaining({ allMatching: true, ids: ['1', '2'], query: expect.objectContaining({ page: 1 }) }));
+    table.setGlobalSearch('x'); // a new query ends it
+    expect(bar.querySelector('.adt-selection-count')!.textContent).not.toContain('tümü seçili');
+  });
+});

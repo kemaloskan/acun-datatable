@@ -72,6 +72,8 @@ export interface RenderTableOptions<TData> {
    * the column's value.
    */
   readonly cells?: Readonly<Record<string, CellRenderer<TData>>>;
+  /** Row actions shown as buttons in the row; the rest go into a "⋮" menu. Default: all in the row. */
+  readonly maxInlineActions?: number;
 }
 
 /** What a custom cell gets. */
@@ -172,6 +174,13 @@ export function renderTable<TData>(
   const notice = element(doc, 'div', { class: 'adt-notice', role: 'status', 'aria-live': 'polite' });
   root.append(notice, scroller);
   container.replaceChildren(root);
+  // One listener closes any open row "⋮" menu on a click outside it.
+  const closeMenus = (event: Event): void => {
+    root.querySelectorAll<HTMLDetailsElement>('.adt-row-menu[open]').forEach(menu => {
+      if (!menu.contains(event.target as Node)) menu.open = false;
+    });
+  };
+  doc.addEventListener('click', closeMenus);
 
   // Responsive collapse: rows whose details are open (kept across re-renders).
   const expanded = new Set<string>();
@@ -194,7 +203,7 @@ export function renderTable<TData>(
     });
     if (rowActions.length > 0) {
       const item = element(doc, 'div', { class: `adt-detail-item${all ? '' : ' adt-col--p2'}` });
-      const actions = actionCell(doc, rowActions, row, nameOf(row, cells), labels);
+      const actions = actionCell(doc, rowActions, row, nameOf(row, cells), labels); // every action as a button in the details
       const value = element(doc, 'dd', { class: 'adt-detail-actions' });
       value.append(...actions.childNodes);
       item.append(element(doc, 'dt', {}, labels.actions), value);
@@ -228,6 +237,8 @@ export function renderTable<TData>(
     }
   };
 
+  // The row a Shift+click range starts from.
+  let anchor: string | undefined;
   // Elements that a selection change updates in place.
   let selectAll: HTMLInputElement | undefined;
   let rowParts: { id: string; tr: HTMLTableRowElement; box: HTMLInputElement | undefined }[] = [];
@@ -349,11 +360,23 @@ export function renderTable<TData>(
       let box: HTMLInputElement | undefined;
       if (selectable) {
         const td = element(doc, 'td', { class: 'adt-select' });
-        box = element(doc, 'input', {
+        const input = element(doc, 'input', {
           type: 'checkbox', 'aria-label': labels.selectRow(nameOf(row, cells)), 'data-adt-focus': `select:${row.id}`,
         });
-        box.addEventListener('change', () => table.toggleRow(row.id));
-        td.append(box);
+        box = input;
+        // Shift+click selects (or clears) every row between the last clicked one and this one.
+        box.addEventListener('click', event => {
+          const from = anchor;
+          anchor = row.id;
+          if (event.shiftKey && from !== undefined && from !== row.id && table.getSelectionMode() === 'multiple') {
+            const ids = rangeOf(pageIds, from, row.id);
+            if (input.checked) table.selectRows(ids);
+            else table.setSelectedRows(table.getState().selectedIds.filter(id => !ids.includes(id)));
+            return;
+          }
+          table.toggleRow(row.id);
+        });
+        td.append(input);
         tr.append(td);
       }
       columns.forEach((column, index) => {
@@ -361,7 +384,7 @@ export function renderTable<TData>(
         tr.append(fill(element(doc, 'td', { 'data-label': column.header, ...(cellClass ? { class: cellClass } : {}) }), column, row, cells[index]!));
       });
       if (rowActions.length > 0) {
-        const cell = actionCell(doc, rowActions, row, nameOf(row, cells), labels);
+        const cell = actionCell(doc, rowActions, row, nameOf(row, cells), labels, options.maxInlineActions);
         if (collapsible) cell.classList.add('adt-col--p2');
         tr.append(cell);
       }
@@ -418,6 +441,7 @@ export function renderTable<TData>(
       unsubscribe();
       unsubscribeStatus();
       closeDialog();
+      doc.removeEventListener('click', closeMenus);
       root.remove();
     },
   };
@@ -431,4 +455,12 @@ export function priorityOf(column: { readonly priority?: 1 | 2 | 3 }, index: num
 /** Numbers and decimals are right-aligned (`adt-num`). */
 export function numeric(column: { readonly type?: string }): boolean {
   return column.type === 'number' || column.type === 'decimal';
+}
+
+/** The IDs from `a` to `b` (both included) in page order; just `[b]` when `a` is not on the page. */
+export function rangeOf(pageIds: readonly string[], a: string, b: string): string[] {
+  const start = pageIds.indexOf(a);
+  const end = pageIds.indexOf(b);
+  if (start === -1 || end === -1) return [b];
+  return pageIds.slice(Math.min(start, end), Math.max(start, end) + 1);
 }

@@ -30,10 +30,14 @@ export interface DataTableLabels {
   readonly actions: string;
   /** Accessible name of a row-action button: the action and the row's name. */
   readonly rowAction: (action: string, name: string) => string;
+  /** The "⋮" button of a row's extra actions. */
+  readonly moreActions: (name: string) => string;
   /** Bulk-actions bar. */
   readonly bulkActions: string;
   readonly selectedCount: (count: number) => string;
   readonly clearSelection: string;
+  readonly selectAllMatching: (total: number) => string;
+  readonly allMatchingSelected: (total: number) => string;
   /** Column visibility menu. */
   readonly columns: string;
   readonly showColumns: string;
@@ -120,6 +124,9 @@ export const labelsEn: DataTableLabels = Object.freeze({
   copied: (count: number) => `${en.number(count)} ${en.one(count) ? 'row' : 'rows'} copied`,
   print: 'Print',
   exportTooLarge: (max: number) => `The export exceeds ${en.number(max)} rows; narrow the filters.`,
+  moreActions: (name: string) => `More actions: ${name}`,
+  selectAllMatching: (total: number) => `Select all ${en.number(total)} matching rows`,
+  allMatchingSelected: (total: number) => `All ${en.number(total)} matching rows selected`,
 });
 
 export const labelsTr: DataTableLabels = Object.freeze({
@@ -169,6 +176,9 @@ export const labelsTr: DataTableLabels = Object.freeze({
   copied: (count: number) => `${tr.number(count)} satır kopyalandı`,
   print: 'Yazdır',
   exportTooLarge: (max: number) => `Dışa aktarma ${tr.number(max)} satırı aşıyor; filtreleri daraltın.`,
+  moreActions: (name: string) => `Diğer işlemler: ${name}`,
+  selectAllMatching: (total: number) => `Eşleşen ${tr.number(total)} kaydın tümünü seç`,
+  allMatchingSelected: (total: number) => `Eşleşen ${tr.number(total)} kaydın tümü seçili`,
 });
 
 export const labelsDe: DataTableLabels = Object.freeze({
@@ -218,6 +228,9 @@ export const labelsDe: DataTableLabels = Object.freeze({
   copied: (count: number) => `${de.number(count)} ${de.one(count) ? 'Zeile' : 'Zeilen'} kopiert`,
   print: 'Drucken',
   exportTooLarge: (max: number) => `Der Export übersteigt ${de.number(max)} Zeilen; grenzen Sie die Filter ein.`,
+  moreActions: (name: string) => `Weitere Aktionen: ${name}`,
+  selectAllMatching: (total: number) => `Alle ${de.number(total)} passenden Einträge auswählen`,
+  allMatchingSelected: (total: number) => `Alle ${de.number(total)} passenden Einträge ausgewählt`,
 });
 
 export const labelsFr: DataTableLabels = Object.freeze({
@@ -267,6 +280,9 @@ export const labelsFr: DataTableLabels = Object.freeze({
   copied: (count: number) => `${fr.number(count)} ${fr.one(count) ? 'ligne copiée' : 'lignes copiées'}`,
   print: 'Imprimer',
   exportTooLarge: (max: number) => `L’export dépasse ${fr.number(max)} lignes ; affinez les filtres.`,
+  moreActions: (name: string) => `Autres actions : ${name}`,
+  selectAllMatching: (total: number) => `Sélectionner les ${fr.number(total)} lignes correspondantes`,
+  allMatchingSelected: (total: number) => `Les ${fr.number(total)} lignes correspondantes sont sélectionnées`,
 });
 
 export const labelsEs: DataTableLabels = Object.freeze({
@@ -316,6 +332,9 @@ export const labelsEs: DataTableLabels = Object.freeze({
   copied: (count: number) => `${es.number(count)} ${es.one(count) ? 'fila copiada' : 'filas copiadas'}`,
   print: 'Imprimir',
   exportTooLarge: (max: number) => `La exportación supera ${es.number(max)} filas; acota los filtros.`,
+  moreActions: (name: string) => `Más acciones: ${name}`,
+  selectAllMatching: (total: number) => `Seleccionar las ${es.number(total)} filas coincidentes`,
+  allMatchingSelected: (total: number) => `Las ${es.number(total)} filas coincidentes están seleccionadas`,
 });
 
 /** The bundled label sets by language. */

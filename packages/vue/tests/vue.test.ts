@@ -303,3 +303,20 @@ describe('AcunDataTableLayout', () => {
     expect(root.querySelector('.adt-bottom .adt-paging')).not.toBeNull();
   });
 });
+
+describe('row action menu', () => {
+  it('keeps the first actions in the row and the rest in ⋮, with confirm', async () => {
+    const remove = vi.fn();
+    const confirm = vi.spyOn(window, 'confirm').mockReturnValue(true);
+    await mount(() => h(AcunDataTable, { table: make(), maxInlineActions: 1, rowActions: [
+      { id: 'view', label: 'View', icon: 'view', iconOnly: true, onSelect: () => undefined },
+      { id: 'edit', label: 'Edit', onSelect: () => undefined },
+      { id: 'delete', label: 'Delete', danger: true, confirm: 'Sure?', onSelect: remove },
+    ] }));
+    expect(host.querySelector('[data-action="view"]')!.className).toBe('adt-action adt-action--icon');
+    expect([...host.querySelectorAll('tbody tr:first-child .adt-row-menu .adt-menu-item')].map(item => item.textContent)).toEqual(['Edit', 'Delete']);
+    host.querySelector<HTMLButtonElement>('tbody tr:first-child .adt-row-menu [data-action="delete"]')!.click();
+    expect(confirm).toHaveBeenCalledWith('Sure?');
+    expect(remove).toHaveBeenCalledOnce();
+  });
+});

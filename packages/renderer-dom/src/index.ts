@@ -4,7 +4,7 @@ export {
   LABELS, labelsDe, labelsEn, labelsEs, labelsFr, labelsTr, resolveLabels, type DataTableLabels,
 } from './labels';
 export {
-  checkResponsive, checkSize, numeric, priorityOf, renderTable, scrollHeight,
+  checkResponsive, checkSize, numeric, priorityOf, rangeOf, renderTable, scrollHeight,
   type CellContext, type CellFormatter, type CellRenderer, type RenderTableOptions, type ResponsiveMode, type StatusSource, type TableSize,
 } from './table';
 export {
@@ -16,7 +16,8 @@ export {
   type DataTableLayout, type LayoutFeature, type LayoutSlot, type RenderDataTableOptions,
 } from './layout';
 export {
-  renderBulkActions, type BulkAction, type BulkSelection, type RenderBulkActionsOptions, type RowAction,
+  confirmed, renderBulkActions, splitActions,
+  type ActionIcon, type BulkAction, type BulkSelection, type RenderBulkActionsOptions, type RowAction,
 } from './actions';
 export { renderColumnToggle, type RenderColumnToggleOptions } from './columns';
 export {

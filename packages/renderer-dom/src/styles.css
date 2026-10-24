@@ -209,7 +209,7 @@
 }
 .adt-selection-count { font-weight: 600; }
 .adt-selection button { font: inherit; color: var(--adt-accent); background: none; border: 0; padding: 0; cursor: pointer; text-decoration: underline; text-underline-offset: 2px; }
-.adt-selection[hidden] { display: none; }
+.adt-selection[hidden], .adt-selection [hidden] { display: none; }
 .adt-selection .adt-bulk-action { height: 2rem; text-decoration: none; color: var(--adt-fg); background: var(--adt-bg); }
 .adt-selection [aria-disabled="true"] { opacity: 0.45; cursor: not-allowed; }
 .adt-feature--selection:has(> .adt-selection[hidden]) { display: none; }
@@ -325,6 +325,18 @@
 .adt-action + .adt-action { margin-left: 0.375rem; }
 .adt-action:hover { background: var(--adt-hover); border-color: color-mix(in srgb, var(--adt-line) 50%, var(--adt-muted)); }
 .adt-action[aria-disabled="true"] { opacity: 0.45; cursor: not-allowed; }
+.adt-action { display: inline-flex; align-items: center; justify-content: center; gap: 0.375rem; vertical-align: middle; }
+.adt-action--icon { width: 2rem; padding: 0; color: var(--adt-muted); }
+.adt-action--icon:hover { color: var(--adt-fg); }
+.adt-action--danger { color: var(--adt-danger); border-color: color-mix(in srgb, var(--adt-danger) 30%, var(--adt-line)); }
+.adt-action--danger:hover { color: var(--adt-danger); background: color-mix(in srgb, var(--adt-danger) 8%, var(--adt-bg)); }
+.adt-row-menu { position: relative; display: inline-block; margin-left: 0.375rem; vertical-align: middle; }
+.adt-row-menu > summary { list-style: none; }
+.adt-row-menu > summary::-webkit-details-marker { display: none; }
+.adt-row-menu .adt-menu-list { top: 100%; text-align: left; white-space: nowrap; }
+.adt-menu-item--danger, .adt-menu-item--danger:hover { color: var(--adt-danger); }
+.adt-menu-item .adt-icon { color: var(--adt-muted); }
+.adt-menu-item--danger .adt-icon { color: inherit; }
 
 /* Responsive collapse / modal: a details button per row (hidden while every column fits) */
 .adt-table .adt-expand-cell { display: none; width: 2.75rem; padding-right: 0; }

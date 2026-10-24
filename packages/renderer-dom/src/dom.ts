@@ -61,10 +61,16 @@ export const ICONS = Object.freeze({
   close: 'M18 6 6 18M6 6l12 12',
   filter: 'M3 5h18l-7 8.5V19l-4 2v-7.5z',
   download: 'M12 3v12M7 10l5 5 5-5M5 21h14',
+  view: 'M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12zM12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z',
+  edit: 'M12 20h9M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4z',
+  delete: 'M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6M10 11v6M14 11v6',
+  more: 'M12 5.5h.01M12 12h.01M12 18.5h.01',
+  copy: 'M9 9h11v11H9zM5 15H4V4h11v1',
+  check: 'M20 6 9 17l-5-5',
 } as const);
 
 /** A decorative stroke icon (hidden from screen readers; the control carries the name). */
-export function icon(doc: Document, name: keyof typeof ICONS): SVGSVGElement {
+export function icon(doc: Document, name: keyof typeof ICONS | { readonly path: string }): SVGSVGElement {
   const ns = 'http://www.w3.org/2000/svg';
   const svg = doc.createElementNS(ns, 'svg');
   for (const [key, value] of Object.entries({
@@ -72,7 +78,7 @@ export function icon(doc: Document, name: keyof typeof ICONS): SVGSVGElement {
     'stroke-width': '2', 'stroke-linecap': 'round', 'stroke-linejoin': 'round', 'aria-hidden': 'true', focusable: 'false',
   })) svg.setAttribute(key, value);
   const path = doc.createElementNS(ns, 'path');
-  path.setAttribute('d', ICONS[name]);
+  path.setAttribute('d', typeof name === 'string' ? ICONS[name] : name.path);
   svg.append(path);
   return svg;
 }
