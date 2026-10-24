@@ -7,7 +7,7 @@ import { checkFixedColumns, pinColumns, type FixedColumns } from './pin';
 import { columnTools } from './column-tools';
 import { autoResponsive } from './auto-responsive';
 import { checkVirtual, virtualWindow } from './virtual';
-import { cellEditor, isEditable, type CellEditor, type EditHandler } from './edit';
+import { afterPointerRelease, cellEditor, isEditable, type CellEditor, type EditHandler } from './edit';
 
 export type { CellFormatter } from './cells';
 
@@ -352,14 +352,6 @@ export function renderTable<TData>(
     }
   };
 
-  // A pointer is pressed inside the table (between pointerdown and pointerup).
-  let pressed = false;
-  const onPress = (): void => { pressed = true; };
-  const onRelease = (): void => { pressed = false; };
-  root.addEventListener('pointerdown', onPress, true);
-  doc.addEventListener('pointerup', onRelease);
-  doc.addEventListener('pointercancel', onRelease);
-
   // The cell being edited in place (the editor element moves into each re-render).
   let editing: { rowId: string; columnId: string; editor: CellEditor } | undefined;
   const onEdit = options.onEdit;
@@ -372,28 +364,16 @@ export function renderTable<TData>(
       onClose: () => {
         if (editing?.editor !== editor) return;
         editing = undefined;
-        if (!pressed) {
+        // Closed by pressing another control: the closed editor stays in its cell until that click is done.
+        afterPointerRelease(doc, waited => {
           editor.destroy();
+          if (waited) {
+            if (!editing) render();
+            return;
+          }
           render();
           root.querySelector<HTMLElement>(`[data-adt-focus="${CSS.escape(focusKey)}"]`)?.focus();
-          return;
-        }
-        // Closed by pressing another control (the editor lost focus on pointerdown): the closed
-        // editor stays in its cell and the table draws again only after that click, so nothing
-        // moves under the pointer and the click reaches the control it was meant for.
-        let done = false;
-        const after = (): void => {
-          if (done) return;
-          done = true;
-          doc.removeEventListener('pointerup', after, true);
-          doc.removeEventListener('pointercancel', after, true);
-          setTimeout(() => {
-            editor.destroy();
-            if (!editing) render();
-          }, 0);
-        };
-        doc.addEventListener('pointerup', after, true);
-        doc.addEventListener('pointercancel', after, true);
+        });
       },
     });
     editing = { rowId: row.id, columnId: column.id, editor };
@@ -752,8 +732,6 @@ export function renderTable<TData>(
       stopAuto();
       stopTools();
       doc.removeEventListener('click', closeMenus);
-      doc.removeEventListener('pointerup', onRelease);
-      doc.removeEventListener('pointercancel', onRelease);
       root.remove();
     },
   };

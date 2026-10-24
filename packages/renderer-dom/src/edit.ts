@@ -109,7 +109,48 @@ export interface CellEditor {
  * or a failed save, shows a message and keeps the editor open. While saving
  * the control is read-only and `aria-busy`.
  */
+// Whether a pointer is pressed, per document: an editor loses focus on pointerdown, before the click.
+const pointers = new WeakMap<Document, { down: boolean }>();
+function trackPointer(doc: Document): { down: boolean } {
+  let state = pointers.get(doc);
+  if (!state) {
+    const tracked = { down: false };
+    const release = (): void => { tracked.down = false; };
+    doc.addEventListener('pointerdown', () => { tracked.down = true; }, true);
+    doc.addEventListener('pointerup', release, true);
+    doc.addEventListener('pointercancel', release, true);
+    pointers.set(doc, tracked);
+    state = tracked;
+  }
+  return state;
+}
+
+/**
+ * Run `close` now, or — when an editor closes because a pointer was pressed
+ * somewhere else — once the pointer is released and its click is done, so
+ * nothing moves under the pointer and the click reaches the control it was
+ * pressed on. `close` learns whether it waited (then focus is where the
+ * click put it).
+ */
+export function afterPointerRelease(doc: Document, close: (waited: boolean) => void): void {
+  if (!trackPointer(doc).down) {
+    close(false);
+    return;
+  }
+  let done = false;
+  const after = (): void => {
+    if (done) return;
+    done = true;
+    doc.removeEventListener('pointerup', after, true);
+    doc.removeEventListener('pointercancel', after, true);
+    setTimeout(() => close(true), 0);
+  };
+  doc.addEventListener('pointerup', after, true);
+  doc.addEventListener('pointercancel', after, true);
+}
+
 export function cellEditor<TData>(doc: Document, options: CellEditorOptions<TData>): CellEditor {
+  trackPointer(doc);
   const { row, column } = options;
   const labels: DataTableLabels = { ...labelsEn, ...options.labels };
   const kind = editorKind(column as ColumnDef<unknown>);

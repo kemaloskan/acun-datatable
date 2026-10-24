@@ -5,7 +5,7 @@ import {
 import { COLUMN_WIDTH_LIMITS, getPageItems, type ColumnDef, type DataTable, type Row } from '@acunsoft/datatable-core';
 import {
   cellValue, checkPageSizes, checkResponsive, checkSize, confirmed, filterControls, splitActions, createCellText, ICONS, labelsEn, nextSorting, pageInfoText,
-  autoResponsive, cellEditor, checkVirtual, virtualWindow, columnsChanged, columnTools, isEditable, numeric, pageSizeChoices, pinColumns, resetColumns, priorityOf, rangeOf, renderBulkActions, renderFilterChips, renderFilters, renderMenu, rowName, scrollHeight,
+  afterPointerRelease, autoResponsive, cellEditor, checkVirtual, virtualWindow, columnsChanged, columnTools, isEditable, numeric, pageSizeChoices, pinColumns, resetColumns, priorityOf, rangeOf, renderBulkActions, renderFilterChips, renderFilters, renderMenu, rowName, scrollHeight,
   checkFixedColumns, type CellEditor, type EditHandler, type FixedColumns, type MenuItem, type RenderedComponent, type ResponsiveMode, type TableSize,
   type BulkAction, type BulkSelection, type CellFormatter, type DataTableLabels, type RowAction, type StatusSource,
 } from '@acunsoft/datatable-dom';
@@ -211,13 +211,14 @@ export function DataTable<TData>(props: DataTableProps<TData>): ReactElement {
     if (!row || !column || !host || !props.onEdit) { setEditing(undefined); return; }
     const mounted = cellEditor(host.ownerDocument, {
       row, column, value: cellValue(column, row), labels, onEdit: props.onEdit,
-      onClose: () => {
+      // Closed by pressing another control: the closed editor stays in its cell until that click is done.
+      onClose: () => afterPointerRelease(host.ownerDocument, waited => {
         if (editor.current !== created) return;
         created.destroy();
         editor.current = undefined;
-        refocus.current = `${row.id}:${column.id}`;
+        if (!waited) refocus.current = `${row.id}:${column.id}`;
         setEditing(undefined);
-      },
+      }),
     });
     const created = Object.assign(mounted, { rowId: row.id, columnId: column.id });
     editor.current = created;

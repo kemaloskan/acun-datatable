@@ -6,7 +6,7 @@ import {
 import { COLUMN_WIDTH_LIMITS, getPageItems, type ColumnDef, type DataTable, type Row } from '@acunsoft/datatable-core';
 import {
   cellValue, checkPageSizes, checkResponsive, checkSize, confirmed, filterControls, splitActions, createCellText, ICONS, labelsEn, nextSorting, pageInfoText,
-  autoResponsive, cellEditor, checkVirtual, virtualWindow, columnsChanged, columnTools, isEditable, numeric, pageSizeChoices, pinColumns, resetColumns, priorityOf, rangeOf, renderBulkActions, renderFilterChips, renderFilters, renderMenu, rowName, scrollHeight,
+  afterPointerRelease, autoResponsive, cellEditor, checkVirtual, virtualWindow, columnsChanged, columnTools, isEditable, numeric, pageSizeChoices, pinColumns, resetColumns, priorityOf, rangeOf, renderBulkActions, renderFilterChips, renderFilters, renderMenu, rowName, scrollHeight,
   checkFixedColumns, type CellEditor, type EditHandler, type FixedColumns, type MenuItem, type RenderedComponent, type ResponsiveMode, type TableSize,
   type BulkAction, type BulkSelection, type CellFormatter, type DataTableLabels, type RowAction, type StatusSource,
 } from '@acunsoft/datatable-dom';
@@ -272,12 +272,13 @@ export const AcunDataTable = defineComponent({
       const focusKey = `${row.id}:${column.id}`;
       const mounted = cellEditor(host.ownerDocument, {
         row, column, value: cellValue(column, row), labels: labels.value, onEdit: props.onEdit as EditHandler<unknown>,
-        onClose: () => {
+        // Closed by pressing another control: the closed editor stays in its cell until that click is done.
+        onClose: () => afterPointerRelease(host.ownerDocument, waited => {
           if (editor !== created) return;
           closeEditor();
           editing.value = undefined;
-          void nextTick(() => wrapEl.value?.querySelector<HTMLElement>(`.adt-edit[data-edit-key="${CSS.escape(focusKey)}"]`)?.focus());
-        },
+          if (!waited) void nextTick(() => wrapEl.value?.querySelector<HTMLElement>(`.adt-edit[data-edit-key="${CSS.escape(focusKey)}"]`)?.focus());
+        }),
       });
       const created = Object.assign(mounted, { rowId: row.id, columnId: column.id });
       editor = created;

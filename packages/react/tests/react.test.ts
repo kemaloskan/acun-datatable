@@ -416,6 +416,26 @@ describe('editing in place', () => {
     expect(host.querySelector('tbody tr:first-child td')!.textContent).toBe('Ayşe Yılmaz');
     expect(document.activeElement).toBe(host.querySelector('.adt-edit[aria-label="Edit Müşteri: Ayşe Yılmaz"]'));
   });
+
+  it('keeps a closed editor in its cell until the press that closed it is done', async () => {
+    const table = createDataTable<Order>({ data: orders, columns: [
+      { id: 'customer', header: 'Müşteri', accessorKey: 'customer', editable: true, enableSorting: true },
+    ] });
+    render(h(DataTable<Order>, { table, onEdit: () => undefined }));
+    click(host.querySelector('.adt-edit[aria-label="Edit Müşteri: Ayşe"]'));
+    const editor = host.querySelector('.adt-editor')!;
+    await act(async () => {
+      document.querySelector('.adt-sort')!.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }));
+      host.querySelector<HTMLInputElement>('.adt-edit-control')!.blur(); // the press takes the focus: the unchanged editor closes
+      await new Promise(resolve => setTimeout(resolve, 0));
+    });
+    expect(editor.isConnected).toBe(true); // nothing moved under the pointer
+    await act(async () => {
+      document.dispatchEvent(new PointerEvent('pointerup', { bubbles: true }));
+      await new Promise(resolve => setTimeout(resolve, 0));
+    });
+    expect(host.querySelector('.adt-editor')).toBeNull();
+  });
 });
 
 describe('virtual scrolling', () => {

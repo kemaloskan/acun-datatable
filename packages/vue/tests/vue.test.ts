@@ -443,6 +443,23 @@ describe('editing in place', () => {
     await nextTick();
     expect(document.activeElement).toBe(host.querySelector('.adt-edit[aria-label="Edit Müşteri: Ayşe Yılmaz"]'));
   });
+
+  it('keeps a closed editor in its cell until the press that closed it is done', async () => {
+    const table = createDataTable<Order>({ data: orders, columns: [
+      { id: 'customer', header: 'Müşteri', accessorKey: 'customer', editable: true, enableSorting: true },
+    ] });
+    await mount(() => h(AcunDataTable, { table, onEdit: () => undefined }));
+    host.querySelector<HTMLButtonElement>('.adt-edit[aria-label="Edit Müşteri: Ayşe"]')!.click();
+    await nextTick();
+    const editor = host.querySelector('.adt-editor')!;
+    document.querySelector('.adt-sort')!.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }));
+    host.querySelector<HTMLInputElement>('.adt-edit-control')!.blur(); // the press takes the focus: the unchanged editor closes
+    await new Promise(resolve => setTimeout(resolve, 0));
+    await nextTick();
+    expect(editor.isConnected).toBe(true); // nothing moved under the pointer
+    document.dispatchEvent(new PointerEvent('pointerup', { bubbles: true }));
+    await vi.waitFor(() => expect(host.querySelector('.adt-editor')).toBeNull());
+  });
 });
 
 describe('virtual scrolling', () => {

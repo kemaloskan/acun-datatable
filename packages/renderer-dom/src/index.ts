@@ -4,7 +4,7 @@ export { columnTools, type ColumnToolsOptions } from './column-tools';
 export { autoResponsive } from './auto-responsive';
 export { checkVirtual, virtualWindow, type VirtualWindow } from './virtual';
 export {
-  cellEditor, editorKind, editText, isEditable, parseEdit,
+  afterPointerRelease, cellEditor, editorKind, editText, isEditable, parseEdit,
   type CellEdit, type CellEditor, type CellEditorOptions, type EditHandler, type EditorKind,
 } from './edit';
 export { printTable, renderMenu, type MenuItem, type RenderMenuOptions } from './menu';
