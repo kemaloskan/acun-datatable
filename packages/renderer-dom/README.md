@@ -82,6 +82,7 @@ renderTable(el, table, { status: runner, labels: labelsTr });
   | `'scroll'` | the table keeps its columns and scrolls sideways inside its box |
   | `'collapse'` | lower-priority columns hide; a ⊕ button (`aria-expanded`) opens their values below the row |
   | `'modal'` | the same button opens every value of the row in a `<dialog>` (Escape, ✕ or a click outside closes it; focus returns to the button) |
+  | `'auto'` | at any width, measured: columns hide only while the table does not fit (priority 3, then 2, from the right; never 1) and open below the row like `collapse`; they come back when there is room (`autoResponsive()`) |
 
   For `collapse` and `modal`, `ColumnDef.priority` decides what stays: `1`
   always, `2` hides below 640px, `3` already below 960px (tablets). By default

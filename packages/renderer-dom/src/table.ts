@@ -5,6 +5,7 @@ import { checkTarget, element, icon, keepFocus, type RenderedComponent } from '.
 import { labelsEn, type DataTableLabels } from './labels';
 import { checkFixedColumns, pinColumns, type FixedColumns } from './pin';
 import { columnTools } from './column-tools';
+import { autoResponsive } from './auto-responsive';
 import { cellEditor, isEditable, type CellEditor, type EditHandler } from './edit';
 
 export type { CellFormatter } from './cells';
@@ -48,7 +49,9 @@ export interface RenderTableOptions<TData> {
    * each row as a card; `'scroll'` keeps the table and scrolls it sideways;
    * `'collapse'` hides lower-priority columns (`ColumnDef.priority`) and adds
    * a button that opens their values below the row; `'modal'` opens every
-   * value of the row in a dialog instead.
+   * value of the row in a dialog instead. `'auto'` works like `'collapse'`
+   * but measures: columns are hidden (lowest priority first, then from the
+   * right) only while the table does not fit, at any screen width.
    */
   readonly responsive?: ResponsiveMode;
   /** Density with the optional `styles.css`: `'sm'` compact, `'md'` (default), `'lg'` spacious. */
@@ -153,8 +156,8 @@ export function checkSize(size: unknown): TableSize {
   if (size !== undefined && size !== 'sm' && size !== 'md' && size !== 'lg') throw new RangeError('size must be sm, md or lg');
   return (size ?? 'md') as TableSize;
 }
-export type ResponsiveMode = 'cards' | 'scroll' | 'collapse' | 'modal';
-const RESPONSIVE_MODES: readonly ResponsiveMode[] = ['cards', 'scroll', 'collapse', 'modal'];
+export type ResponsiveMode = 'cards' | 'scroll' | 'collapse' | 'modal' | 'auto';
+const RESPONSIVE_MODES: readonly ResponsiveMode[] = ['cards', 'scroll', 'collapse', 'modal', 'auto'];
 let tables = 0;
 
 /**
@@ -192,7 +195,9 @@ export function renderTable<TData>(
   if (options.detail !== undefined && typeof options.detail !== 'function') throw new TypeError('detail must be a function');
   const detailOf = options.detail;
   // The expand column: hidden columns (collapse, modal) or a child row (detail).
-  const collapsible = responsive === 'collapse' || responsive === 'modal';
+  const collapsible = responsive === 'collapse' || responsive === 'modal' || responsive === 'auto';
+  // Hidden columns open below the row (collapse, auto) or in a dialog (modal).
+  const inlineDetails = responsive === 'collapse' || responsive === 'auto';
   const expandable = collapsible || detailOf !== undefined;
   const uid = `adt-${++tables}`;
 
@@ -294,12 +299,12 @@ export function renderTable<TData>(
     columns.forEach((column, index) => {
       const level = priorityOf(column, index);
       if (!all && level === 1) return;
-      const item = element(doc, 'div', { class: `adt-detail-item${all ? '' : ` adt-col--p${level}`}` });
+      const item = element(doc, 'div', { class: `adt-detail-item${all ? '' : ` adt-col--p${level}`}`, 'data-column-id': column.id });
       item.append(element(doc, 'dt', {}, column.header), fill(element(doc, 'dd'), column, row, cells[index]!));
       list.append(item);
     });
     if (rowActions.length > 0) {
-      const item = element(doc, 'div', { class: `adt-detail-item${all ? '' : ' adt-col--p2'}` });
+      const item = element(doc, 'div', { class: `adt-detail-item${all ? '' : ' adt-col--p2'}`, 'data-column-id': '__actions' });
       const actions = actionCell(doc, rowActions, row, nameOf(row, cells), labels); // every action as a button in the details
       const value = element(doc, 'dd', { class: 'adt-detail-actions' });
       value.append(...actions.childNodes);
@@ -571,7 +576,7 @@ export function renderTable<TData>(
         tr.classList.add('adt-row--expanded');
         const detail = element(doc, 'tr', { class: 'adt-detail', id: detailId });
         const td = element(doc, 'td', { colspan: String(span) });
-        if (responsive === 'collapse') td.append(detailList(row, cells, columns, false));
+        if (inlineDetails) td.append(detailList(row, cells, columns, false));
         if (detailOf) td.append(detailContent(row));
         detail.append(td);
         body.append(detail);
@@ -634,6 +639,7 @@ export function renderTable<TData>(
   render();
   showStatus();
   const unpin = pinColumns(root, fixed);
+  const stopAuto = responsive === 'auto' ? autoResponsive(root) : () => undefined;
   const stopTools = options.resizableColumns || options.reorderableColumns
     ? columnTools(root, table, { resize: options.resizableColumns === true, reorder: options.reorderableColumns === true })
     : () => undefined;
@@ -654,6 +660,7 @@ export function renderTable<TData>(
       closeDialog();
       editing?.editor.destroy();
       unpin();
+      stopAuto();
       stopTools();
       doc.removeEventListener('click', closeMenus);
       root.remove();

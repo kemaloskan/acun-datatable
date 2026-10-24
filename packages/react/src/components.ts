@@ -5,7 +5,7 @@ import {
 import { COLUMN_WIDTH_LIMITS, getPageItems, type ColumnDef, type DataTable, type Row } from '@acunsoft/datatable-core';
 import {
   cellValue, checkPageSizes, checkResponsive, checkSize, confirmed, filterControls, splitActions, createCellText, ICONS, labelsEn, nextSorting, pageInfoText,
-  cellEditor, columnsChanged, columnTools, isEditable, numeric, pageSizeChoices, pinColumns, resetColumns, priorityOf, rangeOf, renderBulkActions, renderFilterChips, renderFilters, renderMenu, rowName, scrollHeight,
+  autoResponsive, cellEditor, columnsChanged, columnTools, isEditable, numeric, pageSizeChoices, pinColumns, resetColumns, priorityOf, rangeOf, renderBulkActions, renderFilterChips, renderFilters, renderMenu, rowName, scrollHeight,
   checkFixedColumns, type CellEditor, type EditHandler, type FixedColumns, type MenuItem, type RenderedComponent, type ResponsiveMode, type TableSize,
   type BulkAction, type BulkSelection, type CellFormatter, type DataTableLabels, type RowAction, type StatusSource,
 } from '@acunsoft/datatable-dom';
@@ -43,7 +43,7 @@ export interface DataTableProps<TData> {
   readonly rowActions?: readonly RowAction<TData>[];
   /** Server mode: loading and error states, e.g. the HTTP package's runner. */
   readonly status?: StatusSource;
-  /** Narrow screens: `cards` (default), `scroll`, `collapse` or `modal`; see `ColumnDef.priority`. */
+  /** Narrow screens: `cards` (default), `scroll`, `collapse`, `modal` or `auto` (measured); see `ColumnDef.priority`. */
   readonly responsive?: ResponsiveMode;
   /** Density: `sm`, `md` (default) or `lg`. */
   readonly size?: TableSize;
@@ -117,7 +117,7 @@ export function DataTable<TData>(props: DataTableProps<TData>): ReactElement {
   });
   const responsive = checkResponsive(props.responsive);
   const size = checkSize(props.size);
-  const collapsible = responsive === 'collapse' || responsive === 'modal';
+  const collapsible = responsive === 'collapse' || responsive === 'modal' || responsive === 'auto';
   const detail = props.detail;
   const expandable = collapsible || detail !== undefined;
   const uid = useId();
@@ -152,6 +152,11 @@ export function DataTable<TData>(props: DataTableProps<TData>): ReactElement {
     if (!wrap.current || (!resizable && !reorderable)) return undefined;
     return columnTools(wrap.current, table, { resize: resizable, reorder: reorderable });
   }, [table, resizable, reorderable]);
+  // responsive="auto": columns hidden while the table does not fit, measured after every render.
+  useEffect(() => {
+    if (!wrap.current || responsive !== 'auto') return undefined;
+    return autoResponsive(wrap.current);
+  }, [responsive]);
   // Editing in place: the shared editor is mounted into the editing cell, which React leaves empty.
   const [editing, setEditing] = useState<{ rowId: string; columnId: string } | undefined>();
   const editor = useRef<(CellEditor & { rowId: string; columnId: string }) | undefined>(undefined);
@@ -256,11 +261,11 @@ export function DataTable<TData>(props: DataTableProps<TData>): ReactElement {
     ...columns.flatMap((column, index) => {
       const priority = priorityOf(column, index);
       if (!all && priority === 1) return [];
-      return [h('div', { className: all ? 'adt-detail-item' : `adt-detail-item adt-col--p${priority}`, key: column.id },
+      return [h('div', { className: all ? 'adt-detail-item' : `adt-detail-item adt-col--p${priority}`, key: column.id, 'data-column-id': column.id },
         h('dt', null, column.header), h('dd', null, contentOf(column, row, texts[index]!)))];
     }),
     rowActions.length > 0
-      ? h('div', { className: all ? 'adt-detail-item' : 'adt-detail-item adt-col--p2', key: '__actions' },
+      ? h('div', { className: all ? 'adt-detail-item' : 'adt-detail-item adt-col--p2', key: '__actions', 'data-column-id': '__actions' },
         h('dt', null, labels.actions), h('dd', { className: 'adt-detail-actions' }, actionButtons(row, name, Infinity)))
       : null);
 
@@ -399,7 +404,7 @@ export function DataTable<TData>(props: DataTableProps<TData>): ReactElement {
     if (open) {
       body.push(h('tr', { className: 'adt-detail', id: detailId, key: `${row.id}__detail` },
         h('td', { colSpan: span },
-          responsive === 'collapse' ? detailList(row, texts, name, false) : null,
+          responsive === 'collapse' || responsive === 'auto' ? detailList(row, texts, name, false) : null,
           detail ? h('div', { className: 'adt-detail-content' }, detail(row)) : null)));
     }
   });

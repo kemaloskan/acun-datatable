@@ -297,6 +297,27 @@ test('edit a cell in place: Enter saves, errors keep the editor, Escape cancels,
   await expect(page.getByRole('cell', { name: 'Deniz Ak' })).toBeVisible();
 });
 
+test('responsive auto hides only the columns that do not fit, at any width', async ({ page }) => {
+  await page.setViewportSize({ width: 1100, height: 800 });
+  await page.goto('/e2e/fixtures/table.html?responsive=auto');
+  await expect(page.locator('body[data-ready=true]')).toBeAttached();
+  await expect(page.getByRole('columnheader', { name: 'City' })).toBeVisible();
+  await expect(page.locator('tbody .adt-expand').first()).toBeHidden(); // everything fits
+
+  await page.setViewportSize({ width: 330, height: 800 });
+  await expect(page.getByRole('columnheader', { name: 'City' })).toBeHidden(); // priority 3 goes first
+  await expect(page.getByRole('columnheader', { name: 'Customer' })).toBeVisible();
+  const scroller = page.locator('.adt-scroll');
+  expect(await scroller.evaluate(node => node.scrollWidth <= node.clientWidth + 1)).toBe(true); // nothing scrolls sideways
+  const details = page.getByRole('button', { name: 'Details of Ayşe' });
+  await details.click();
+  await expect(page.locator('.adt-detail').getByText('İstanbul')).toBeVisible();
+
+  await page.setViewportSize({ width: 1100, height: 800 });
+  await expect(page.getByRole('columnheader', { name: 'City' })).toBeVisible(); // back when there is room
+  await expect(page.locator('.adt-detail')).toBeHidden();
+});
+
 test.describe('child rows', () => {
   for (const width of [1280, 375]) {
     test(`load and open below the row at ${width}px`, async ({ page }) => {

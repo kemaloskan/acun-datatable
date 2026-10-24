@@ -5,7 +5,7 @@ import {
 import { COLUMN_WIDTH_LIMITS, getPageItems, type ColumnDef, type DataTable, type Row } from '@acunsoft/datatable-core';
 import {
   cellValue, checkPageSizes, checkResponsive, checkSize, confirmed, filterControls, splitActions, createCellText, ICONS, labelsEn, nextSorting, pageInfoText,
-  cellEditor, columnsChanged, columnTools, isEditable, numeric, pageSizeChoices, pinColumns, resetColumns, priorityOf, rangeOf, renderBulkActions, renderFilterChips, renderFilters, renderMenu, rowName, scrollHeight,
+  autoResponsive, cellEditor, columnsChanged, columnTools, isEditable, numeric, pageSizeChoices, pinColumns, resetColumns, priorityOf, rangeOf, renderBulkActions, renderFilterChips, renderFilters, renderMenu, rowName, scrollHeight,
   checkFixedColumns, type CellEditor, type EditHandler, type FixedColumns, type MenuItem, type RenderedComponent, type ResponsiveMode, type TableSize,
   type BulkAction, type BulkSelection, type CellFormatter, type DataTableLabels, type RowAction, type StatusSource,
 } from '@acunsoft/datatable-dom';
@@ -68,7 +68,7 @@ export const AcunDataTable = defineComponent({
     rowLabel: { type: Function as PropType<(row: Row<never>) => string>, default: undefined },
     rowActions: { type: Array as PropType<readonly RowAction<never>[]>, default: () => [] },
     status: { type: Object as PropType<StatusSource>, default: undefined },
-    /** Narrow screens: `cards` (default), `scroll`, `collapse` or `modal`; see `ColumnDef.priority`. */
+    /** Narrow screens: `cards` (default), `scroll`, `collapse`, `modal` or `auto` (measured); see `ColumnDef.priority`. */
     responsive: {
       type: String as PropType<ResponsiveMode>, default: 'cards',
       validator: (value: unknown) => { try { checkResponsive(value); return true; } catch { return false; } },
@@ -181,6 +181,13 @@ export const AcunDataTable = defineComponent({
         : undefined;
     }, { flush: 'post' });
     onScopeDispose(() => stopTools?.());
+    // responsive="auto": columns hidden while the table does not fit, measured after every render.
+    let stopAuto: (() => void) | undefined;
+    watch([wrapEl, () => props.responsive], ([node, mode]) => {
+      stopAuto?.();
+      stopAuto = node && mode === 'auto' ? autoResponsive(node) : undefined;
+    }, { flush: 'post' });
+    onScopeDispose(() => stopAuto?.());
     // Editing in place: the shared editor is mounted into the editing cell, which Vue leaves empty.
     const editing = shallowRef<{ rowId: string; columnId: string } | undefined>();
     let editor: (CellEditor & { rowId: string; columnId: string }) | undefined;
@@ -220,7 +227,7 @@ export const AcunDataTable = defineComponent({
     return (): VNode => {
       const { table } = props;
       const responsive = props.responsive;
-      const collapsible = responsive === 'collapse' || responsive === 'modal';
+      const collapsible = responsive === 'collapse' || responsive === 'modal' || responsive === 'auto';
       const detailSlot = slots.detail as ((props: DetailSlotProps) => VNode[]) | undefined; // absent unless given
       const expandable = collapsible || detailSlot !== undefined;
       const state = binding.state.value;
@@ -327,12 +334,12 @@ export const AcunDataTable = defineComponent({
         ...columns.flatMap((column, index) => {
           const priority = priorityOf(column, index);
           if (!all && priority === 1) return [];
-          return [h('div', { class: all ? 'adt-detail-item' : `adt-detail-item adt-col--p${priority}`, key: column.id }, [
+          return [h('div', { class: all ? 'adt-detail-item' : `adt-detail-item adt-col--p${priority}`, key: column.id, 'data-column-id': column.id }, [
             h('dt', column.header), h('dd', contentOf(column, row, texts[index]!) as never),
           ])];
         }),
         actions.length > 0
-          ? h('div', { class: all ? 'adt-detail-item' : 'adt-detail-item adt-col--p2', key: '__actions' }, [
+          ? h('div', { class: all ? 'adt-detail-item' : 'adt-detail-item adt-col--p2', key: '__actions', 'data-column-id': '__actions' }, [
             h('dt', label.actions), h('dd', { class: 'adt-detail-actions' }, actionButtons(row, name, Infinity)),
           ])
           : null,
@@ -435,7 +442,7 @@ export const AcunDataTable = defineComponent({
         if (open) {
           body.push(h('tr', { class: 'adt-detail', id: detailId, key: `${row.id}__detail` }, [
             h('td', { colspan: span }, [
-              responsive === 'collapse' ? detailList(row, texts, name, false) : null,
+              responsive === 'collapse' || responsive === 'auto' ? detailList(row, texts, name, false) : null,
               detailSlot ? h('div', { class: 'adt-detail-content' }, detailSlot({ row })) : null,
             ]),
           ]));

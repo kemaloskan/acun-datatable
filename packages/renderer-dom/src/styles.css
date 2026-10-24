@@ -388,7 +388,15 @@
   .adt-responsive--collapse .adt-detail-item.adt-col--p2 { display: grid; }
   .adt-table .adt-detail > td { padding-left: 1rem; }
 }
-@media (min-width: 961px) { .adt-table:not(.adt-has-detail) .adt-detail { display: none; } }
+@media (min-width: 961px) { :is(.adt-responsive--collapse, .adt-responsive--modal) .adt-table:not(.adt-has-detail) .adt-detail { display: none; } }
+
+/* Responsive auto: columns hidden while the table does not fit (measured, any width) */
+.adt-responsive--auto .adt-table :is(th, td) { white-space: nowrap; }
+.adt-responsive--auto .adt-table .adt-detail > td { white-space: normal; }
+.adt-responsive--auto .adt-table :is(th, td).adt-auto-hidden { display: none; }
+.adt-responsive--auto .adt-table.adt-auto-collapsed .adt-expand-cell { display: table-cell; }
+.adt-responsive--auto .adt-detail-item.adt-auto-shown { display: grid; }
+.adt-responsive--auto .adt-table:not(.adt-auto-collapsed):not(.adt-has-detail) .adt-detail { display: none; }
 
 /* Child rows (detail): the button is always there; hidden-column items still follow the screen width */
 .adt-table.adt-has-detail .adt-expand-cell { display: table-cell; }

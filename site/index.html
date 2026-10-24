@@ -964,15 +964,15 @@ const GUIDES = {
    "en": "Narrow screens"
   },
   "lead": {
-   "tr": "Telefonda tabloyu dört şekilde gösterebilirsiniz. Açılır satır ve modalda hangi kolonun ekranda kalacağını kolon önceliği belirler.",
-   "en": "Four ways to show a table on a phone. With collapsible rows and the dialog, a priority per column decides what stays on screen."
+   "tr": "Telefonda tabloyu beş şekilde gösterebilirsiniz. Açılır satır, modal ve otomatik modda hangi kolonun ekranda kalacağını kolon önceliği belirler.",
+   "en": "Five ways to show a table on a phone. With collapsible rows, the dialog and auto, a priority per column decides what stays on screen."
   },
   "sections": [
    {
     "id": "modes",
     "title": {
-     "tr": "Dört seçenek",
-     "en": "Four modes"
+     "tr": "Beş seçenek",
+     "en": "Five modes"
     },
     "desc": null,
     "table": [
@@ -1013,6 +1013,13 @@ const GUIDES = {
        "tr": "⊕ butonu satırın tüm değerlerini bir pencerede gösterir (Esc veya ✕ kapatır).",
        "en": "The ⊕ button shows every value of the row in a dialog (Escape or ✕ closes it)."
       }
+     ],
+     [
+      "auto",
+      {
+       "tr": "Her genişlikte ölçülür: yalnızca sığmayan kolonlar gizlenir (önce öncelik 3, sonra 2, sağdan; 1 hiç) ve ⊕ ile satırın altında açılır. Yer açılınca geri gelir.",
+       "en": "Measured at any width: only columns that do not fit hide (priority 3, then 2, from the right; never 1) and open below the row with ⊕. They come back when there is room."
+      }
      ]
     ]
    },
@@ -1030,12 +1037,12 @@ const GUIDES = {
      [
       "AcunDataTable",
       "typescript",
-      "new AcunDataTable('#orders', {\n  data: orders,\n  responsive: 'collapse',   // 'cards' | 'scroll' | 'collapse' | 'modal'\n  columns: [\n    { data: 'customer', title: 'Müşteri' },                 // first column: always shown\n    { data: 'total', title: 'Tutar', priority: 1 },         // stays on phones\n    { data: 'email', title: 'E-posta', priority: 3 },       // hidden below 960 px\n    { data: 'city', title: 'Şehir' },                       // default 2: hidden below 640 px\n  ],\n});"
+      "new AcunDataTable('#orders', {\n  data: orders,\n  responsive: 'collapse',   // 'cards' | 'scroll' | 'collapse' | 'modal' | 'auto'\n  columns: [\n    { data: 'customer', title: 'Müşteri' },                 // first column: always shown\n    { data: 'total', title: 'Tutar', priority: 1 },         // stays on phones\n    { data: 'email', title: 'E-posta', priority: 3 },       // hidden below 960 px\n    { data: 'city', title: 'Şehir' },                       // default 2: hidden below 640 px\n  ],\n});"
      ],
      [
       "Livewire",
       "php",
-      "protected function responsive(): string\n{\n    return 'collapse';   // cards, scroll, collapse, modal\n}\n\nprotected function columns(): array\n{\n    return [\n        Column::make('customer')->header('Müşteri'),\n        Column::make('total')->header('Tutar')->priority(1),\n        Column::make('email')->header('E-posta')->priority(3),\n        Column::make('city')->header('Şehir'),\n    ];\n}"
+      "protected function responsive(): string\n{\n    return 'collapse';   // cards, scroll, collapse, modal, auto\n}\n\nprotected function columns(): array\n{\n    return [\n        Column::make('customer')->header('Müşteri'),\n        Column::make('total')->header('Tutar')->priority(1),\n        Column::make('email')->header('E-posta')->priority(3),\n        Column::make('city')->header('Şehir'),\n    ];\n}"
      ],
      [
       "Vue",
