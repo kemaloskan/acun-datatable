@@ -96,7 +96,7 @@ export type DataTableEvent =
   | { readonly type: 'globalSearch'; readonly globalSearch: string }
   | { readonly type: 'data'; readonly totalRows: number; readonly removedIds: readonly RowId[] }
   /** Server mode: a page result was applied. `totalRows` is absent when unknown. */
-  | { readonly type: 'result'; readonly rows: number; readonly totalRows?: number }
+  | { readonly type: 'result'; readonly rows: number; readonly totalRows?: number; readonly totalRowsAtLeast?: number }
   | { readonly type: 'selection'; readonly change: Readonly<SelectionChange> }
   | { readonly type: 'columnVisibility'; readonly hiddenColumns: readonly string[] }
   | { readonly type: 'columnOrder'; readonly columnOrder: readonly string[] }
@@ -115,6 +115,11 @@ export interface DataTable<TData> {
   /** Matching rows: local count, or the server's `totalRows` (undefined when unknown). */
   getTotalRows(): number | undefined;
   /**
+   * Server mode without an exact total: the server's `totalRowsAtLeast` (at
+   * least this many match), when it sent one. Undefined otherwise.
+   */
+  getTotalRowsAtLeast(): number | undefined;
+  /**
    * Footer totals of the columns with `aggregate`: computed over every row
    * matching the filters and search (local mode) or taken from the server's
    * `totals` (server mode; empty until a result carries them).
@@ -132,7 +137,8 @@ export interface DataTable<TData> {
   getFilteredRows(): readonly Row<TData>[];
   /**
    * The current page. In server mode with an unknown total, `totalRows` is a
-   * lower bound and `pageCount` adds one page while the page is full.
+   * lower bound (at least the server's `totalRowsAtLeast`) and `pageCount`
+   * counts the pages known to exist, plus one while the page is full.
    */
   getPage(): PageView<TData>;
   /** Local mode only. */
@@ -230,6 +236,7 @@ export function createDataTable<TData>(options: DataTableOptions<TData>): DataTa
   };
   let coreRows = toRows(options.data ?? []);
   let serverTotal: number | undefined;
+  let serverAtLeast: number | undefined;
   let serverTotals: Readonly<Record<string, string | number | null>> | undefined;
   let rowIds = new Set(coreRows.map(row => row.id));
   const model = createLocalRowModel(coreRows, columns, modelOptions);
@@ -402,6 +409,7 @@ export function createDataTable<TData>(options: DataTableOptions<TData>): DataTa
     },
     getPaging: () => paging,
     getTotalRows: () => (server ? serverTotal : getFilteredRows().length),
+    getTotalRowsAtLeast: () => (server && serverTotal === undefined ? serverAtLeast : undefined),
     getAggregates: () => {
       if (!server) {
         // Once per set of matching rows (a virtual table asks on every scroll frame).
@@ -424,12 +432,12 @@ export function createDataTable<TData>(options: DataTableOptions<TData>): DataTa
       if (!server) return paginateRows(getFilteredRows(), { page: state.page, pageSize: state.pageSize });
       const { page, pageSize } = state;
       const known = serverTotal !== undefined;
-      const totalRows = known ? serverTotal! : (page - 1) * pageSize + coreRows.length;
+      const totalRows = known ? serverTotal! : Math.max((page - 1) * pageSize + coreRows.length, serverAtLeast ?? 0);
       const pageCount = cursorPaging
         ? cursors.length // only pages a cursor leads to
         : known
           ? Math.max(1, Math.ceil(totalRows / pageSize))
-          : page + (coreRows.length === pageSize ? 1 : 0);
+          : Math.max(page + (coreRows.length === pageSize ? 1 : 0), Math.ceil((serverAtLeast ?? 0) / pageSize));
       return Object.freeze({ rows: coreRows, page, pageSize, totalRows, pageCount });
     },
 
@@ -441,6 +449,7 @@ export function createDataTable<TData>(options: DataTableOptions<TData>): DataTa
       coreRows = rows;
       rowIds = new Set(rows.map(row => row.id));
       serverTotal = checked.totalRows;
+      serverAtLeast = checked.totalRowsAtLeast;
       serverTotals = checked.totals;
       if (cursorPaging) {
         const page = inner.getState().page;
@@ -452,9 +461,11 @@ export function createDataTable<TData>(options: DataTableOptions<TData>): DataTa
       const before = inner.getState().page;
       clampPage();
       const after = inner.getState().page;
-      emit(serverTotal === undefined
-        ? { type: 'result', rows: rows.length }
-        : { type: 'result', rows: rows.length, totalRows: serverTotal });
+      emit(serverTotal !== undefined
+        ? { type: 'result', rows: rows.length, totalRows: serverTotal }
+        : serverAtLeast !== undefined
+          ? { type: 'result', rows: rows.length, totalRowsAtLeast: serverAtLeast }
+          : { type: 'result', rows: rows.length });
       if (after !== before) emit({ type: 'page', page: after });
     },
 

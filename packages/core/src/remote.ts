@@ -22,6 +22,11 @@ export interface PageResult<TData> {
   readonly rows: readonly TData[];
   /** Total matching records; omitted when the server does not know it. */
   readonly totalRows?: number;
+  /**
+   * At least this many records match: the server stopped counting (e.g. the
+   * Laravel adapter past `countLimit()`). Used only without `totalRows`.
+   */
+  readonly totalRowsAtLeast?: number;
   /** Cursor pagination: where the next page starts; omitted on the last page. */
   readonly nextCursor?: string;
   /** Footer totals per column ID, over every matching row (columns with `aggregate`). */
@@ -109,7 +114,7 @@ export function validatePageResult(value: unknown, options: PageResultValidation
   if (!value || typeof value !== 'object' || Array.isArray(value)) {
     throw new TypeError('page result must be an object');
   }
-  const { rows, totalRows, nextCursor, totals } = value as { rows?: unknown; totalRows?: unknown; nextCursor?: unknown; totals?: unknown };
+  const { rows, totalRows, totalRowsAtLeast, nextCursor, totals } = value as { rows?: unknown; totalRows?: unknown; totalRowsAtLeast?: unknown; nextCursor?: unknown; totals?: unknown };
   if (!Array.isArray(rows)) throw new TypeError('page result rows must be an array');
   rows.forEach((row, index) => {
     if (!row || typeof row !== 'object' || Array.isArray(row)) {
@@ -125,6 +130,11 @@ export function validatePageResult(value: unknown, options: PageResultValidation
     }
     if (totalRows < rows.length) throw new RangeError('page result totalRows is smaller than the number of rows');
   }
+  // A lower bound counts only while there is no exact total.
+  const atLeast = totalRows === undefined ? totalRowsAtLeast : undefined;
+  if (atLeast !== undefined && (typeof atLeast !== 'number' || !Number.isSafeInteger(atLeast) || atLeast < rows.length)) {
+    throw new TypeError('page result totalRowsAtLeast must be a safe integer of at least the number of rows');
+  }
   if (nextCursor !== undefined && (typeof nextCursor !== 'string' || nextCursor.length === 0)) {
     throw new TypeError('page result nextCursor must be a non-empty string');
   }
@@ -135,6 +145,7 @@ export function validatePageResult(value: unknown, options: PageResultValidation
   return Object.freeze({
     rows: Object.freeze([...rows]) as readonly Record<string, unknown>[],
     ...(totalRows !== undefined ? { totalRows } : {}),
+    ...(atLeast !== undefined ? { totalRowsAtLeast: atLeast } : {}),
     ...(nextCursor !== undefined ? { nextCursor } : {}),
     ...(totals !== undefined ? { totals: Object.freeze({ ...(totals as Record<string, string | number | null>) }) } : {}),
   });

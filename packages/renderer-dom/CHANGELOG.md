@@ -4,6 +4,9 @@
 
 ### Minor Changes
 
+- The page info shows the server's count as it was sent: exact ("of 35 rows"),
+  a lower bound ("of 10,000+ rows", new label `pageInfoMore`) or none; the
+  pager numbers the pages known to exist (`knownPageCount`).
 - 8d10fdf: Row actions with `icon`, `iconOnly`, `danger` and `confirm`, and a "⋮" menu
   for the actions past `maxInlineActions`. Shift+click selects a range of rows.
   The bulk bar offers "Select all N matching" (server mode: `allMatching` and

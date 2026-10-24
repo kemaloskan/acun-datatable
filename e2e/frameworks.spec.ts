@@ -31,6 +31,18 @@ for (const app of ['react', 'vue']) {
       expect(errors).toEqual([]);
     });
 
+    test('shows a lower bound when the back end stopped counting, and no total when it did not count', async ({ page }) => {
+      await page.goto(`/e2e/fixtures/${app}.html?limited`);
+      await expect(info(page)).toHaveText('Showing 1 to 10 of 100+ rows'); // the server counted up to 100
+      await expect(page.getByRole('button', { name: 'Page 11' })).toBeVisible(); // 101 rows are known to exist
+      await expect(page.getByRole('button', { name: 'Page 12' })).toHaveCount(0);
+      await page.getByRole('button', { name: 'Page 11' }).click();
+      await expect(info(page)).toHaveText('Showing 101 to 110 of 100+ rows');
+      await page.getByRole('searchbox', { name: 'Search' }).fill('ayse');
+      const found = await api(page, 'pageSize=1&search=ayse');
+      await expect(info(page)).toHaveText(`Showing 1 to 10 of ${found.totalRows} rows`); // under the limit: exact
+    });
+
     test('follows keyset cursors page after page', async ({ page }) => {
       await page.goto(`/e2e/fixtures/${app}.html?cursor`);
       await expect(info(page)).toHaveText('Showing 1 to 10 of 500 rows');
@@ -55,6 +67,14 @@ test.describe('the <script> build with the Node server package', () => {
       await expect(info(page)).toHaveText('Showing 11 to 20 of 500 rows');
     });
   }
+
+  test('shows the lower bound of a limited count', async ({ page }) => {
+    await page.goto('/e2e/fixtures/node.html?limited');
+    await expect(info(page)).toHaveText('Showing 1 to 10 of 100+ rows');
+    const answer = await (await page.request.get('/e2e/api/orders-limited?pageSize=10')).json();
+    expect(answer).toMatchObject({ totalRowsAtLeast: 101 });
+    expect(answer).not.toHaveProperty('totalRows');
+  });
 
   test('refuses what the allowlist does not allow: 422, or DataTables\' error with a 200', async ({ page }) => {
     const refused = await page.request.get('/e2e/api/orders?filters[0][field]=total&filters[0][op]=contains&filters[0][value]=1');

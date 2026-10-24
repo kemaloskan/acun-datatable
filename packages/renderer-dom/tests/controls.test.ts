@@ -217,3 +217,32 @@ describe('paging with an unknown server total', () => {
     expect(pager.querySelector<HTMLElement>('.adt-last')!.hidden).toBe(false);
   });
 });
+
+describe('the server count', () => {
+  it('shows an exact total, a lower bound or only the range, and numbers the pages known to exist', () => {
+    const table = createDataTable<Item>({ mode: 'server', columns, initialState: { pageSize: 10 } });
+    const info = document.createElement('div');
+    const pager = document.createElement('div');
+    host.append(info, pager);
+    renderPageInfo(info, table);
+    renderPagination(pager, table, { firstLast: true });
+    const page = (rows: number) => Array.from({ length: rows }, (_, index) => ({ id: index + 1, name: `R${index}` }));
+    const numbers = () => [...pager.querySelectorAll('.adt-page-numbers > *')].map(node => node.textContent);
+    const last = () => pager.querySelector<HTMLElement>('.adt-last')!;
+
+    table.setPageResult({ rows: page(10), totalRows: 35 });
+    expect(info.textContent).toBe('Showing 1 to 10 of 35 rows');
+    expect(numbers()).toEqual(['1', '2', '3', '4']);
+    expect(last().hidden).toBe(false);
+
+    table.setPageResult({ rows: page(10), totalRowsAtLeast: 10_001 });
+    expect(info.textContent).toBe('Showing 1 to 10 of 10,000+ rows');
+    expect(numbers().at(-1)).toBe('1,001'); // 10,001 rows exist: 1,001 pages of 10
+    expect(last().hidden).toBe(true); // the last page is not known
+
+    table.setPageResult({ rows: page(10) });
+    expect(info.textContent).toBe('Showing rows 1 to 10');
+    expect(numbers()).toEqual(['1']);
+    expect(pager.querySelector('.adt-next')!.getAttribute('aria-disabled')).toBeNull(); // a full page: next may follow
+  });
+});

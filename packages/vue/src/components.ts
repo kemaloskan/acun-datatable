@@ -5,7 +5,7 @@ import {
 } from 'vue';
 import { COLUMN_WIDTH_LIMITS, getPageItems, type ColumnDef, type DataTable, type Row } from '@acunsoft/datatable-core';
 import {
-  cellValue, checkPageSizes, checkResponsive, checkSize, confirmed, filterControls, splitActions, createCellText, ICONS, labelsEn, nextSorting, pageInfoText,
+  cellValue, checkPageSizes, checkResponsive, checkSize, confirmed, filterControls, splitActions, createCellText, ICONS, labelsEn, knownPageCount, nextSorting, pageInfoText,
   afterPointerRelease, autoResponsive, cellEditor, checkVirtual, virtualWindow, columnsChanged, columnTools, isEditable, numeric, pageSizeChoices, pinColumns, resetColumns, priorityOf, rangeOf, renderBulkActions, renderFilterChips, renderFilters, renderMenu, rowName, scrollHeight,
   checkFixedColumns, type CellEditor, type EditHandler, type FixedColumns, type MenuItem, type RenderedComponent, type ResponsiveMode, type TableSize,
   type BulkAction, type BulkSelection, type CellFormatter, type DataTableLabels, type RowAction, type StatusSource,
@@ -618,7 +618,7 @@ export const AcunPagination = defineComponent({
         type: 'button', class: `adt-page adt-page-arrow adt-${name}`, 'aria-label': label[name],
         'aria-disabled': disabled ? 'true' : undefined, onClick: () => { if (!disabled) table.setPage(target); },
       }, [iconNode(name)]);
-      const items = getPageItems(page.page, known ? page.pageCount : page.page, { siblings: props.siblings, boundaries: props.boundaries });
+      const items = getPageItems(page.page, knownPageCount(props.table), { siblings: props.siblings, boundaries: props.boundaries });
       return h('nav', { class: 'adt-paging', 'aria-label': label.pagination }, [
         props.firstLast ? arrow('first', atStart, 1) : null,
         arrow('previous', atStart, page.page - 1),

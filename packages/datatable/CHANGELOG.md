@@ -4,6 +4,7 @@
 
 ### Minor Changes
 
+- Reads `totalRowsAtLeast` (a server that stopped counting) and shows "10,000+".
 - 30c5883: Child rows (DataTables `row().child()`): DOM `detail` (a node, text or a
   promise, with loading and error states), Vue `#detail="{ row }"` slot, React
   `detail` prop and `AcunDataTable` `detail`. Every row gets a ⊕ button; with

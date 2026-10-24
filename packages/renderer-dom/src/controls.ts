@@ -62,7 +62,7 @@ export function renderPagination<TData>(
       last.hidden = !known; // the last page of an unknown total is not known
     }
     // Unknown total: number only the pages that are known to exist.
-    const items = getPageItems(page.page, known ? page.pageCount : page.page, itemOptions);
+    const items = getPageItems(page.page, knownPageCount(table), itemOptions);
     keepFocus(numbers, () => numbers.replaceChildren(...items.map(item => {
       if (item === 'gap') return element(doc, 'span', { class: 'adt-page-gap', 'aria-hidden': 'true' }, '…');
       const button = element(doc, 'button', {
@@ -142,7 +142,23 @@ export interface RenderPageInfoOptions {
   readonly all?: boolean;
 }
 
-/** The info text of a page: `1–25 of 5,000 rows`, or only the range when the total is unknown. */
+/**
+ * The pages known to exist, for numbering: all of them with an exact total;
+ * without one, those up to the current page and up to the server's
+ * `totalRowsAtLeast` ("next" still leads on while the page is full).
+ */
+export function knownPageCount<TData>(table: DataTable<TData>): number {
+  const page = table.getPage();
+  if (table.getTotalRows() !== undefined) return page.pageCount;
+  const atLeast = table.getTotalRowsAtLeast();
+  return Math.max(page.page, atLeast === undefined ? 0 : Math.ceil(atLeast / page.pageSize));
+}
+
+/**
+ * The info text of a page as the server counted: `1–25 of 5,000 rows` (an exact
+ * total), `1–25 of 10,000+ rows` (`totalRowsAtLeast`: the server stopped
+ * counting), or only the range (no count).
+ */
 export function pageInfoText<TData>(table: DataTable<TData>, labels: DataTableLabels, all = false): string {
   if (all) {
     const total = table.getFilteredRows().length;
@@ -152,7 +168,10 @@ export function pageInfoText<TData>(table: DataTable<TData>, labels: DataTableLa
   if (page.rows.length === 0) return labels.pageInfoEmpty;
   const from = (page.page - 1) * page.pageSize + 1;
   const to = from + page.rows.length - 1;
-  return table.getTotalRows() === undefined ? labels.pageInfoOpen(from, to) : labels.pageInfo(from, to, page.totalRows);
+  if (table.getTotalRows() !== undefined) return labels.pageInfo(from, to, page.totalRows);
+  const atLeast = table.getTotalRowsAtLeast();
+  // "10,000+" as the Livewire table writes it: at least 10,001 match, so more than 10,000 (on any page).
+  return atLeast !== undefined ? labels.pageInfoMore(from, to, atLeast - 1) : labels.pageInfoOpen(from, to);
 }
 
 /** Render the visible range and the total as one polite live region. */

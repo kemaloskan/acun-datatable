@@ -2,9 +2,10 @@
 import { createDataTable } from '@acunsoft/datatable-core';
 import { connectTable, createHttpDataSource, createQueryRunner } from '@acunsoft/datatable-http';
 
-/** A server table on the real Node API; `?cursor` asks for keyset pages. */
+/** A server table on the real Node API; `?cursor` asks for keyset pages, `?limited` a back end that counts up to 100. */
 export function ordersTable() {
   const cursor = new URLSearchParams(location.search).has('cursor');
+  const url = new URLSearchParams(location.search).has('limited') ? '/e2e/api/orders-limited' : '/e2e/api/orders';
   const table = createDataTable({
     mode: 'server', locale: 'tr', ...(cursor ? { paging: 'cursor' } : {}), initialState: { pageSize: 10 },
     columns: [
@@ -14,7 +15,7 @@ export function ordersTable() {
       { id: 'paid', header: 'Paid', accessorKey: 'paid', type: 'boolean', enableFiltering: true, filter: true },
     ],
   });
-  const runner = createQueryRunner(createHttpDataSource({ url: '/e2e/api/orders', ...(cursor ? { paging: 'cursor' } : {}) }));
+  const runner = createQueryRunner(createHttpDataSource({ url, ...(cursor ? { paging: 'cursor' } : {}) }));
   window.__table = table;
   return { table, runner, connect: () => connectTable(table, runner) };
 }

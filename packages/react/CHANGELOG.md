@@ -4,6 +4,8 @@
 
 ### Minor Changes
 
+- `PageInfo` and `Pagination` show a server's lower bound ("10,000+") and number
+  the pages known to exist.
 - 8d10fdf: Row actions with `icon`, `iconOnly`, `danger` and `confirm`, and a "⋮" menu
   for the actions past `maxInlineActions`. Shift+click selects a range of rows.
   The bulk bar offers "Select all N matching" (server mode: `allMatching` and

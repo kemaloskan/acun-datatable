@@ -254,3 +254,12 @@ describe('NULL values, big integers and odd requests', () => {
     expect(tableError(new TableQueryError('sort', 'no'), form)).toMatchObject({ status: 200, body: { draw: 4, error: 'no' } });
   });
 });
+
+describe('counting', () => {
+  it('sends an exact total, a lower bound, or none, as the back end counted', () => {
+    const query = readTableQuery({}, columns);
+    expect(tableResponse(query, [{ id: 1 }], 7)).toEqual({ rows: [{ id: 1 }], totalRows: 7 });
+    expect(tableResponse(query, [{ id: 1 }], 10_001, { atLeast: true })).toEqual({ rows: [{ id: 1 }], totalRowsAtLeast: 10_001 });
+    expect(tableResponse(query, [{ id: 1 }])).toEqual({ rows: [{ id: 1 }] });
+  });
+});

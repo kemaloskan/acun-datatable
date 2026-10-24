@@ -4,6 +4,8 @@
 
 ### Minor Changes
 
+- `tableResponse(…, { atLeast: true })` sends a limited count as
+  `totalRowsAtLeast`.
 - fc415f6: New package: the Node back end for Next.js route handlers, Express and
   Fastify. `defineColumns` (the allowlist), `readTableQuery` (this format or
   DataTables' protocol, checked and typed), `sqlQuery` (bound-parameter SQL

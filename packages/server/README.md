@@ -94,7 +94,10 @@ or `createHttpDataSource({ url: '/api/orders' })` with the React or Vue package.
   local `YYYY-MM-DD HH:MM:SS` text. `bindDate: date => date.toISOString()`
   matches SQLite columns that store ISO text in UTC.
 - **`tableResponse`** answers `{ rows, totalRows, nextCursor? }`, or
-  `{ draw, recordsTotal, recordsFiltered, data }` for a DataTables request;
+  `{ draw, recordsTotal, recordsFiltered, data }` for a DataTables request.
+  How you count is your choice: pass the exact count; or a limited count
+  with `atLeast: true` (sent as `totalRowsAtLeast`, shown as "10,000+");
+  or no count at all (the table pages on without a total);
   `map` picks what each row sends. **`tableError`** turns a `TableQueryError`
   into a 422 (or DataTables' `error` with a 200) and throws anything else on.
 

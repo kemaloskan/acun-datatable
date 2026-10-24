@@ -122,3 +122,29 @@ describe('createDataTable — server mode', () => {
     expect(t.getPage().rows).toEqual([]);
   });
 });
+
+describe('the three ways a server can count', () => {
+  it('uses an exact total, a lower bound, or no total, as the server sent it', () => {
+    const t = serverTable();
+    const events: DataTableEvent[] = [];
+    t.subscribe((_, event) => events.push(event));
+
+    t.setPageResult({ rows: rows(1, 2), totalRows: 7 }); // exact
+    expect([t.getTotalRows(), t.getTotalRowsAtLeast()]).toEqual([7, undefined]);
+    expect(t.getPage()).toMatchObject({ totalRows: 7, pageCount: 4 });
+
+    t.setPageResult({ rows: rows(1, 2), totalRowsAtLeast: 10_001 }); // the server stopped counting
+    expect([t.getTotalRows(), t.getTotalRowsAtLeast()]).toEqual([undefined, 10_001]);
+    expect(t.getPage()).toMatchObject({ totalRows: 10_001, pageCount: 5001 }); // pages known to exist
+    expect(events.at(-1)).toEqual({ type: 'result', rows: 2, totalRowsAtLeast: 10_001 });
+
+    t.setPageResult({ rows: rows(1, 2) }); // not counted at all
+    expect([t.getTotalRows(), t.getTotalRowsAtLeast()]).toEqual([undefined, undefined]);
+    expect(t.getPage()).toMatchObject({ totalRows: 2, pageCount: 2 }); // a full page: one more may follow
+
+    t.setPageResult({ rows: rows(1, 2), totalRows: 7, totalRowsAtLeast: 99 } as never); // exact wins
+    expect([t.getTotalRows(), t.getTotalRowsAtLeast()]).toEqual([7, undefined]);
+    expect(() => t.setPageResult({ rows: rows(1, 2), totalRowsAtLeast: 1 })).toThrow('totalRowsAtLeast');
+    expect(() => t.setPageResult({ rows: rows(1, 2), totalRowsAtLeast: '9' as never })).toThrow('totalRowsAtLeast');
+  });
+});

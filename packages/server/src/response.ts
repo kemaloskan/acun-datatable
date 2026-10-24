@@ -7,6 +7,12 @@ export interface TableResponseOptions<TRow> {
   readonly recordsTotal?: number;
   /** Map each row to what the browser should get (leave out what it must not see). */
   readonly map?: (row: TRow) => unknown;
+  /**
+   * `total` is a lower bound: you stopped counting (e.g. counted at most
+   * 10,001 matches). Sent as `totalRowsAtLeast`; the table then shows
+   * "10,000+" and numbers only the pages known to exist.
+   */
+  readonly atLeast?: boolean;
 }
 
 /**
@@ -14,7 +20,8 @@ export interface TableResponseOptions<TRow> {
  * package's `{ rows, totalRows, nextCursor? }`, or DataTables'
  * `{ draw, recordsTotal, recordsFiltered, data }`. With cursor paging the
  * page was read one row longer: the extra row is dropped and only tells
- * that there is a next page. `total` may be left out when not counted.
+ * that there is a next page. `total` may be left out when not counted, or
+ * be a lower bound (`atLeast`).
  */
 export function tableResponse<TRow extends Record<string, unknown>>(query: ServerTableQuery, rows: readonly TRow[], total?: number | bigint | string, options: TableResponseOptions<TRow> = {}): Record<string, unknown> {
   const more = query.cursorPaging && rows.length > query.pageSize;
@@ -28,7 +35,7 @@ export function tableResponse<TRow extends Record<string, unknown>>(query: Serve
   if (more && !options.cursorOf) throw new TypeError('cursor paging needs options.cursorOf for nextCursor');
   return {
     rows: out,
-    ...(count === undefined ? {} : { totalRows: count }),
+    ...(count === undefined ? {} : options.atLeast ? { totalRowsAtLeast: count } : { totalRows: count }),
     ...(more ? { nextCursor: options.cursorOf!(page[page.length - 1]!) } : {}),
   };
 }

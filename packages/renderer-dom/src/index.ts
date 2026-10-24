@@ -16,7 +16,7 @@ export {
   type CellContext, type CellFormatter, type CellRenderer, type DetailRenderer, type RenderTableOptions, type ResponsiveMode, type StatusSource, type TableSize,
 } from './table';
 export {
-  checkPageSizes, pageInfoText, pageSizeChoices, renderPageInfo, renderPageSize, renderPagination, renderSearch,
+  checkPageSizes, knownPageCount, pageInfoText, pageSizeChoices, renderPageInfo, renderPageSize, renderPagination, renderSearch,
   type RenderPageInfoOptions, type RenderPageSizeOptions, type RenderPaginationOptions, type RenderSearchOptions,
 } from './controls';
 export {

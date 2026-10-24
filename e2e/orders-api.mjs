@@ -27,12 +27,21 @@ for (let id = 1; id <= 500; id++) {
 
 const all = statement => db.prepare(statement.text).all(...statement.values);
 
-/** Answer one table request; `params` is URLSearchParams (GET) or the parsed form (POST). */
-export function ordersApi(params) {
+/**
+ * Answer one table request; `params` is URLSearchParams (GET) or the parsed form
+ * (POST). With `countUpTo`, matches are counted only that far (a limited count):
+ * past it the answer carries `totalRowsAtLeast` instead of `totalRows`.
+ */
+export function ordersApi(params, { countUpTo } = {}) {
   try {
     const query = readTableQuery(params, columns, { maxPageSize: 100 });
     const sql = sqlQuery(query, columns, { dialect: 'sqlite', table: 'orders', select: ['id', 'customer', 'city', 'total', 'ordered_at', 'paid'] });
     const rows = all(sql.page).map(row => ({ ...row, paid: row.paid === 1 }));
+    if (countUpTo !== undefined) {
+      const limited = { text: `SELECT COUNT(*) AS count FROM (SELECT 1 FROM orders${sql.count.text.split(' FROM "orders"')[1] ?? ''} LIMIT ${countUpTo + 1})`, values: sql.count.values };
+      const counted = all(limited)[0].count;
+      return { status: 200, body: tableResponse(query, rows, counted, { cursorOf: sql.cursorOf, atLeast: counted > countUpTo }) };
+    }
     const total = all(sql.count)[0].count;
     return { status: 200, body: tableResponse(query, rows, total, { cursorOf: sql.cursorOf, recordsTotal: 500 }) };
   } catch (error) {

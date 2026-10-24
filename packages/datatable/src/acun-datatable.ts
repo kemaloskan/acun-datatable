@@ -761,11 +761,12 @@ function serverRows(body: unknown, dataSrc: AjaxOptions['dataSrc']): unknown {
   return { rows: json['data'], ...total(json) };
 }
 
-function total(json: Data): { totalRows?: unknown; totals?: unknown; nextCursor?: string } {
+function total(json: Data): { totalRows?: unknown; totalRowsAtLeast?: unknown; totals?: unknown; nextCursor?: string } {
   const meta = json['meta'] as Data | undefined;
   const count = json['totalRows'] ?? json['recordsFiltered'] ?? json['total'] ?? meta?.['total'];
   return {
     ...(count === undefined ? {} : { totalRows: count }),
+    ...(count === undefined && json['totalRowsAtLeast'] !== undefined ? { totalRowsAtLeast: json['totalRowsAtLeast'] } : {}),
     ...(json['totals'] === undefined ? {} : { totals: json['totals'] }),
     ...(typeof json['nextCursor'] === 'string' ? { nextCursor: json['nextCursor'] } : {}),
   };

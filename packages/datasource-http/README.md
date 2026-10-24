@@ -76,8 +76,18 @@ Dates are sent in the user's local time so the day never shifts (`formatLocalDat
 a local midnight becomes `2026-10-23`, other times `2026-10-23T14:05:00.000+03:00`.
 Booleans are sent as `true`/`false`. `createTableQuery` rejects unknown operators
 and invalid values and leaves out empty `contains` filters and empty search. The server
-answers `{ "rows": [...], "totalRows": 185920 }` (`totalRows` may be omitted when
-unknown), or Laravel's paginator JSON with `parseResponse: fromLaravelPaginator`.
+answers `{ "rows": [...], "totalRows": 185920 }`, or Laravel's paginator JSON with
+`parseResponse: fromLaravelPaginator`. The server decides how it counts, and
+the table shows what it sent:
+
+| The server sends | The table shows | Page numbers |
+|---|---|---|
+| `totalRows` (an exact count) | "Showing 1 to 25 of 185,920 rows" | every page, and « last |
+| `totalRowsAtLeast` (it stopped counting, e.g. the Laravel adapter past `countLimit()`) | "Showing 1 to 25 of 10,000+ rows" | the pages known to exist; no « last |
+| neither (no count) | "Showing rows 1 to 25" | the pages seen so far; "next" while a page is full |
+
+`table.getTotalRows()` is the exact count (or undefined), and
+`table.getTotalRowsAtLeast()` the lower bound.
 
 **DataTables protocol.** `serializeQuery: query => serializeDataTablesQuery(query, columns, ++draw)`
 and `parseResponse: fromDataTablesResponse` talk to an existing DataTables

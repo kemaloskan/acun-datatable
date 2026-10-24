@@ -4,7 +4,7 @@ import {
 } from 'react';
 import { COLUMN_WIDTH_LIMITS, getPageItems, type ColumnDef, type DataTable, type Row } from '@acunsoft/datatable-core';
 import {
-  cellValue, checkPageSizes, checkResponsive, checkSize, confirmed, filterControls, splitActions, createCellText, ICONS, labelsEn, nextSorting, pageInfoText,
+  cellValue, checkPageSizes, checkResponsive, checkSize, confirmed, filterControls, splitActions, createCellText, ICONS, labelsEn, knownPageCount, nextSorting, pageInfoText,
   afterPointerRelease, autoResponsive, cellEditor, checkVirtual, virtualWindow, columnsChanged, columnTools, isEditable, numeric, pageSizeChoices, pinColumns, resetColumns, priorityOf, rangeOf, renderBulkActions, renderFilterChips, renderFilters, renderMenu, rowName, scrollHeight,
   checkFixedColumns, type CellEditor, type EditHandler, type FixedColumns, type MenuItem, type RenderedComponent, type ResponsiveMode, type TableSize,
   type BulkAction, type BulkSelection, type CellFormatter, type DataTableLabels, type RowAction, type StatusSource,
@@ -539,7 +539,8 @@ export interface PaginationProps {
 /**
  * Numbered pages: `‹ 1 … 4 5 6 … 20 ›`, with a fixed number of buttons while
  * there are more pages than fit. With an unknown server total it numbers the
- * pages seen so far and keeps "next" while the page is full.
+ * pages known to exist (seen so far, or up to the server's `totalRowsAtLeast`)
+ * and keeps "next" while the page is full.
  */
 export function Pagination({
   table, siblings = 1, boundaries = 1, firstLast = false, locale = 'en', labels: custom,
@@ -548,7 +549,7 @@ export function Pagination({
   const labels = withLabels(custom);
   const numbers = useMemo(() => new Intl.NumberFormat(locale), [locale]);
   const known = totalRows !== undefined;
-  const items = getPageItems(page.page, known ? page.pageCount : page.page, { siblings, boundaries });
+  const items = getPageItems(page.page, knownPageCount(table), { siblings, boundaries });
   const atStart = page.page <= 1;
   const atEnd = page.page >= page.pageCount;
   const arrow = (name: 'first' | 'previous' | 'next' | 'last', disabled: boolean, target: number): ReactElement => h('button', {

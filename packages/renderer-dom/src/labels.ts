@@ -13,6 +13,8 @@ export interface DataTableLabels {
   readonly page: (page: number) => string;
   /** Range of the visible rows: `Showing 1 to 25 of 5,000 rows`. */
   readonly pageInfo: (from: number, to: number, totalRows: number) => string;
+  /** Server mode when the server stopped counting: more than `moreThan` rows match ("10,000+"). */
+  readonly pageInfoMore: (from: number, to: number, moreThan: number) => string;
   /** Server mode when the server does not report a total: only the range is known. */
   readonly pageInfoOpen: (from: number, to: number) => string;
   readonly pageInfoEmpty: string;
@@ -103,6 +105,7 @@ export const labelsEn: DataTableLabels = Object.freeze({
   page: (page: number) => `Page ${en.number(page)}`,
   pageInfo: (from: number, to: number, totalRows: number) =>
     `Showing ${en.number(from)} to ${en.number(to)} of ${en.number(totalRows)} ${en.one(totalRows) ? 'row' : 'rows'}`,
+  pageInfoMore: (from: number, to: number, moreThan: number) => `Showing ${en.number(from)} to ${en.number(to)} of ${en.number(moreThan)}+ rows`,
   pageInfoOpen: (from: number, to: number) => `Showing rows ${en.number(from)} to ${en.number(to)}`,
   pageInfoEmpty: 'No rows to show',
   pageSize: 'Rows per page',
@@ -165,6 +168,7 @@ export const labelsTr: DataTableLabels = Object.freeze({
   page: (page: number) => `Sayfa ${tr.number(page)}`,
   pageInfo: (from: number, to: number, totalRows: number) =>
     `Toplam: ${tr.number(totalRows)} kaydın ${tr.number(from)} ile ${tr.number(to)} arasını gösteriyor`,
+  pageInfoMore: (from: number, to: number, moreThan: number) => `Toplam: ${tr.number(moreThan)}+ kaydın ${tr.number(from)} ile ${tr.number(to)} arasını gösteriyor`,
   pageInfoOpen: (from: number, to: number) => `${tr.number(from)} ile ${tr.number(to)} arasındaki kayıtları gösteriyor`,
   pageInfoEmpty: 'Gösterilecek kayıt yok',
   pageSize: 'Sayfa başına satır',
@@ -227,6 +231,7 @@ export const labelsDe: DataTableLabels = Object.freeze({
   page: (page: number) => `Seite ${de.number(page)}`,
   pageInfo: (from: number, to: number, totalRows: number) =>
     `${de.number(from)} bis ${de.number(to)} von ${de.number(totalRows)} ${de.one(totalRows) ? 'Eintrag' : 'Einträgen'}`,
+  pageInfoMore: (from: number, to: number, moreThan: number) => `${de.number(from)} bis ${de.number(to)} von ${de.number(moreThan)}+ Einträgen`,
   pageInfoOpen: (from: number, to: number) => `Einträge ${de.number(from)} bis ${de.number(to)}`,
   pageInfoEmpty: 'Keine Einträge vorhanden',
   pageSize: 'Zeilen pro Seite',
@@ -289,6 +294,7 @@ export const labelsFr: DataTableLabels = Object.freeze({
   page: (page: number) => `Page ${fr.number(page)}`,
   pageInfo: (from: number, to: number, totalRows: number) =>
     `Affichage de ${fr.number(from)} à ${fr.number(to)} sur ${fr.number(totalRows)} ${fr.one(totalRows) ? 'ligne' : 'lignes'}`,
+  pageInfoMore: (from: number, to: number, moreThan: number) => `Affichage de ${fr.number(from)} à ${fr.number(to)} sur ${fr.number(moreThan)}+ lignes`,
   pageInfoOpen: (from: number, to: number) => `Affichage des lignes ${fr.number(from)} à ${fr.number(to)}`,
   pageInfoEmpty: 'Aucune ligne à afficher',
   pageSize: 'Lignes par page',
@@ -351,6 +357,7 @@ export const labelsEs: DataTableLabels = Object.freeze({
   page: (page: number) => `Página ${es.number(page)}`,
   pageInfo: (from: number, to: number, totalRows: number) =>
     `Mostrando ${es.number(from)} a ${es.number(to)} de ${es.number(totalRows)} ${es.one(totalRows) ? 'fila' : 'filas'}`,
+  pageInfoMore: (from: number, to: number, moreThan: number) => `Mostrando ${es.number(from)} a ${es.number(to)} de ${es.number(moreThan)}+ filas`,
   pageInfoOpen: (from: number, to: number) => `Mostrando filas ${es.number(from)} a ${es.number(to)}`,
   pageInfoEmpty: 'No hay filas para mostrar',
   pageSize: 'Filas por página',

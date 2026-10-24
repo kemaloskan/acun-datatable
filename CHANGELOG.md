@@ -25,6 +25,9 @@ npm package's `CHANGELOG.md` has its own notes.
   footer totals, child rows, skeleton loading, fixed, resizable and movable
   columns, editing in place, `responsive: 'auto'`, virtual scrolling, cursor
   paging, `persistState` for the column layout.
+- **Counting as the server counts:** an exact `totalRows`, a lower bound
+  `totalRowsAtLeast` ("10,000+", as the Laravel adapter sends past
+  `countLimit()`), or no count; the pager numbers the pages known to exist.
 - **Fixes from review:** NULL-aware cursor paging, cursor exports, editor
   clicks, modal focus, large selections, column widths on phones, Vue table
   props, SSR ids, and more (see each package's changelog).

@@ -4,6 +4,10 @@
 
 ### Minor Changes
 
+- The server's lower bound: a page result may carry `totalRowsAtLeast` when the
+  server stopped counting (the Laravel adapter past `countLimit()`);
+  `getTotalRowsAtLeast()` returns it and `getPage().pageCount` counts the pages
+  known to exist.
 - b758334: Resizing and moving columns. Core: `columnOrder` and `columnWidths` state
   with `moveColumn`, `setColumnOrder`, `setColumnWidth`, `setColumnWidths`
   (`COLUMN_WIDTH_LIMITS`), kept by `persistState`. Renderers:

@@ -55,15 +55,18 @@ createServer((request, response) => {
     productsApi(request, response);
     return;
   }
-  if (request.url === '/e2e/api/orders' || request.url?.startsWith('/e2e/api/orders?')) {
+  // /e2e/api/orders counts every match; /e2e/api/orders-limited counts up to 100.
+  const api = /^\/e2e\/api\/(orders|orders-limited)(\?|$)/.exec(request.url ?? '');
+  if (api) {
+    const options = api[1] === 'orders-limited' ? { countUpTo: 100 } : {};
     const answer = ({ status, body }) => response.writeHead(status, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' }).end(JSON.stringify(body));
     if (request.method === 'GET') {
-      answer(ordersApi(new URL(request.url, 'http://localhost').searchParams));
+      answer(ordersApi(new URL(request.url, 'http://localhost').searchParams, options));
       return;
     }
     let body = '';
     request.on('data', chunk => { body += chunk; });
-    request.on('end', () => answer(ordersApi(new URLSearchParams(body))));
+    request.on('end', () => answer(ordersApi(new URLSearchParams(body), options)));
     return;
   }
   if (request.method !== 'GET' && request.method !== 'HEAD') {

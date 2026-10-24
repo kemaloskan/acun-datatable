@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>E2E · Node back end</title>
-<!-- The <script> build against the real Node back end (e2e/orders-api.mjs). ?protocol=datatables, ?cursor. -->
+<!-- The <script> build against the real Node back end (e2e/orders-api.mjs). ?protocol=datatables, ?cursor, ?limited (a back end that counts up to 100). -->
 <link rel="stylesheet" href="/packages/datatable/dist/styles.css">
 <script src="/packages/datatable/dist/acun-datatable.min.js"></script>
 </head>
@@ -14,7 +14,7 @@
 const params = new URLSearchParams(location.search);
 window.dt = new AcunDataTable('#orders', {
   serverSide: true,
-  ajax: { url: '/e2e/api/orders', ...(params.has('protocol') ? { protocol: 'datatables' } : {}), ...(params.has('post') ? { method: 'POST' } : {}) },
+  ajax: { url: params.has('limited') ? '/e2e/api/orders-limited' : '/e2e/api/orders', ...(params.has('protocol') ? { protocol: 'datatables' } : {}), ...(params.has('post') ? { method: 'POST' } : {}) },
   columns: [
     { data: 'customer', title: 'Customer' },
     { data: 'city', title: 'City' },
