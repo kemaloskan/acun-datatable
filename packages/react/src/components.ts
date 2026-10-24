@@ -5,8 +5,8 @@ import {
 import { getPageItems, type ColumnDef, type DataTable, type Row } from '@acunsoft/datatable-core';
 import {
   cellValue, checkPageSizes, checkResponsive, checkSize, createCellText, ICONS, labelsEn, nextSorting, pageInfoText,
-  numeric, pageSizeChoices, priorityOf, renderFilterChips, renderFilters, rowName, scrollHeight,
-  type RenderedComponent, type ResponsiveMode, type TableSize,
+  numeric, pageSizeChoices, priorityOf, renderFilterChips, renderFilters, renderMenu, rowName, scrollHeight,
+  type MenuItem, type RenderedComponent, type ResponsiveMode, type TableSize,
   type BulkAction, type BulkSelection, type CellFormatter, type DataTableLabels, type RowAction, type StatusSource,
 } from '@acunsoft/datatable-dom';
 import { useTable } from './hooks.js';
@@ -473,5 +473,18 @@ export function Filters({ table, labels, locale = 'en' }: FiltersProps): ReactEl
 /** The active filters as removable chips (see `renderFilterChips`). */
 export function FilterChips({ table, labels, locale = 'en' }: FiltersProps): ReactElement {
   const host = useDomControl(el => renderFilterChips(el, table, { labels: withLabels(labels), locale }), [table, locale, JSON.stringify(labels ?? {})]);
+  return h('div', { ref: host, className: 'adt-feature' });
+}
+
+export interface ToolsProps {
+  readonly items: readonly MenuItem[];
+  /** The button text. Default: the `tools` label. */
+  readonly label?: string;
+  readonly labels?: Partial<DataTableLabels>;
+}
+
+/** A tools menu (export, copy, print, your own actions) with `items` (see `renderMenu`). */
+export function Tools({ items, label, labels }: ToolsProps): ReactElement {
+  const host = useDomControl(el => renderMenu(el, { items, labels: withLabels(labels), ...(label ? { label } : {}) }), [items, label, JSON.stringify(labels ?? {})]);
   return h('div', { ref: host, className: 'adt-feature' });
 }

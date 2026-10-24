@@ -7,7 +7,7 @@ export default defineConfig([
     format: ['esm'],
     dts: true,
     clean: true,
-    external: ['@acunsoft/datatable-core', '@acunsoft/datatable-dom', '@acunsoft/datatable-http'],
+    external: ['@acunsoft/datatable-core', '@acunsoft/datatable-dom', '@acunsoft/datatable-http', '@acunsoft/datatable-export'],
   },
   {
     // <script src="…/acun-datatable.min.js">: everything in one file, window.AcunDataTable.

@@ -60,6 +60,7 @@ export const ICONS = Object.freeze({
   collapse: 'M8 12h8M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18z',
   close: 'M18 6 6 18M6 6l12 12',
   filter: 'M3 5h18l-7 8.5V19l-4 2v-7.5z',
+  download: 'M12 3v12M7 10l5 5 5-5M5 21h14',
 } as const);
 
 /** A decorative stroke icon (hidden from screen readers; the control carries the name). */
@@ -80,4 +81,22 @@ export function icon(doc: Document, name: keyof typeof ICONS): SVGSVGElement {
 export function ariaDisabled(node: HTMLElement, value: boolean): void {
   if (value) node.setAttribute('aria-disabled', 'true');
   else node.removeAttribute('aria-disabled');
+}
+
+type Child = Node | string | number | null | undefined | false;
+
+/**
+ * Build an element for a custom cell without any HTML parsing: attributes
+ * are set with `setAttribute`, strings become text nodes.
+ * `el('span', { class: 'badge badge--paid' }, 'Ödendi')`.
+ */
+export function el<K extends keyof HTMLElementTagNameMap>(
+  tag: K, attributes: Readonly<Record<string, string | boolean | undefined>> = {}, ...children: Child[]
+): HTMLElementTagNameMap[K] {
+  const node = element(document, tag, attributes);
+  for (const child of children) {
+    if (child === null || child === undefined || child === false) continue;
+    node.append(typeof child === 'number' ? String(child) : child);
+  }
+  return node;
 }

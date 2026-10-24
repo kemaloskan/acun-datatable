@@ -1,9 +1,11 @@
-export { ICONS, type RenderedComponent } from './dom';
+export { el, ICONS, type RenderedComponent } from './dom';
+export { printTable, renderMenu, type MenuItem, type RenderMenuOptions } from './menu';
 export {
   LABELS, labelsDe, labelsEn, labelsEs, labelsFr, labelsTr, resolveLabels, type DataTableLabels,
 } from './labels';
 export {
-  checkResponsive, checkSize, numeric, priorityOf, renderTable, scrollHeight, type CellFormatter, type RenderTableOptions, type ResponsiveMode, type StatusSource, type TableSize,
+  checkResponsive, checkSize, numeric, priorityOf, renderTable, scrollHeight,
+  type CellContext, type CellFormatter, type CellRenderer, type RenderTableOptions, type ResponsiveMode, type StatusSource, type TableSize,
 } from './table';
 export {
   checkPageSizes, pageInfoText, pageSizeChoices, renderPageInfo, renderPageSize, renderPagination, renderSearch,

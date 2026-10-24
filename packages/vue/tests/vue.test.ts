@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createApp, defineComponent, h, nextTick, ref, type App, type Component } from 'vue';
 import { createDataTable, type ColumnDef, type Row } from '@acunsoft/datatable-core';
 import {
-  AcunBulkActions, AcunColumnToggle, AcunDataTable, AcunFilterChips, AcunFilters, AcunPageInfo, AcunPageSize, AcunPagination, AcunSearch, labelsTr, useDataTable, type BulkSelection,
+  AcunBulkActions, AcunColumnToggle, AcunDataTable, AcunFilterChips, AcunFilters, AcunPageInfo, AcunPageSize, AcunPagination, AcunSearch, AcunTools, labelsTr, useDataTable, type BulkSelection,
 } from '../src/index';
 
 type Order = { id: number; customer: string; total: string; locked?: boolean };
@@ -268,5 +268,15 @@ describe('filters', () => {
     app!.unmount();
     app = undefined;
     table.setFilters([]); // listeners are gone with the component
+  });
+});
+
+describe('tools', () => {
+  it('renders a tools menu from items', async () => {
+    const onSelect = vi.fn();
+    await mount(() => h(AcunTools, { items: [{ id: 'print', label: 'Yazdır', onSelect }], labels: labelsTr }));
+    expect(host.querySelector('.adt-tools summary')!.textContent).toBe('Araçlar');
+    host.querySelector<HTMLButtonElement>('[data-action="print"]')!.click();
+    expect(onSelect).toHaveBeenCalledOnce();
   });
 });

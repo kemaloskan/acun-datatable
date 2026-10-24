@@ -2,10 +2,11 @@ import {
   createDataTable, type ColumnDef, type ColumnType, type DataTable, type DataTableListener, type FilterOption, type Row, type SortRule,
 } from '@acunsoft/datatable-core';
 import {
-  DEFAULT_LAYOUT, renderDataTable, resolveLabels,
-  type BulkAction, type CellFormatter, type DataTableLabels, type DataTableLayout, type LayoutSlot,
-  type RenderedComponent, type ResponsiveMode, type RowAction, type StatusSource, type TableSize,
+  DEFAULT_LAYOUT, downloadFile, printTable, renderDataTable, resolveLabels,
+  type BulkAction, type CellFormatter, type CellRenderer, type DataTableLabels, type DataTableLayout, type LayoutSlot,
+  type MenuItem, type RenderedComponent, type ResponsiveMode, type RowAction, type StatusSource, type TableSize,
 } from '@acunsoft/datatable-dom';
+import { tableToSheet, toCsv, toXlsx, type Sheet } from '@acunsoft/datatable-export';
 import { connectTable, createHttpDataSource, createQueryRunner, type QueryRunner } from '@acunsoft/datatable-http';
 
 type Data = Record<string, unknown>;
@@ -35,7 +36,16 @@ export interface ColumnOptions {
    * choices to tick.
    */
   readonly filter?: boolean | readonly FilterOption[];
+  /**
+   * Draw the cell yourself: return a DOM node (e.g. `el('span', { class: 'badge' }, text)`)
+   * or a string (shown as text). Never parsed as HTML; sorting, search and
+   * exports keep the value.
+   */
+  readonly cell?: (value: unknown, row: Data, text: string) => Node | string;
 }
+
+/** Built-in buttons of the tools menu (DataTables `buttons`). */
+export type ButtonName = 'excel' | 'csv' | 'copy' | 'print';
 
 export interface AjaxOptions {
   readonly url: string;
@@ -109,6 +119,17 @@ export interface AcunDataTableOptions {
   readonly bulkActions?: readonly BulkAction<Data>[];
   /** Show the column menu. Default `true`. */
   readonly columnToggle?: boolean;
+  /**
+   * The tools menu (DataTables `buttons`): `'excel'`, `'csv'`, `'copy'`,
+   * `'print'` and your own `{ id, label, onSelect }`. Exports take the
+   * selected rows, else every row matching the search and filters (server
+   * side: fetched page by page up to `exportLimit`).
+   */
+  readonly buttons?: readonly (ButtonName | MenuItem)[];
+  /** File name of exports, without extension. Default `'export'`. */
+  readonly exportFilename?: string;
+  /** Server side: the most rows an export fetches. Default 10,000. */
+  readonly exportLimit?: number;
   /** Place the controls yourself; merged over the layout the options above give. */
   readonly layout?: DataTableLayout;
 }
@@ -136,6 +157,7 @@ export class AcunDataTable {
   #original: HTMLTableElement | undefined;
   #rendered: RenderedComponent | undefined;
   #runner: QueryRunner<Data> | undefined;
+  #source: ReturnType<typeof createHttpDataSource<Data>> | undefined;
   #disconnect: (() => void) | undefined;
   #loader: ReturnType<typeof loadState> | undefined;
   #destroyed = false;
@@ -192,6 +214,7 @@ export class AcunDataTable {
         columns = inferColumns(first.rows[0], options);
       }
       if (this.#destroyed) return;
+      this.#source = source;
       const table = this.#createTable('server', columns, undefined);
       this.#runner = createQueryRunner(source);
       this.#mount(table, options.processing === false ? undefined : this.#runner);
@@ -275,12 +298,18 @@ export class AcunDataTable {
     const sorting = typeof options.sorting === 'object' ? options.sorting : {};
     const searching = typeof options.searching === 'object' ? options.searching : {};
     const format: Record<string, CellFormatter<Data>> = {};
+    const cells: Record<string, CellRenderer<Data>> = {};
     for (const column of options.columns ?? []) {
       if ('data' in column && column.render) {
         const render = column.render;
         format[column.data] = (value, row: Row<Data>) => render(value, row.original);
       }
+      if ('data' in column && column.cell) {
+        const cell = column.cell;
+        cells[column.data] = ({ value, row, text }) => cell(value, row.original, text);
+      }
     }
+    const labels = resolveLabels(options.language, options.labels);
     const drop = (slot: LayoutSlot | undefined, names: readonly string[]): LayoutSlot => {
       const list = slot === null || slot === undefined ? [] : Array.isArray(slot) ? slot : [slot];
       return list.filter(feature => typeof feature === 'function' || !names.includes(feature as string));
@@ -300,8 +329,10 @@ export class AcunDataTable {
     this.#rendered?.destroy();
     this.#rendered = renderDataTable(this.element, table, {
       locale: options.language ?? 'en',
-      labels: resolveLabels(options.language, options.labels),
+      labels,
       layout,
+      tools: this.#tools(labels),
+      ...(Object.keys(cells).length > 0 ? { cells } : {}),
       ...(pagination.pageSizes ? { pageSizes: pagination.pageSizes } : {}),
       paging: {
         ...(pagination.siblings !== undefined ? { siblings: pagination.siblings } : {}),
@@ -324,6 +355,67 @@ export class AcunDataTable {
       ...(sorting.multiSort === false ? { multiSort: false } : {}),
       ...(status ? { status } : {}),
     });
+  }
+
+  /** The tools menu items for `buttons`. */
+  #tools(labels: DataTableLabels): MenuItem[] {
+    const name = this.#options.exportFilename ?? 'export';
+    return (this.#options.buttons ?? []).map(button => {
+      if (typeof button !== 'string') return button;
+      switch (button) {
+        case 'excel':
+          return { id: 'excel', label: labels.exportExcel, group: labels.export, onSelect: async () => { downloadFile(toXlsx(await this.#sheet()), `${name}.xlsx`); } };
+        case 'csv':
+          return {
+            id: 'csv', label: labels.exportCsv, group: labels.export,
+            onSelect: async () => { downloadFile(toCsv(await this.#sheet(), { delimiter: this.#options.language === 'tr' ? ';' : ',' }), `${name}.csv`); },
+          };
+        case 'copy':
+          return {
+            id: 'copy', label: labels.copy, group: labels.export,
+            onSelect: async () => {
+              const sheet = await this.#sheet();
+              await navigator.clipboard.writeText(toCsv(sheet, { delimiter: '\t', bom: false, newline: '\n' }));
+              return labels.copied(sheet.rows.length);
+            },
+          };
+        case 'print':
+          return { id: 'print', label: labels.print, onSelect: () => printTable() };
+        default:
+          throw new TypeError(`AcunDataTable: unknown button "${String(button)}"`);
+      }
+    });
+  }
+
+  /** The rows to export: the selection, else every matching row (server side: fetched page by page). */
+  async #sheet(): Promise<Sheet> {
+    const table = this.table;
+    if (!table) throw new Error('AcunDataTable: not ready');
+    if (table.getState().selectedIds.length > 0 || !this.#source) {
+      return tableToSheet(table, { rows: table.getState().selectedIds.length > 0 ? 'selected' : 'all' });
+    }
+    const limit = this.#options.exportLimit ?? 10_000;
+    const labels = resolveLabels(this.#options.language, this.#options.labels);
+    const query = table.getQuery();
+    const rows: Data[] = [];
+    for (let page = 1; ; page++) {
+      const result = await this.#source.getPage({ ...query, page, pageSize: 1000 });
+      if (result.totalRows !== undefined && result.totalRows > limit) throw new Error(labels.exportTooLarge(limit));
+      rows.push(...result.rows);
+      if (rows.length > limit) throw new Error(labels.exportTooLarge(limit));
+      if (result.rows.length < 1000) break;
+    }
+    // A local copy in the server's order, with the same visible columns.
+    const copy = createDataTable<Data>({
+      data: rows, columns: table.getColumns(), locale: this.#options.language ?? 'en',
+      getRowId: (() => { const ids = new WeakMap<object, number>(); let next = 0; return (row: Data) => { if (!ids.has(row)) ids.set(row, ++next); return ids.get(row)!; }; })(),
+      initialState: { hiddenColumns: [...table.getState().hiddenColumns] },
+    } as Parameters<typeof createDataTable<Data>>[0]);
+    try {
+      return tableToSheet(copy, { rows: 'all' });
+    } finally {
+      copy.destroy();
+    }
   }
 
   #setData(rows: Data[]): void {

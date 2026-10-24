@@ -167,6 +167,18 @@ texts (`'tr'` → Turkish); `labels` overrides single texts. Features are
 empty element to fill and may return `{ destroy }`. A bar with no features is
 left out. Each part is also available on its own (below), for your own markup.
 
+## Tools menu and custom cells
+
+`renderMenu(container, { items })` renders a dropdown of actions (`{ id,
+label, onSelect, group? }`); a string returned by `onSelect` is announced
+(e.g. "25 rows copied"), a thrown error shown. `renderDataTable(…, { tools })`
+puts it in the top bar (layout feature `tools`); `printTable()` prints the
+table without the controls.
+
+`cells: { status: ({ value, text, row, column }) => el('span', { class: 'badge' }, text) }`
+draws cells yourself: return a DOM node (`el()` builds one without parsing
+HTML) or a string (shown as text). Sorting, search and exports keep the value.
+
 ## `renderFilters(container, table, options?)` · `renderFilterChips(…)`
 
 A "Filters" menu with one control per column that has `filter`, chosen from

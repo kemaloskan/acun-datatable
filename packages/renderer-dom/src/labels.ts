@@ -50,6 +50,15 @@ export interface DataTableLabels {
   readonly filterMax: string;
   readonly filterFrom: string;
   readonly filterTo: string;
+  /** Tools menu (export, copy, print). */
+  readonly tools: string;
+  readonly export: string;
+  readonly exportExcel: string;
+  readonly exportCsv: string;
+  readonly copy: string;
+  readonly copied: (count: number) => string;
+  readonly print: string;
+  readonly exportTooLarge: (max: number) => string;
 }
 
 /** Plural-aware word choice and locale digit grouping for count texts. */
@@ -103,6 +112,14 @@ export const labelsEn: DataTableLabels = Object.freeze({
   filterMax: 'Max',
   filterFrom: 'From',
   filterTo: 'To',
+  tools: 'Tools',
+  export: 'Export',
+  exportExcel: 'Excel (.xlsx)',
+  exportCsv: 'CSV',
+  copy: 'Copy',
+  copied: (count: number) => `${en.number(count)} ${en.one(count) ? 'row' : 'rows'} copied`,
+  print: 'Print',
+  exportTooLarge: (max: number) => `The export exceeds ${en.number(max)} rows; narrow the filters.`,
 });
 
 export const labelsTr: DataTableLabels = Object.freeze({
@@ -144,6 +161,14 @@ export const labelsTr: DataTableLabels = Object.freeze({
   filterMax: 'En çok',
   filterFrom: 'Başlangıç',
   filterTo: 'Bitiş',
+  tools: 'Araçlar',
+  export: 'Dışa aktar',
+  exportExcel: 'Excel (.xlsx)',
+  exportCsv: 'CSV',
+  copy: 'Kopyala',
+  copied: (count: number) => `${tr.number(count)} satır kopyalandı`,
+  print: 'Yazdır',
+  exportTooLarge: (max: number) => `Dışa aktarma ${tr.number(max)} satırı aşıyor; filtreleri daraltın.`,
 });
 
 export const labelsDe: DataTableLabels = Object.freeze({
@@ -185,6 +210,14 @@ export const labelsDe: DataTableLabels = Object.freeze({
   filterMax: 'Max.',
   filterFrom: 'Von',
   filterTo: 'Bis',
+  tools: 'Werkzeuge',
+  export: 'Exportieren',
+  exportExcel: 'Excel (.xlsx)',
+  exportCsv: 'CSV',
+  copy: 'Kopieren',
+  copied: (count: number) => `${de.number(count)} ${de.one(count) ? 'Zeile' : 'Zeilen'} kopiert`,
+  print: 'Drucken',
+  exportTooLarge: (max: number) => `Der Export übersteigt ${de.number(max)} Zeilen; grenzen Sie die Filter ein.`,
 });
 
 export const labelsFr: DataTableLabels = Object.freeze({
@@ -226,6 +259,14 @@ export const labelsFr: DataTableLabels = Object.freeze({
   filterMax: 'Max.',
   filterFrom: 'Du',
   filterTo: 'Au',
+  tools: 'Outils',
+  export: 'Exporter',
+  exportExcel: 'Excel (.xlsx)',
+  exportCsv: 'CSV',
+  copy: 'Copier',
+  copied: (count: number) => `${fr.number(count)} ${fr.one(count) ? 'ligne copiée' : 'lignes copiées'}`,
+  print: 'Imprimer',
+  exportTooLarge: (max: number) => `L’export dépasse ${fr.number(max)} lignes ; affinez les filtres.`,
 });
 
 export const labelsEs: DataTableLabels = Object.freeze({
@@ -267,6 +308,14 @@ export const labelsEs: DataTableLabels = Object.freeze({
   filterMax: 'Máx.',
   filterFrom: 'Desde',
   filterTo: 'Hasta',
+  tools: 'Herramientas',
+  export: 'Exportar',
+  exportExcel: 'Excel (.xlsx)',
+  exportCsv: 'CSV',
+  copy: 'Copiar',
+  copied: (count: number) => `${es.number(count)} ${es.one(count) ? 'fila copiada' : 'filas copiadas'}`,
+  print: 'Imprimir',
+  exportTooLarge: (max: number) => `La exportación supera ${es.number(max)} filas; acota los filtros.`,
 });
 
 /** The bundled label sets by language. */

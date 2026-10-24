@@ -6,12 +6,13 @@ import {
   renderPageInfo, renderPageSize, renderPagination, renderSearch, type RenderPaginationOptions, type RenderSearchOptions,
 } from './controls';
 import { checkTarget, element, type RenderedComponent } from './dom';
+import { renderMenu, type MenuItem } from './menu';
 import { resolveLabels, type DataTableLabels } from './labels';
 import { checkSize, renderTable, type RenderTableOptions } from './table';
 
 /** A built-in control, or your own: a function that fills the given element. */
 export type LayoutFeature =
-  | 'pageSize' | 'search' | 'filters' | 'columns' | 'info' | 'paging'
+  | 'pageSize' | 'search' | 'filters' | 'columns' | 'tools' | 'info' | 'paging'
   | ((slot: HTMLElement) => RenderedComponent | void);
 
 /** One slot holds one feature, several (shown side by side) or nothing (`null`). */
@@ -28,7 +29,7 @@ export interface DataTableLayout {
 /** Page size and search top left, filters and the column menu top right, info bottom left, pages bottom right. */
 export const DEFAULT_LAYOUT: Readonly<Required<DataTableLayout>> = Object.freeze({
   topStart: Object.freeze(['pageSize', 'search'] as const),
-  topEnd: Object.freeze(['filters', 'columns'] as const),
+  topEnd: Object.freeze(['filters', 'columns', 'tools'] as const),
   bottomStart: 'info',
   bottomEnd: 'paging',
 });
@@ -44,9 +45,11 @@ export interface RenderDataTableOptions<TData> extends RenderTableOptions<TData>
   readonly search?: Omit<RenderSearchOptions, 'labels'>;
   /** Actions for the selected rows, shown in a bar above the table while rows are selected. */
   readonly bulkActions?: readonly BulkAction<TData>[];
+  /** The tools menu (layout feature `tools`): export, copy, print or your own actions. */
+  readonly tools?: readonly MenuItem[];
 }
 
-const FEATURES = new Set(['pageSize', 'search', 'filters', 'columns', 'info', 'paging']);
+const FEATURES = new Set(['pageSize', 'search', 'filters', 'columns', 'tools', 'info', 'paging']);
 
 /**
  * Render a complete table: the table plus its controls arranged in a top and
@@ -93,6 +96,9 @@ export function renderDataTable<TData>(
       case 'filters':
         part = renderFilters(node, table, { labels, locale });
         break;
+      case 'tools':
+        part = renderMenu(node, { items: options.tools ?? [], labels });
+        break;
       case 'info':
         part = renderPageInfo(node, table, { labels });
         break;
@@ -132,7 +138,7 @@ export function renderDataTable<TData>(
   const body = element(doc, 'div', { class: 'adt-body' });
   root.append(body);
   // The size class sits on .adt, so the bars and the table share it.
-  const { layout: _layout, pageSizes: _sizes, paging: _paging, search: _search, bulkActions: _bulk, size: _size, ...tableOptions } = options;
+  const { layout: _layout, pageSizes: _sizes, paging: _paging, search: _search, bulkActions: _bulk, size: _size, tools: _tools, ...tableOptions } = options;
   parts.push(renderTable(body, table, { ...tableOptions, labels }));
   const bottom = bar('bottom', layout.bottomStart, layout.bottomEnd);
   if (bottom) root.append(bottom);

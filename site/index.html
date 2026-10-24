@@ -278,6 +278,7 @@ const API = [
     ["renderPagination(container, table, options?)", {tr:"Numaralı sayfalar: ‹ 1 … 4 5 6 … 20 ›; buton sayısı sabit kalır, aktif sayfa aria-current ile işaretlenir; isteğe bağlı ilk/son.", en:"Numbered pages: ‹ 1 … 4 5 6 … 20 ›; the button count stays fixed, the current page has aria-current; optional first/last."}],
     ["renderPageSize · renderPageInfo", {tr:"Sayfa başı satır seçimi ve canlı kayıt aralığı metni (Toplam: 5.000 kaydın 1 ile 25 arasını gösteriyor).", en:"Rows-per-page select and the live row range (Showing 1 to 25 of 5,000 rows)."}],
     ["renderSearch(container, table, options?)", {tr:"İkonlu, gecikmeli arama kutusu; Enter hemen uygular.", en:"Debounced search box with an icon; Enter applies at once."}],
+    ["renderMenu({ items }) · printTable() · cells + el()", {tr:"Araçlar menüsü (dışa aktarma, kopyalama, yazdırma, kendi işleminiz); DOM öğesi döndüren güvenli özel hücreler.", en:"A tools menu (export, copy, print, your own action); safe custom cells that return DOM nodes."}],
     ["renderFilters · renderFilterChips", {tr:"Filtreler menüsü (kolon türüne göre kontrol, options ile onay kutuları) ve kaldırılabilir etkin filtre etiketleri.", en:"The filters menu (a control per column type, ticks with options) and removable chips of the active filters."}],
     ["resolveLabels(locale, overrides?) · labelsEn/Tr/De/Fr/Es", {tr:"Yerleşik metinler (i18n kütüphanesi gerekmez): en, tr, de, fr, es; tekil/çoğul ve basamak ayırıcı dile göre.", en:"Built-in texts (no i18n library needed): en, tr, de, fr, es; singular/plural and digit grouping per language."}],
   ]],
@@ -718,6 +719,14 @@ const GUIDES = {
      [
       "rowId",
       "rowId"
+     ],
+     [
+      "buttons",
+      "buttons: ['excel', 'csv', 'copy', 'print']"
+     ],
+     [
+      "columns.render (HTML)",
+      "columns.cell (DOM node)"
      ]
     ]
    },
@@ -1353,9 +1362,97 @@ const GUIDES = {
     ]
    }
   ]
+ },
+ "tools": {
+  "title": {
+   "tr": "Araçlar ve özel hücreler",
+   "en": "Tools and custom cells"
+  },
+  "lead": {
+   "tr": "Excel, CSV, kopyalama ve yazdırma tek menüde (DataTables “buttons”); hücrelere rozet, avatar veya bağlantı gibi kendi içeriğiniz — HTML metni yorumlanmadan, güvenle.",
+   "en": "Excel, CSV, copy and print in one menu (DataTables “buttons”); your own content in cells, such as badges, avatars or links — safely, without parsing HTML."
+  },
+  "sections": [
+   {
+    "id": "buttons",
+    "title": {
+     "tr": "Araçlar menüsü",
+     "en": "The tools menu"
+    },
+    "desc": {
+     "tr": "Seçili satırlar varsa onlar, yoksa arama ve filtrelere uyan tüm satırlar aktarılır.",
+     "en": "The selected rows are exported, else every row matching the search and filters."
+    },
+    "tabs": [
+     [
+      "AcunDataTable",
+      "typescript",
+      "new AcunDataTable('#orders', {\n  serverSide: true,\n  ajax: '/api/orders',\n  buttons: ['excel', 'csv', 'copy', 'print', { id: 'archive', label: 'Arşivle', onSelect: archive }],\n  exportFilename: 'siparisler',\n  exportLimit: 10_000,   // server side: rows fetched page by page, at most this many\n  language: 'tr',        // CSV with ';' for Turkish Excel\n});"
+     ],
+     [
+      "Livewire",
+      "php",
+      "protected function exportFormats(): array { return ['xlsx', 'csv']; }\nprotected function printable(): bool { return true; }\n// Import: use WithTableImport; everything shows in the tools menu."
+     ],
+     [
+      "Vue",
+      "xml",
+      "\u003cscript setup lang=\"ts\">\nimport { downloadFile } from '@acunsoft/datatable-dom';\nimport { tableToSheet, toXlsx } from '@acunsoft/datatable-export';\n\nconst tools = [{ id: 'excel', label: 'Excel', onSelect: () => downloadFile(toXlsx(tableToSheet(table)), 'siparisler.xlsx') }];\n\u003c/script>\n\n\u003ctemplate>\u003cAcunTools :items=\"tools\" :labels=\"labelsTr\" />\u003c/template>"
+     ],
+     [
+      "React",
+      "typescript",
+      "import { downloadFile } from '@acunsoft/datatable-dom';\nimport { tableToSheet, toXlsx } from '@acunsoft/datatable-export';\n\nconst tools = [{ id: 'excel', label: 'Excel', onSelect: () => downloadFile(toXlsx(tableToSheet(table)), 'siparisler.xlsx') }];\nreturn \u003cTools items={tools} labels={labelsTr} />;"
+     ],
+     [
+      "HTML (parçalar)",
+      "typescript",
+      "renderDataTable(el, table, {\n  tools: [\n    { id: 'csv', label: 'CSV', group: 'Dışa aktar', onSelect: () => downloadFile(toCsv(tableToSheet(table)), 'orders.csv') },\n    { id: 'print', label: 'Yazdır', onSelect: () => printTable() },\n  ],\n});"
+     ]
+    ]
+   },
+   {
+    "id": "cells",
+    "title": {
+     "tr": "Özel hücreler",
+     "en": "Custom cells"
+    },
+    "desc": {
+     "tr": "DOM öğesi ya da metin döndürün; arama, sıralama ve dışa aktarma kolonun değerini kullanmaya devam eder.",
+     "en": "Return a DOM node or text; search, sorting and exports keep using the value."
+    },
+    "tabs": [
+     [
+      "AcunDataTable",
+      "typescript",
+      "import { AcunDataTable, el } from '@acunsoft/datatable';   // \u003cscript>: AcunDataTable.el\n\nnew AcunDataTable('#orders', {\n  data: orders,\n  columns: [\n    { data: 'customer', title: 'Müşteri' },\n    { data: 'status', title: 'Durum', cell: (value, row, text) => el('span', { class: 'badge badge--' + value }, text) },\n    { data: 'email', title: 'E-posta', cell: value => el('a', { href: 'mailto:' + value }, String(value)) },\n  ],\n});"
+     ],
+     [
+      "Livewire",
+      "php",
+      "Column::make('status')->header('Durum')->view('orders.status-badge'),\n\n// resources/views/orders/status-badge.blade.php\n// \u003cspan class=\"badge badge--{{ $value }}\">{{ $text }}\u003c/span>"
+     ],
+     [
+      "Vue",
+      "xml",
+      "\u003cAcunDataTable :table=\"table\">\n  \u003ctemplate #cell-status=\"{ value, text }\">\u003cspan :class=\"`badge badge--${value}`\">{{ text }}\u003c/span>\u003c/template>\n\u003c/AcunDataTable>"
+     ],
+     [
+      "React",
+      "typescript",
+      "\u003cDataTable table={table} cells={{ status: ({ value, text }) => \u003cspan className={`badge badge--${value}`}>{text}\u003c/span> }} />"
+     ],
+     [
+      "HTML (parçalar)",
+      "typescript",
+      "import { el, renderDataTable } from '@acunsoft/datatable-dom';\n\nrenderDataTable(el_, table, {\n  cells: { status: ({ value, text }) => el('span', { class: 'badge badge--' + value }, text) },\n});"
+     ]
+    ]
+   }
+  ]
  }
 };
-const GUIDE_ORDER = ["quick", "server", "filters", "pagesize", "mobile", "header", "look", "texts", "bigdata"];
+const GUIDE_ORDER = ["quick", "server", "filters", "tools", "pagesize", "mobile", "header", "look", "texts", "bigdata"];
 const FW_ORDER = ["laravel","html","vue","react"];
 
 const T = {

@@ -1,6 +1,6 @@
 import type { ColumnDef, DataTable, Row } from '@acunsoft/datatable-core';
 import { actionCell, checkActions, type RowAction } from './actions';
-import { createCellText, nextSorting, rowName, type CellFormatter } from './cells';
+import { cellValue, createCellText, nextSorting, rowName, type CellFormatter } from './cells';
 import { checkTarget, element, icon, keepFocus, type RenderedComponent } from './dom';
 import { labelsEn, type DataTableLabels } from './labels';
 
@@ -65,7 +65,24 @@ export interface RenderTableOptions<TData> {
   readonly scrollY?: string | number;
   /** Shift+click adds a second sort column. Default `true`; `false` always sorts by one column. */
   readonly multiSort?: boolean;
+  /**
+   * Custom cells per column ID: return a DOM node (built with `el()` or the
+   * DOM API, never parsed from HTML) or a string (shown as text). Also used
+   * in the responsive details and dialog. Sorting, search and exports keep
+   * the column's value.
+   */
+  readonly cells?: Readonly<Record<string, CellRenderer<TData>>>;
 }
+
+/** What a custom cell gets. */
+export interface CellContext<TData> {
+  readonly value: unknown;
+  /** The default display text. */
+  readonly text: string;
+  readonly row: Row<TData>;
+  readonly column: ColumnDef<TData>;
+}
+export type CellRenderer<TData> = (cell: CellContext<TData>) => Node | string;
 
 /** The CSS length of a `scrollY` option, or `undefined` when it is not set. */
 export function scrollHeight(value: unknown): string | undefined {
@@ -126,6 +143,23 @@ export function renderTable<TData>(
   const uid = `adt-${++tables}`;
 
   const nameOf = (row: Row<TData>, cells: readonly string[]): string => rowName(row, cells[0] ?? '', options.rowLabel);
+  const custom = options.cells ?? {};
+  for (const [id, render] of Object.entries(custom)) {
+    if (typeof render !== 'function') throw new TypeError(`cells.${id} must be a function`);
+  }
+  /** The content of a cell: a custom renderer's node or text, else the default text. */
+  const fill = (target: HTMLElement, column: ColumnDef<TData>, row: Row<TData>, text: string): HTMLElement => {
+    const render = custom[column.id];
+    if (!render) {
+      target.textContent = text;
+      return target;
+    }
+    const content = render({ value: cellValue(column, row), text, row, column });
+    if (typeof content === 'string') target.textContent = content;
+    else if (content && typeof (content as Node).nodeType === 'number') target.replaceChildren(content);
+    else throw new TypeError(`cells.${column.id} must return a DOM node or a string`);
+    return target;
+  };
 
   const size = checkSize(options.size);
   const height = scrollHeight(options.scrollY);
@@ -155,7 +189,7 @@ export function renderTable<TData>(
       const level = priorityOf(column, index);
       if (!all && level === 1) return;
       const item = element(doc, 'div', { class: `adt-detail-item${all ? '' : ` adt-col--p${level}`}` });
-      item.append(element(doc, 'dt', {}, column.header), element(doc, 'dd', {}, cells[index]));
+      item.append(element(doc, 'dt', {}, column.header), fill(element(doc, 'dd'), column, row, cells[index]!));
       list.append(item);
     });
     if (rowActions.length > 0) {
@@ -324,7 +358,7 @@ export function renderTable<TData>(
       }
       columns.forEach((column, index) => {
         const cellClass = [collapsible ? `adt-col--p${priorityOf(column, index)}` : '', numeric(column) ? 'adt-num' : ''].filter(Boolean).join(' ');
-        tr.append(element(doc, 'td', { 'data-label': column.header, ...(cellClass ? { class: cellClass } : {}) }, cells[index]));
+        tr.append(fill(element(doc, 'td', { 'data-label': column.header, ...(cellClass ? { class: cellClass } : {}) }), column, row, cells[index]!));
       });
       if (rowActions.length > 0) {
         const cell = actionCell(doc, rowActions, row, nameOf(row, cells), labels);

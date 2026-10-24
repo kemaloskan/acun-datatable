@@ -57,6 +57,12 @@ columns: [
 ```
 
 `render` returns text; cells are always written as text, never as HTML.
+`cell: (value, row, text) => el('span', { class: 'badge' }, text)` draws a
+cell as a DOM node (`el` is exported, and `AcunDataTable.el` in the
+`<script>` build); it is never parsed as HTML.
+`buttons: ['excel', 'csv', 'copy', 'print', { id, label, onSelect }]` adds the
+tools menu; exports take the selected rows, else every matching row (server
+side: fetched page by page up to `exportLimit`, default 10,000).
 `filter: true` (or a list of `{ value, label }`) puts a column in the
 "Filters" menu; active filters show as removable chips.
 

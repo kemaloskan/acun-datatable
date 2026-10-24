@@ -1,7 +1,7 @@
 {
   "name": "@acunsoft/datatable",
   "version": "0.3.0",
-  "description": "All-in-one data table: new AcunDataTable(\"#orders\", { serverSide: true, ajax: \"/api/orders\" }). Core, DOM renderer and HTTP in one package, also as a single <script>.",
+  "description": "All-in-one data table: new AcunDataTable(\"#orders\", { serverSide: true, ajax: \"/api/orders\" }). Core, DOM renderer, HTTP and Excel/CSV export in one package, also as a single <script>.",
   "keywords": [
     "datatable",
     "data-table",
@@ -52,7 +52,8 @@
   "dependencies": {
     "@acunsoft/datatable-core": "0.3.0",
     "@acunsoft/datatable-dom": "0.3.0",
-    "@acunsoft/datatable-http": "0.3.0"
+    "@acunsoft/datatable-http": "0.3.0",
+    "@acunsoft/datatable-export": "0.3.0"
   },
   "devDependencies": {
     "jsdom": "^30.1.3",

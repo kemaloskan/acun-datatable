@@ -6,7 +6,8 @@
     "paths": {
       "@acunsoft/datatable-core": ["../core/src/index.ts"],
       "@acunsoft/datatable-dom": ["../renderer-dom/src/index.ts"],
-      "@acunsoft/datatable-http": ["../datasource-http/src/index.ts"]
+      "@acunsoft/datatable-http": ["../datasource-http/src/index.ts"],
+      "@acunsoft/datatable-export": ["../export/src/index.ts"]
     }
   },
   "include": ["src/**/*.ts", "tests/**/*.ts"]

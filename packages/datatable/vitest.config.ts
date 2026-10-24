@@ -9,6 +9,7 @@ export default defineConfig({
       '@acunsoft/datatable-core': source('../core/src/index.ts'),
       '@acunsoft/datatable-dom': source('../renderer-dom/src/index.ts'),
       '@acunsoft/datatable-http': source('../datasource-http/src/index.ts'),
+      '@acunsoft/datatable-export': source('../export/src/index.ts'),
     },
   },
   test: { environment: 'jsdom' },

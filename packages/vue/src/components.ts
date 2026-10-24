@@ -5,8 +5,8 @@ import {
 import { getPageItems, type ColumnDef, type DataTable, type Row } from '@acunsoft/datatable-core';
 import {
   cellValue, checkPageSizes, checkResponsive, checkSize, createCellText, ICONS, labelsEn, nextSorting, pageInfoText,
-  numeric, pageSizeChoices, priorityOf, renderFilterChips, renderFilters, rowName, scrollHeight,
-  type RenderedComponent, type ResponsiveMode, type TableSize,
+  numeric, pageSizeChoices, priorityOf, renderFilterChips, renderFilters, renderMenu, rowName, scrollHeight,
+  type MenuItem, type RenderedComponent, type ResponsiveMode, type TableSize,
   type BulkAction, type BulkSelection, type CellFormatter, type DataTableLabels, type RowAction, type StatusSource,
 } from '@acunsoft/datatable-dom';
 import { useTable } from './composables';
@@ -509,3 +509,25 @@ function domControl(name: string, render: (el: HTMLElement, props: { table: AnyT
 export const AcunFilters = domControl('AcunFilters', (el, props) => renderFilters(el, props.table, props));
 /** The active filters as removable chips (see `renderFilterChips`). */
 export const AcunFilterChips = domControl('AcunFilterChips', (el, props) => renderFilterChips(el, props.table, props));
+
+/** A tools menu (export, copy, print, your own actions) with `items` (see `renderMenu`). */
+export const AcunTools = defineComponent({
+  name: 'AcunTools',
+  props: {
+    items: { type: Array as PropType<readonly MenuItem[]>, required: true },
+    label: { type: String, default: undefined },
+    labels: labelsProp,
+  },
+  setup(props) {
+    const host = shallowRef<HTMLElement | null>(null);
+    let part: RenderedComponent | undefined;
+    const mount = (): void => {
+      part?.destroy();
+      if (host.value) part = renderMenu(host.value, { items: props.items, labels: withLabels(props.labels), ...(props.label ? { label: props.label } : {}) });
+    };
+    onMounted(mount);
+    watch(() => [props.items, props.label], mount);
+    onScopeDispose(() => part?.destroy());
+    return (): VNode => h('div', { ref: host, class: 'adt-feature' });
+  },
+});

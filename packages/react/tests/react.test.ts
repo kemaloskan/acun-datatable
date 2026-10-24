@@ -3,7 +3,7 @@ import { act, createElement as h, StrictMode, useState, type ReactElement } from
 import { createRoot, type Root } from 'react-dom/client';
 import { createDataTable, type ColumnDef, type Row } from '@acunsoft/datatable-core';
 import {
-  BulkActions, ColumnToggle, DataTable, FilterChips, Filters, PageInfo, PageSize, Pagination, Search, labelsTr, useDataTable, type BulkSelection,
+  BulkActions, ColumnToggle, DataTable, FilterChips, Filters, PageInfo, PageSize, Pagination, Search, Tools, labelsTr, useDataTable, type BulkSelection,
 } from '../src/index';
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
@@ -248,5 +248,15 @@ describe('filters', () => {
     act(() => table.setFilters([{ field: 'total', operator: 'gte', value: '100' }]));
     expect(host.querySelector('.adt-chip')!.textContent).toBe('Tutar: ≥ 100');
     expect(table.getPage().rows.map(row => row.original.customer)).toEqual(['Ayşe', 'Can']);
+  });
+});
+
+describe('tools', () => {
+  it('renders a tools menu from items', () => {
+    const onSelect = vi.fn();
+    render(h(Tools, { items: [{ id: 'print', label: 'Yazdır', onSelect }], labels: labelsTr }));
+    expect(host.querySelector('.adt-tools summary')!.textContent).toBe('Araçlar');
+    click(host.querySelector('[data-action="print"]'));
+    expect(onSelect).toHaveBeenCalledOnce();
   });
 });
