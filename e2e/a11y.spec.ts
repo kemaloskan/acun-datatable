@@ -58,7 +58,7 @@ test.describe('accessibility (axe)', () => {
     });
   }
 
-  for (const route of ['home', 'laravel', 'nextjs', 'webcomponent', 'server', 'bigdata', 'api']) {
+  for (const route of ['home', 'laravel', 'nextjs', 'webcomponent', 'server', 'bigdata', 'api', 'performance', 'security', 'upgrade', 'faq']) {
     test(`the docs site: #/${route}`, async ({ page }) => {
       if (route === 'server') await page.emulateMedia({ colorScheme: 'dark' }); // one page in dark mode too
       await page.goto(`/site/index.html#/${route}`);

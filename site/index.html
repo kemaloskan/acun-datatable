@@ -4,6 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Acun DataTable — Dokümantasyon</title>
+<meta name="description" content="Acun DataTable: sıralama, akıllı arama, filtreler, sayfalama, dışa aktarma ve mobil görünüm hazır bir veri tablosu. Laravel, Vue, React, Next.js ve düz HTML; MIT, ücretsiz.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='9' fill='%236d3fff'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Public+Sans:wght@400;500;600;700;800&display=swap">
@@ -143,6 +145,8 @@
   .gtable td code{font-family:var(--mono);font-size:12.5px;color:var(--ink)}
   .note{border:1px solid var(--line);border-left:3px solid var(--brand);background:var(--surface-subtle);border-radius:var(--radius);padding:11px 15px;color:var(--muted);font-size:14px;line-height:1.6;margin:12px 0}
   .note.warn{border-left-color:#c48214}
+  .note a{color:var(--brand-text);font-weight:600;text-decoration:none}
+  .note a:hover{text-decoration:underline}
   /* home */
   .hero h1{font-size:44px;line-height:1.1;letter-spacing:-.03em;margin:0 0 16px;max-width:760px}
   .hero .lead{font-size:18px;max-width:720px}
@@ -2138,13 +2142,126 @@ const QUICK_SERVER = `new AcunDataTable('#orders', {
   ],
   language: 'tr',
 });`;
+/* Resources: measured performance, security, upgrading, questions. Same shape as GUIDES. */
+const PAGES = {
+  performance: {
+    title: { tr: "Performans ölçümleri", en: "Performance measurements" },
+    lead: { tr: "Hız sözü değil, ölçüm. Aşağıdakiler yalnızca gerçekten çalıştırılmış ölçümlerdir; koşulları yanlarında. Kendi veritabanınızda aynı ölçümü tek komutla yapabilirsiniz.",
+            en: "Measurements, not promises. Below are only runs that actually happened, with their conditions. The same measurement on your own database is one command." },
+    sections: [
+      { id: "measured", title: { tr: "Ölçülenler: 5 milyon satır", en: "Measured: 5 million rows" },
+        desc: { tr: "Apple M2, 16 GB; her veritabanı varsayılan ayarlarıyla; 7 çalıştırmanın medyanı.", en: "Apple M2, 16 GB; each database with its default settings; median of 7 runs." },
+        table: [[{ tr: "İstek", en: "Request" }, "PostgreSQL 17", "MySQL 8.0", "MariaDB 10.11"],
+          [{ tr: "ilk sayfa", en: "first page" }, "0.4 ms", "0.4 ms", "1.4 ms"],
+          [{ tr: "ortadaki sayfa, OFFSET ile", en: "middle page by OFFSET" }, "2.45 s", "11.49 s", "3.50 s"],
+          [{ tr: "aynı derinlik, cursor ile", en: "the same depth by cursor" }, "0.3 ms", "0.4 ms", "0.3 ms"],
+          [{ tr: "tüm tablonun COUNT(*)", en: "COUNT(*) of the whole table" }, "66 ms", "508 ms", "515 ms"],
+          [{ tr: "sınırlı sayım (10.001'e kadar)", en: "limited count (up to 10,001)" }, "0.8 ms", "1.2 ms", "1.8 ms"],
+          [{ tr: "sınırlı sayım, indekssiz nadir kelime", en: "limited count, a rare word no index serves" }, "716 ms", "1.72 s", "1.85 s"],
+          [{ tr: "indeksli sütunda nadir kelime", en: "a rare word in the indexed column" }, "0.1 ms", "1.63 s", "1.66 s"]],
+        note: { tr: "Ayrıntılar ve sorgu planları: <a href=\"https://github.com/kemaloskan/acun-datatable/tree/main/bench/results\">bench/results</a>. MySQL ve MariaDB 128 MB tampon havuzuyla (varsayılan) ölçüldü; tablodan çok küçük. Ayarlanmış bir sunucu başka sonuç verir.",
+                en: "Details and query plans: <a href=\"https://github.com/kemaloskan/acun-datatable/tree/main/bench/results\">bench/results</a>. MySQL and MariaDB ran with the default 128 MB buffer pool, much smaller than the table; a configured server gives other numbers." } },
+      { id: "means", title: { tr: "Ne anlama geliyor?", en: "What it means" },
+        desc: { tr: "İndeksle karşılanan sayfa milisaniyeler sürdü; OFFSET ile derin sayfa üç veritabanında da saniyeler. Kesin sayım veritabanları arasında sekiz kat değişti. Sınırlı sayım, filtreyi bir indeks karşılıyorsa milisaniyeler, karşılamıyorsa bir saniyeyi aştı. MySQL ve MariaDB'de LIKE ile kelime araması tabloyu taradı.",
+                en: "Pages an index served took milliseconds; a deep OFFSET page took seconds on all three. The exact count differed eightfold between the databases. The limited count took milliseconds where an index served the filter and over a second where none did. On MySQL and MariaDB a word search with LIKE scanned the table." },
+        note: { tr: "Pratikte: derin sayfalar için <a href=\"#/bigdata\">cursor sayfalama</a>, kullanıcıların filtrelediği kolonlara indeks, MySQL/MariaDB'de metin araması için FULLTEXT ya da bir arama motoru.",
+                en: "In practice: <a href=\"#/bigdata\">cursor paging</a> for deep pages, indexes on the columns your users filter, and FULLTEXT or a search engine for text search on MySQL and MariaDB." } },
+      { id: "yours", title: { tr: "Kendi veritabanınızda ölçün", en: "Measure your own database" },
+        desc: { tr: "Betik tabloyu veritabanının içinde üretir (milyon satır başına tek komut), her isteği 7 kez çalıştırır ve p50 / p95 ile sorgu planını yazar. Yalnızca adt_perf tablosunu oluşturur ve sonunda siler; ayrı bir veritabanı kullanın.",
+                en: "The script generates the table inside the database (one statement per million rows), runs each request 7 times and reports p50 / p95 with the query plan. It only creates and drops the table adt_perf; use a database of its own." },
+        code: ["bash", "npm run build\nnode bench/sql-bench.mjs --db postgres://user@127.0.0.1:5432/bench --rows 5000000\nnode bench/sql-bench.mjs --db mysql://user:pass@127.0.0.1:3306/bench --rows 5000000"] },
+      { id: "not", title: { tr: "Henüz ölçülmeyenler", en: "Not measured yet" },
+        desc: { tr: "100 milyon ve 1 milyar satır (ayrı sunucu gerekir: yaklaşık 50 GB ve 500 GB), SQL Server ve ayarlanmış (tampon havuzu büyütülmüş) sunucular. Bunlar için bir sonuç iddia etmiyoruz; betik hazır.",
+                en: "100 million and 1 billion rows (they need a dedicated server: about 50 GB and 500 GB), SQL Server, and tuned servers with larger buffer pools. We claim no results for these; the script is ready." } },
+    ],
+  },
+  security: {
+    title: { tr: "Güvenlik", en: "Security" },
+    lead: { tr: "Tablo değerleri her zaman metin olarak yazar; sunucu yalnızca tanımladığınız kolonları kabul eder. Kimin hangi satırı görebileceğine ise siz karar verirsiniz. Yayına almadan önce bu listeyi gözden geçirin.",
+            en: "The table always writes values as text, and the server accepts only the columns you define. Who may see which rows is your decision. Go through this list before going live." },
+    sections: [
+      { id: "server", title: { tr: "Sunucuda", en: "On the server" },
+        table: [[{ tr: "Kontrol", en: "Check" }, { tr: "Nasıl", en: "How" }],
+          [{ tr: "Kolon izin listesi", en: "Column allowlist" }, { tr: "Laravel columns(), Node defineColumns: istekteki kolon adları SQL'e asla girmez.", en: "Laravel columns(), Node defineColumns: column names from a request never reach the SQL." }],
+          [{ tr: "Satır yetkisi", en: "Row authorization" }, { tr: "Laravel query() ya da Node scope yalnızca bu kullanıcının satırlarını döndürsün (kiracı, sahip).", en: "Laravel query() or the Node scope returns only this user's rows (tenant, owner)." }],
+          [{ tr: "Uç nokta yetkisi", en: "End point authorization" }, { tr: "JSON uç noktasını rotada yetkilendirin (middleware, policy).", en: "Authorize the JSON end point on its route (middleware, policy)." }],
+          [{ tr: "Gönderilen alanlar", en: "Fields sent" }, { tr: "Yalnızca gereken kolonları seçin (select / map); gizli alanlar tarayıcıya gitmesin.", en: "Select only the columns needed (select / map); hidden fields never reach the browser." }],
+          [{ tr: "Sınırlar", en: "Limits" }, { tr: "maxPageSize küçük kalsın; derin sayfalar için result window; pahalı uç noktalara hız sınırı.", en: "Keep maxPageSize small; a result window against deep pages; rate limits on expensive end points." }],
+          [{ tr: "Değişiklikler", en: "Changes" }, { tr: "Toplu işlem, hücre düzenleme ve dışa aktarma kendi yetki kontrolünü yapsın (Laravel authorizeEdit, policy).", en: "Bulk actions, cell edits and exports check their own authorization (Laravel authorizeEdit, policies)." }]] },
+      { id: "browser", title: { tr: "Tarayıcıda", en: "In the browser" },
+        desc: { tr: "Hücreler textContent ile yazılır; sunucudan gelen HTML yorumlanmaz. Kendi hücrenizi çiziyorsanız metin olarak verin ya da DOM düğümü oluşturun; innerHTML kullanmayın. POST isteklerinde Laravel CSRF belirteci meta etiketinden otomatik eklenir.",
+                en: "Cells are written with textContent; HTML from the server is never interpreted. When you draw your own cells, give text or build DOM nodes; do not use innerHTML. POST requests add Laravel's CSRF token from its meta tag." },
+        code: ["typescript", "// A badge drawn safely: a DOM node, the value as text.\n{ data: 'status', cell: value => AcunDataTable.el('span', { class: 'badge' }, String(value)) }"] },
+      { id: "tasks", title: { tr: "Kuyruklu görevler (Laravel)", en: "Queued tasks (Laravel)" },
+        desc: { tr: "Büyük dışa aktarmalar ve kuyruklu toplu işlemler, başlatan kullanıcı olarak çalışır; iş bitince işçi o kullanıcıyı unutur. Dosya yalnızca imzalı ve süreli bir bağlantıyla, yalnızca başlatana (misafirde aynı oturuma) verilir ve gönderildikten sonra silinir. Tablo başına tek görev, ziyaretçi başına sınır vardır.",
+                en: "Large exports and queued bulk actions run as the user who started them, and the worker forgets that user afterwards. The file is served only through a signed, expiring link, only to its owner (for a guest, the same session), and deleted once sent. One task at a time per table, with a limit per visitor." } },
+      { id: "deps", title: { tr: "Bağımlılıklar", en: "Dependencies" },
+        desc: { tr: "Tarayıcı paketlerinin kendi paketleri dışında çalışma zamanı bağımlılığı yoktur; veritabanı sürücüsü hiçbir pakete zorunlu değildir. Yazılım MIT lisanslıdır ve garanti verilmeden sunulur: kendi projenizde test etmek ve güvenliğini sağlamak sizin sorumluluğunuzdadır.",
+                en: "The browser packages have no runtime dependencies besides each other, and no database driver is required by any package. The software is MIT licensed and provided without warranty: testing and securing it in your project is your responsibility." } },
+    ],
+  },
+  upgrade: {
+    title: { tr: "Sürüm geçişi", en: "Upgrading" },
+    lead: { tr: "npm paketleri 0.2.x'ten 0.4.0'a, Laravel paketi 0.4'ten 0.5'e. 0.3.0 hazırlanıp yayınlanmadı; 0.4.0 ikisini birlikte getirir. Çoğu değişiklik yenidir; aşağıdakiler kodunuzda değişiklik isteyebilecek olanlar.",
+            en: "The npm packages from 0.2.x to 0.4.0, the Laravel package from 0.4 to 0.5. 0.3.0 was prepared but not published; 0.4.0 carries both. Most of it is new; below are the changes that can need a change in your code." },
+    sections: [
+      { id: "npm", title: { tr: "npm: değiştirmeniz gerekenler", en: "npm: what you must change" },
+        desc: { tr: "Sayfalama artık üç kontrol: sayfa numaraları (renderPagination), sayfa başı satır (renderPageSize) ve satır aralığı (renderPageInfo). Ya da hepsini yerleştiren renderDataTable / AcunDataTableLayout / DataTableLayout. pageStatus etiketleri pageInfo, pageInfoOpen ve pageInfoEmpty oldu. CSS sınıfları: adt-pagination → adt-paging, adt-status → adt-info, adt-page-size → adt-length.",
+                en: "Pagination is three controls now: page numbers (renderPagination), rows per page (renderPageSize) and the row range (renderPageInfo). Or renderDataTable / AcunDataTableLayout / DataTableLayout, which place them all. The pageStatus labels became pageInfo, pageInfoOpen and pageInfoEmpty. CSS classes: adt-pagination → adt-paging, adt-status → adt-info, adt-page-size → adt-length." },
+        code: ["typescript", "// 0.2\nrenderPagination(el, table);\n// 0.4\nrenderPageSize(sizeEl, table);\nrenderPageInfo(infoEl, table);\nrenderPagination(pagesEl, table, { firstLast: true });"] },
+      { id: "npm-behaviour", title: { tr: "npm: davranışı değişenler", en: "npm: behaviour that changed" },
+        desc: { tr: "DataTableState'te columnOrder ve columnWidths var; getVisibleColumns() kolon sırasını izler; connectTable yalnızca kolon düzeni değişince sunucuya gitmez; sanal kaydırmalı tablolar varsayılan olarak responsive: 'scroll' olur; genişliği sıfırlamak sütunu içeriğin genişliğine getirir.",
+                en: "DataTableState has columnOrder and columnWidths; getVisibleColumns() follows the column order; connectTable no longer asks the server when only the column layout changes; virtual tables default to responsive: 'scroll'; resetting a width sets the column to the width its content takes." } },
+      { id: "laravel", title: { tr: "Laravel 0.4 → 0.5", en: "Laravel 0.4 → 0.5" },
+        desc: { tr: "Görünümleri yayınladıysanız yeniden yayınlayın (table, feature, details, row-actions değişti; yeni görünümler var). Kullanıcının sıralaması artık query() içindeki orderBy()'dan önce gelir. Yeni public özellikler: openDetails, columnOrder, columnWidths, cursors, tableTask; aynı adlı kendi özelliklerinizi yeniden adlandırın. DataTables protokolünde data: null kolonları yok sayılır.",
+                en: "If you published the views, publish them again (table, feature, details and row-actions changed; there are new views). The user's sort now comes before an orderBy() in query(). New public properties: openDetails, columnOrder, columnWidths, cursors, tableTask; rename your own properties with these names. In the DataTables protocol, data: null columns are ignored." },
+        code: ["bash", "php artisan vendor:publish --tag=acun-datatable-views --force"],
+        note: { tr: "Tam liste: <a href=\"https://github.com/kemaloskan/acun-datatable/blob/main/UPGRADING.md\">UPGRADING.md</a> ve <a href=\"https://github.com/kemaloskan/acun-datatable/blob/main/CHANGELOG.md\">CHANGELOG.md</a>.",
+                en: "The full list: <a href=\"https://github.com/kemaloskan/acun-datatable/blob/main/UPGRADING.md\">UPGRADING.md</a> and <a href=\"https://github.com/kemaloskan/acun-datatable/blob/main/CHANGELOG.md\">CHANGELOG.md</a>." } },
+    ],
+  },
+  faq: {
+    title: { tr: "Sık sorulan sorular", en: "Questions" },
+    lead: { tr: "Kısa cevaplar; ayrıntılar bağlantıdaki sayfalarda.", en: "Short answers; the details are on the linked pages." },
+    sections: [
+      { id: "datatables", title: { tr: "DataTables'tan geçebilir miyim?", en: "Can I move from DataTables?" },
+        desc: { tr: "Evet. Seçenek adları tanıdık (serverSide, ajax, columns, language), mevcut bir <table> doğrudan dönüşür ve DataTables'ın sunucu protokolü (draw, start, length) desteklenir; mevcut backend'iniz değişmeden çalışabilir. jQuery gerekmez.",
+                en: "Yes. The option names are familiar (serverSide, ajax, columns, language), an existing <table> turns into a data table as it is, and DataTables' server protocol (draw, start, length) is supported, so your back end can stay as it is. No jQuery." },
+        note: { tr: "Karşılık tablosu: <a href=\"#/quick\">Tek çağrıda tablo</a>.", en: "The mapping: <a href=\"#/quick\">One-call table</a>." } },
+      { id: "databases", title: { tr: "Hangi veritabanlarıyla çalışır?", en: "Which databases does it work with?" },
+        desc: { tr: "Tablo veritabanına bağlanmaz; sorguyu backend'iniz çalıştırır. Hazır adaptörler MySQL, MariaDB, PostgreSQL, SQLite ve SQL Server için SQL yazar. Veritabanı sürücüsü sizindir; hiçbir paket bir sürücüyü zorunlu kılmaz.",
+                en: "The table never connects to a database; your back end runs the queries. The adapters write SQL for MySQL, MariaDB, PostgreSQL, SQLite and SQL Server. The database driver is yours; no package requires one." } },
+      { id: "millions", title: { tr: "Milyonlarca satırda kullanılır mı?", en: "Does it work with millions of rows?" },
+        desc: { tr: "Sunucu tarafı modda tablo yalnızca bir sayfa tutar; sıralama, arama ve sayım backend'de yapılır. Ne kadar hızlı olacağını indeksleriniz ve veritabanınız belirler; ölçülmüş sonuçlar ve kendi veritabanınızda ölçme yolu Performans sayfasında.",
+                en: "In server mode the table holds one page; sorting, search and counting run on the back end. How fast it is depends on your indexes and database; measured results, and how to measure yours, are on the Performance page." },
+        note: { tr: "<a href=\"#/performance\">Performans ölçümleri</a> · <a href=\"#/bigdata\">Büyük veri</a>", en: "<a href=\"#/performance\">Performance measurements</a> · <a href=\"#/bigdata\">Large tables</a>" } },
+      { id: "plus", title: { tr: "Toplam neden \"10.000+\" görünüyor?", en: "Why does the total say \"10,000+\"?" },
+        desc: { tr: "Backend saymayı bir sınırda bıraktı (Laravel'de countLimit) ve bunu bildirdi: en az bu kadar satır var. Tablo da bunu böyle gösterir ve var olduğu bilinen sayfaları numaralar. Kesin sayı gelirse kesin sayıyı, hiç sayı gelmezse yalnızca satır aralığını gösterir.",
+                en: "The back end stopped counting at a limit (countLimit in Laravel) and said so: at least this many rows match. The table shows it that way and numbers the pages known to exist. With an exact count it shows the exact count; with none, only the row range." } },
+      { id: "turkish", title: { tr: "Türkçe arama nasıl çalışır?", en: "How does Turkish search work?" },
+        desc: { tr: "Arama büyük/küçük harf ve Türkçe harf farkını yok sayar: \"ayse\" Ayşe'yi, \"istanbul\" İSTANBUL'u bulur. Büyük tablolarda en hızlısı katlanmış bir kopya kolon (Laravel searchUsing, Node search) ve onun indeksidir.",
+                en: "Search ignores case and Turkish letters: \"ayse\" finds Ayşe, \"istanbul\" finds İSTANBUL. On large tables the fastest way is a folded copy of the column (Laravel searchUsing, Node search) with an index on it." } },
+      { id: "style", title: { tr: "Görünümü kendi tasarımıma uydurabilir miyim?", en: "Can it match my design?" },
+        desc: { tr: "styles.css isteğe bağlıdır. Renkler, köşeler ve yoğunluk --adt-* CSS değişkenleriyle değişir; ya da adt-* sınıflarını kendiniz biçimlendirin. Tamamen kendi bileşenlerinizi çizmek için headless çekirdeği kullanın.",
+                en: "styles.css is optional. Colours, radii and density change with the --adt-* custom properties; or style the adt-* classes yourself. To draw entirely your own components, use the headless core." },
+        note: { tr: "<a href=\"#/look\">Boyut, tema ve yerleşim</a> · <a href=\"#/api\">API</a>", en: "<a href=\"#/look\">Size, theme and layout</a> · <a href=\"#/api\">API</a>" } },
+      { id: "ssr", title: { tr: "Sunucuda render (SSR) ile çalışır mı?", en: "Does it work with server rendering (SSR)?" },
+        desc: { tr: "Paketler sunucuda içe aktarılabilir. React ve Vue bileşenleri sunucuda render edilir; tablo verisi tarayıcıda yüklenir. Nuxt'ta <ClientOnly> içine alın; Next.js'te React paketi \"use client\" ile işaretlidir.",
+                en: "The packages can be imported on a server. The React and Vue components render on the server; the rows load in the browser. In Nuxt wrap it in <ClientOnly>; in Next.js the React package is marked \"use client\"." } },
+      { id: "license", title: { tr: "Ücretli mi? Lisansı ne?", en: "Is it paid? What licence?" },
+        desc: { tr: "Ücretsiz ve MIT lisanslıdır; ticari projelerde de kullanılabilir. Garanti verilmeden sunulur.",
+                en: "It is free and MIT licensed, commercial projects included. It comes without warranty." } },
+    ],
+  },
+};
+const PAGE_ORDER = ["performance", "security", "upgrade", "faq"];
 /* "Next steps" on every framework page: the guides most tables need next. */
 const NEXT_STEPS = ['server', 'filters', 'tools', 'mobile', 'bigdata'];
 const FW_ORDER = ["laravel","html","vue","react","nextjs","nuxt","inertia","webcomponent"];
 
 const T = {
   tr:{ nav_start:"Başlangıç", nav_fw:"Frameworkler", nav_guides:"Kılavuzlar", nav_api:"API", cta:"Kuruluma başla",
-       g_start:"Başlangıç", g_fw:"Frameworkler", g_guides:"Kılavuzlar", g_core:"Çekirdek",
+       g_start:"Başlangıç", g_fw:"Frameworkler", g_guides:"Kılavuzlar", g_resources:"Kaynaklar", g_core:"Çekirdek",
        home:"Giriş", api:"API referansı", toc:"Bu sayfada",
        s_install:"Kurulum", s_usage:"İlk tablo", s_examples:"Örnekler", s_api:"API",
        d_install:"Paketleri projene ekle.", d_usage:"İlk tablonuz; kopyalayıp kolonlarınızı yazın.", d_examples:"Kopyalanıp uyarlanabilecek örnekler.", d_api:"Kullanılan çekirdek fonksiyonlar.",
@@ -2183,7 +2300,7 @@ const T = {
        next_demo:"Bütün özellikler tarayıcıda, kurulum olmadan.",
   },
   en:{ nav_start:"Getting started", nav_fw:"Frameworks", nav_guides:"Guides", nav_api:"API", cta:"Get started",
-       g_start:"Getting started", g_fw:"Frameworks", g_guides:"Guides", g_core:"Core",
+       g_start:"Getting started", g_fw:"Frameworks", g_guides:"Guides", g_resources:"Resources", g_core:"Core",
        home:"Introduction", api:"API reference", toc:"On this page",
        s_install:"Installation", s_usage:"First table", s_examples:"Examples", s_api:"API",
        d_install:"Add the packages to your project.", d_usage:"Your first table; copy it and write your columns.", d_examples:"Examples to copy and adapt.", d_api:"Core functions used.",
@@ -2230,7 +2347,7 @@ if (theme) document.documentElement.setAttribute('data-theme', theme);
 const $ = (s) => document.querySelector(s);
 const esc = (s) => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 const ALIASES = { livewire: 'laravel' }; // Livewire is part of the Laravel package
-const route = () => { let r = (location.hash.match(/^#\/([a-z]+)/) || [])[1]; r = ALIASES[r] || r; return (r && (r === 'home' || r === 'api' || FW[r] || GUIDES[r])) ? r : 'home'; };
+const route = () => { let r = (location.hash.match(/^#\/([a-z]+)/) || [])[1]; r = ALIASES[r] || r; return (r && (r === 'home' || r === 'api' || FW[r] || GUIDES[r] || PAGES[r])) ? r : 'home'; };
 
 /* ======================= builders ======================= */
 const code = (src, l) => `<div class="codewrap"><pre><code class="language-${l}" tabindex="0">${esc(src)}</code></pre><button class="copy">${T[lang].copy}</button></div>`;
@@ -2248,7 +2365,8 @@ const tabs = (items) => {
     items.map(([label, l, src], i) => `<div class="tabpanel" role="tabpanel" id="${id}-p${i}" aria-labelledby="${id}-t${i}" data-tab="${esc(label)}"${i === sel ? '' : ' hidden'}>${code(src, l)}</div>`).join('') + `</div>`;
 };
 const gtable = (rows) => `<div class="gtable"><table><thead><tr>${rows[0].map(h => `<th>${esc(typeof h === 'object' ? h[lang] : h)}</th>`).join('')}</tr></thead><tbody>${
-  rows.slice(1).map(r => `<tr>${r.map((c, i) => `<td>${i === 0 ? `<code>${esc(typeof c === 'object' ? c[lang] : c)}</code>` : esc(typeof c === 'object' ? c[lang] : c)}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`;
+  // A first cell that is a name in code (an option) is shown as code; a translated one as text.
+  rows.slice(1).map(r => `<tr>${r.map((c, i) => `<td>${i === 0 && typeof c !== 'object' ? `<code>${esc(c)}</code>` : esc(typeof c === 'object' ? c[lang] : c)}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`;
 const featCards = () => `<div class="cards">${FEATURES[lang].map(([h,p],i)=>`<div class="card${i===0?' feat':''}"><span class="lb">0${i+1}</span><h3>${esc(h)}</h3><p>${esc(p)}</p></div>`).join('')}</div>`;
 const apiList = (only) => API.filter(([pkg]) => !only || pkg === only).map(([pkg, items]) =>
   `${only ? '' : `<h3 class="sub">${esc(pkg)}</h3>`}<div class="api">${items.map(([sig,d])=>`<div class="r"><code>${esc(sig)}</code><span>${esc(d[lang])}</span></div>`).join('')}</div>`).join('');
@@ -2284,10 +2402,10 @@ function page(r) {
       sec('a1',1,t.a_s1,t.a_s1d,apiList()) +
       sec('a2',2,t.a_s2,t.a_s2d,code(EX_TABLE,'typescript')+code(EX_SORT,'typescript')+code(EX_STATE,'typescript')) };
   }
-  if (GUIDES[r]) {
-    const g = GUIDES[r];
+  if (GUIDES[r] || PAGES[r]) {
+    const g = GUIDES[r] ?? PAGES[r];
     return { toc: g.sections.map(x => [x.id, x.title[lang]]), html:
-      `<h1><span class="hi">${ICON.guide}</span>${esc(g.title[lang])}</h1><p class="lead">${g.lead[lang]}</p><div class="meta"><span>${t.g_guides}</span><span>${t.updated}</span></div>` +
+      `<h1><span class="hi">${ICON.guide}</span>${esc(g.title[lang])}</h1><p class="lead">${g.lead[lang]}</p><div class="meta"><span>${GUIDES[r] ? t.g_guides : t.g_resources}</span><span>${t.updated}</span></div>` +
       g.sections.map((x, i) => sec(x.id, i + 1, esc(x.title[lang]), x.desc ? esc(x.desc[lang]) : '',
         (x.tabs ? tabs(x.tabs) : '') + (x.code ? code(x.code[1], x.code[0]) : '') + (x.table ? gtable(x.table) : '') +
         (x.note ? `<div class="note">${x.note[lang]}</div>` : ''))).join('') };
@@ -2313,7 +2431,7 @@ function renderHeader(r) {
   const t = T[lang];
   const first = FW_ORDER[0];
   const tn = [['home',t.nav_start],[first,t.nav_fw],[GUIDE_ORDER[0],t.nav_guides],['api',t.nav_api]];
-  const active = r === 'home' ? 'home' : r === 'api' ? 'api' : GUIDES[r] ? GUIDE_ORDER[0] : first;
+  const active = r === 'home' ? 'home' : r === 'api' ? 'api' : GUIDES[r] || PAGES[r] ? GUIDE_ORDER[0] : first;
   $('#tnav').innerHTML = tn.map(([id,l]) => `<a href="#/${id}" data-go="${id}" class="${id===active?'on':''}"${id===active?' aria-current="page"':''}>${l}</a>`).join('');
   $('#lang').innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg>${lang.toUpperCase()}`;
   const dark = document.documentElement.getAttribute('data-theme') === 'dark' ||
@@ -2331,6 +2449,7 @@ function renderSide(r) {
     `<div class="grp">${t.g_start}</div>${item('home',t.home,ICON.home)}` +
     `<div class="grp">${t.g_fw}</div>${FW_ORDER.map(id=>item(id,FW[id].name,ICON[id])).join('')}` +
     `<div class="grp">${t.g_guides}</div>${GUIDE_ORDER.map(id=>item(id,GUIDES[id].title[lang],ICON.guide)).join('')}` +
+    `<div class="grp">${t.g_resources}</div>${PAGE_ORDER.map(id=>item(id,PAGES[id].title[lang],ICON.guide)).join('')}` +
     `<div class="grp">${t.g_core}</div>${item('api',t.api,ICON.api)}`;
 }
 let tocIds = [];
@@ -2342,7 +2461,7 @@ function renderPage(r) {
   $('#toc').innerHTML = `<h4>${t.toc}</h4><ul>${p.toc.map(([id,l]) => `<li><a href="#/${r}/${id}" data-to="${id}">${esc(l)}</a></li>`).join('')}</ul>`;
   document.querySelectorAll('#content pre code').forEach(b => { try { hljs.highlightElement(b); } catch (e) {} });
   mountHomeTable(r);
-  document.title = r === 'home' ? 'Acun DataTable' : (FW[r] ? FW[r].name : GUIDES[r] ? GUIDES[r].title[lang] : t.api) + ' — Acun DataTable';
+  document.title = r === 'home' ? 'Acun DataTable' : (FW[r] ? FW[r].name : GUIDES[r] ? GUIDES[r].title[lang] : PAGES[r] ? PAGES[r].title[lang] : t.api) + ' — Acun DataTable';
   spy();
 }
 /* The live table on the home page: the real <script> build, rows made here. */
