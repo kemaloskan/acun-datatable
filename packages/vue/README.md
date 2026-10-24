@@ -72,7 +72,7 @@ const bulk = [{ id: 'archive', label: 'Arşivle', onSelect: ({ ids }) => archive
 
 | Component | Props |
 |---|---|
-| `AcunDataTable` | `table`, `caption`, `selectable`, `locale`, `labels`, `format`, `rowLabel`, `rowActions`, `status` |
+| `AcunDataTable` | `table`, `caption`, `selectable`, `locale`, `labels`, `format`, `rowLabel`, `rowActions`, `status`, `responsive`, `size` |
 | `AcunPagination` | `table`, `siblings`, `boundaries`, `firstLast`, `locale`, `labels` |
 | `AcunPageSize` | `table`, `pageSizes`, `labels` |
 | `AcunPageInfo` | `table`, `labels` |

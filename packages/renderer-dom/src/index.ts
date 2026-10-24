@@ -2,7 +2,9 @@ export { ICONS, type RenderedComponent } from './dom';
 export {
   LABELS, labelsDe, labelsEn, labelsEs, labelsFr, labelsTr, resolveLabels, type DataTableLabels,
 } from './labels';
-export { renderTable, type CellFormatter, type RenderTableOptions, type StatusSource } from './table';
+export {
+  checkResponsive, checkSize, priorityOf, renderTable, type CellFormatter, type RenderTableOptions, type ResponsiveMode, type StatusSource, type TableSize,
+} from './table';
 export {
   checkPageSizes, pageInfoText, pageSizeChoices, renderPageInfo, renderPageSize, renderPagination, renderSearch,
   type RenderPageInfoOptions, type RenderPageSizeOptions, type RenderPaginationOptions, type RenderSearchOptions,

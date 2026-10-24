@@ -98,8 +98,8 @@ test.describe('keyboard only (SPEC M3)', () => {
 test.describe('accessibility semantics', () => {
   test('exposes a named table, column headers, labelled controls and a live status', async ({ page }) => {
     await expect(page.getByRole('table', { name: 'Orders' })).toBeVisible();
-    await expect(page.getByRole('columnheader')).toHaveCount(3);
-    await expect(page.locator('#orders th[scope=col]')).toHaveCount(3);
+    await expect(page.getByRole('columnheader')).toHaveCount(5); // select, customer, total, city, actions
+    await expect(page.locator('#orders th[scope=col]')).toHaveCount(5);
     await page.getByRole('button', { name: 'Customer' }).click();
     // The sort mark is aria-hidden, so the accessible name stays "Customer".
     await expect(page.getByRole('button', { name: 'Customer', exact: true })).toBeVisible();
@@ -174,6 +174,46 @@ test.describe('optional styles.css (second review: narrow screens)', () => {
     const display = await page.locator('#orders table').evaluate(table => getComputedStyle(table).display);
     expect(display).toBe('table');
     expect(await page.locator('#orders tbody td').nth(1).evaluate(td => getComputedStyle(td, '::before').content)).toBe('none');
+  });
+});
+
+test.describe('responsive modes on a phone', () => {
+  test.beforeEach(async ({ page }) => page.setViewportSize({ width: 375, height: 800 }));
+
+  test('collapse hides lower-priority columns and opens them below the row', async ({ page }) => {
+    await page.goto('/e2e/fixtures/table.html?responsive=collapse');
+    await expect(page.locator('body[data-ready=true]')).toBeAttached();
+    await expect(page.getByRole('columnheader', { name: 'City' })).toBeHidden();
+    await expect(page.getByRole('columnheader', { name: 'Total' })).toBeHidden();
+    const details = page.getByRole('button', { name: 'Details of Ayşe' });
+    await details.click();
+    await expect(details).toHaveAttribute('aria-expanded', 'true');
+    const row = page.locator('.adt-detail');
+    await expect(row.getByText('İstanbul')).toBeVisible();
+    await row.getByRole('button', { name: 'Edit: Ayşe' }).click();
+    expect(await page.evaluate(() => (window as unknown as { __edited?: string }).__edited)).toBe('1');
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
+  });
+
+  test('modal opens every value in a dialog that Escape closes', async ({ page }) => {
+    await page.goto('/e2e/fixtures/table.html?responsive=modal');
+    await expect(page.locator('body[data-ready=true]')).toBeAttached();
+    const details = page.getByRole('button', { name: 'Details of Ali' });
+    await details.click();
+    const dialog = page.getByRole('dialog', { name: 'Details of Ali' });
+    await expect(dialog).toBeVisible();
+    await expect(dialog.getByText('Ankara')).toBeVisible();
+    await page.keyboard.press('Escape');
+    await expect(dialog).toBeHidden();
+    await expect(details).toBeFocused(); // focus goes back to the button
+  });
+
+  test('scroll keeps the table and scrolls it sideways inside its box', async ({ page }) => {
+    await page.goto('/e2e/fixtures/table.html?responsive=scroll');
+    await expect(page.locator('body[data-ready=true]')).toBeAttached();
+    expect(await page.locator('#orders table').evaluate(table => getComputedStyle(table).display)).toBe('table');
+    await expect(page.getByRole('columnheader', { name: 'City' })).toBeVisible();
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
   });
 });
 

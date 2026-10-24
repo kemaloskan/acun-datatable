@@ -37,6 +37,9 @@ export interface DataTableLabels {
   /** Column visibility menu. */
   readonly columns: string;
   readonly showColumns: string;
+  /** Responsive `collapse` / `modal`: the details button of a row and the dialog title. */
+  readonly details: (name: string) => string;
+  readonly close: string;
 }
 
 /** Plural-aware word choice and locale digit grouping for count texts. */
@@ -79,6 +82,8 @@ export const labelsEn: DataTableLabels = Object.freeze({
   clearSelection: 'Clear selection',
   columns: 'Columns',
   showColumns: 'Show columns',
+  details: (name: string) => `Details of ${name}`,
+  close: 'Close',
 });
 
 export const labelsTr: DataTableLabels = Object.freeze({
@@ -109,6 +114,8 @@ export const labelsTr: DataTableLabels = Object.freeze({
   clearSelection: 'Seçimi temizle',
   columns: 'Kolonlar',
   showColumns: 'Gösterilecek kolonlar',
+  details: (name: string) => `${name} ayrıntıları`,
+  close: 'Kapat',
 });
 
 export const labelsDe: DataTableLabels = Object.freeze({
@@ -139,6 +146,8 @@ export const labelsDe: DataTableLabels = Object.freeze({
   clearSelection: 'Auswahl aufheben',
   columns: 'Spalten',
   showColumns: 'Angezeigte Spalten',
+  details: (name: string) => `Details zu ${name}`,
+  close: 'Schließen',
 });
 
 export const labelsFr: DataTableLabels = Object.freeze({
@@ -169,6 +178,8 @@ export const labelsFr: DataTableLabels = Object.freeze({
   clearSelection: 'Effacer la sélection',
   columns: 'Colonnes',
   showColumns: 'Colonnes affichées',
+  details: (name: string) => `Détails de ${name}`,
+  close: 'Fermer',
 });
 
 export const labelsEs: DataTableLabels = Object.freeze({
@@ -199,6 +210,8 @@ export const labelsEs: DataTableLabels = Object.freeze({
   clearSelection: 'Borrar selección',
   columns: 'Columnas',
   showColumns: 'Columnas visibles',
+  details: (name: string) => `Detalles de ${name}`,
+  close: 'Cerrar',
 });
 
 /** The bundled label sets by language. */

@@ -6,7 +6,7 @@ import {
 } from './controls';
 import { checkTarget, element, type RenderedComponent } from './dom';
 import { resolveLabels, type DataTableLabels } from './labels';
-import { renderTable, type RenderTableOptions } from './table';
+import { checkSize, renderTable, type RenderTableOptions } from './table';
 
 /** A built-in control, or your own: a function that fills the given element. */
 export type LayoutFeature =
@@ -72,7 +72,8 @@ export function renderDataTable<TData>(
   const labels: DataTableLabels = resolveLabels(options.locale, options.labels);
   const locale = options.locale ?? 'en';
 
-  const root = element(doc, 'div', { class: 'adt' });
+  const size = checkSize(options.size);
+  const root = element(doc, 'div', { class: size === 'md' ? 'adt' : `adt adt-size--${size}` });
   const parts: RenderedComponent[] = [];
   const mount = (target: HTMLElement, feature: LayoutFeature): void => {
     const node = element(doc, 'div', { class: typeof feature === 'function' ? 'adt-feature' : `adt-feature adt-feature--${feature}` });
@@ -120,7 +121,8 @@ export function renderDataTable<TData>(
   }
   const body = element(doc, 'div', { class: 'adt-body' });
   root.append(body);
-  const { layout: _layout, pageSizes: _sizes, paging: _paging, search: _search, bulkActions: _bulk, ...tableOptions } = options;
+  // The size class sits on .adt, so the bars and the table share it.
+  const { layout: _layout, pageSizes: _sizes, paging: _paging, search: _search, bulkActions: _bulk, size: _size, ...tableOptions } = options;
   parts.push(renderTable(body, table, { ...tableOptions, labels }));
   const bottom = bar('bottom', layout.bottomStart, layout.bottomEnd);
   if (bottom) root.append(bottom);

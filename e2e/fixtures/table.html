@@ -21,17 +21,22 @@ import { labelsEn, renderDataTable } from '@acunsoft/datatable-dom';
 
 const names = ['Ayşe', 'Ali', 'Can', 'Deniz', 'Ece', 'Fatma', 'Gül', 'Hakan', 'İrem', 'Kaan', 'Lale', 'Mert'];
 const table = createDataTable({
-  data: names.map((customer, index) => ({ id: index + 1, customer, total: ((index * 37) % 100) + 10 })),
+  data: names.map((customer, index) => ({ id: index + 1, customer, total: ((index * 37) % 100) + 10, city: ['İstanbul', 'Ankara', 'İzmir'][index % 3] })),
   columns: [
     { id: 'customer', header: 'Customer', accessorKey: 'customer', enableSorting: true, enableFiltering: true },
     { id: 'total', header: 'Total', accessorKey: 'total', enableSorting: true },
+    { id: 'city', header: 'City', accessorKey: 'city', priority: 3 },
   ],
   locale: 'tr',
   initialState: { pageSize: 5 },
 });
 // Turkish number and date formats with the English texts.
+// ?responsive=collapse|modal|scroll and ?size=sm|lg try the other modes.
+const params = new URLSearchParams(location.search);
 renderDataTable(document.getElementById('orders'), table, {
   caption: 'Orders', selectable: true, locale: 'tr', labels: labelsEn, pageSizes: [5, 10], search: { debounceMs: 0 },
+  responsive: params.get('responsive') ?? 'cards', size: params.get('size') ?? 'md',
+  rowActions: [{ id: 'edit', label: 'Edit', onSelect: row => { window.__edited = row.id; } }],
 });
 window.__table = table;
 document.body.dataset.ready = 'true';

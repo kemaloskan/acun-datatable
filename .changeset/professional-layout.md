@@ -31,3 +31,12 @@ Professional, DataTables-like layout.
   (`--adt-surface`, `--adt-control-radius`, `--adt-control-height`, `--adt-gap`,
   `--adt-head-transform`, …), native controls follow dark mode, a print style
   and a responsive layout (stacked bars, a compact pager and cards on phones).
+- Narrow screens: `responsive: 'cards' | 'scroll' | 'collapse' | 'modal'` on
+  `renderTable` / `renderDataTable`, Vue `AcunDataTable` and React `DataTable`.
+  `collapse` hides lower-priority columns (new `ColumnDef.priority`: 1 always,
+  2 below 640px, 3 below 960px) behind a button that opens them below the row;
+  `modal` shows every value of the row in an accessible `<dialog>`.
+- Sizes: `size: 'sm' | 'md' | 'lg'` (classes `adt-size--sm` / `adt-size--lg`).
+- `--adt-*` defaults are declared only on the outermost element, so values set
+  on `.adt` now reach every part.
+

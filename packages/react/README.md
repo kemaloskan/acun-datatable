@@ -66,7 +66,7 @@ on every table event through `useSyncExternalStore`.
 
 | Component | Props |
 |---|---|
-| `DataTable` | `table`, `caption`, `selectable`, `locale`, `labels`, `format`, `cells`, `empty`, `rowLabel`, `rowActions`, `status` |
+| `DataTable` | `table`, `caption`, `selectable`, `locale`, `labels`, `format`, `cells`, `empty`, `rowLabel`, `rowActions`, `status`, `responsive`, `size` |
 | `Pagination` | `table`, `siblings`, `boundaries`, `firstLast`, `locale`, `labels` |
 | `PageSize` | `table`, `pageSizes`, `labels` |
 | `PageInfo` | `table`, `labels` |

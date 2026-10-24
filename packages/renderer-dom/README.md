@@ -70,8 +70,30 @@ renderTable(el, table, { status: runner, labels: labelsTr });
   the HTTP runner): while loading the wrapper has `aria-busy="true"` and a polite
   status says `labels.loading`; after an error an alert shows `labels.error` and,
   if the source has `retry()`, a "Try again" button. The last rows stay visible.
-- **Narrow screens:** every cell has `data-label` with its header, used by the
-  optional stylesheet's card layout.
+- **Narrow screens** (`responsive`, with the optional stylesheet):
+
+  | Mode | Below 640px |
+  |---|---|
+  | `'cards'` (default) | every row becomes a card, each cell with its header (`data-label`) |
+  | `'scroll'` | the table keeps its columns and scrolls sideways inside its box |
+  | `'collapse'` | lower-priority columns hide; a ⊕ button (`aria-expanded`) opens their values below the row |
+  | `'modal'` | the same button opens every value of the row in a `<dialog>` (Escape, ✕ or a click outside closes it; focus returns to the button) |
+
+  For `collapse` and `modal`, `ColumnDef.priority` decides what stays: `1`
+  always, `2` hides below 640px, `3` already below 960px (tablets). By default
+  the first column is `1` and the others `2`; row actions move into the
+  details. While every column fits, the button is not shown.
+
+  ```ts
+  columns: [
+    { id: 'customer', header: 'Müşteri', accessorKey: 'customer' },          // 1: first column
+    { id: 'total', header: 'Tutar', accessorKey: 'total', priority: 1 },     // stays on phones
+    { id: 'email', header: 'E-posta', accessorKey: 'email', priority: 3 },   // hides on tablets too
+  ],
+  renderDataTable(el, table, { responsive: 'collapse' });
+  ```
+- **Sizes:** `size: 'sm' | 'md' | 'lg'` (default `md`) sets row height, text
+  and control size together (class `adt-size--sm` / `adt-size--lg`).
 
 ## Row and bulk actions
 
@@ -220,7 +242,8 @@ shows its header). It is light by default; it turns dark under an ancestor with
 `data-theme="auto"` (it cannot see your page background, so it never turns dark
 on its own).
 
-Customise it with custom properties, on `.adt` or any ancestor:
+Customise it with custom properties on `.adt` (the outermost `adt-*` element;
+the defaults are declared only there, so your values reach every part):
 
 ```css
 .adt {

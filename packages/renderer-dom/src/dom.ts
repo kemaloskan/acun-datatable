@@ -56,6 +56,9 @@ export const ICONS = Object.freeze({
   last: 'M13 17l5-5-5-5M6 17l5-5-5-5',
   search: 'M21 21l-4.35-4.35M11 18a7 7 0 1 0 0-14 7 7 0 0 0 0 14z',
   columns: 'M9 4v16M15 4v16M4 4h16v16H4z',
+  expand: 'M12 8v8M8 12h8M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18z',
+  collapse: 'M8 12h8M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18z',
+  close: 'M18 6 6 18M6 6l12 12',
 } as const);
 
 /** A decorative stroke icon (hidden from screen readers; the control carries the name). */

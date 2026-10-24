@@ -1,10 +1,11 @@
 import {
-  computed, defineComponent, h, onScopeDispose, shallowRef, watch,
+  computed, defineComponent, h, nextTick, onScopeDispose, shallowRef, watch,
   type PropType, type SlotsType, type VNode,
 } from 'vue';
 import { getPageItems, type ColumnDef, type DataTable, type Row } from '@acunsoft/datatable-core';
 import {
-  cellValue, checkPageSizes, createCellText, ICONS, labelsEn, nextSorting, pageInfoText, pageSizeChoices, rowName,
+  cellValue, checkPageSizes, checkResponsive, checkSize, createCellText, ICONS, labelsEn, nextSorting, pageInfoText,
+  pageSizeChoices, priorityOf, rowName, type ResponsiveMode, type TableSize,
   type BulkAction, type BulkSelection, type CellFormatter, type DataTableLabels, type RowAction, type StatusSource,
 } from '@acunsoft/datatable-dom';
 import { useTable } from './composables';
@@ -20,6 +21,7 @@ type AnyColumn = ColumnDef<any>;
 type LooseAction = RowAction<unknown>;
 type LooseBulk = BulkAction<unknown>;
 
+let tables = 0;
 const tableProp = {
   type: Object as PropType<AnyTable>,
   required: true as const,
@@ -61,6 +63,16 @@ export const AcunDataTable = defineComponent({
     rowLabel: { type: Function as PropType<(row: Row<never>) => string>, default: undefined },
     rowActions: { type: Array as PropType<readonly RowAction<never>[]>, default: () => [] },
     status: { type: Object as PropType<StatusSource>, default: undefined },
+    /** Narrow screens: `cards` (default), `scroll`, `collapse` or `modal`; see `ColumnDef.priority`. */
+    responsive: {
+      type: String as PropType<ResponsiveMode>, default: 'cards',
+      validator: (value: unknown) => { try { checkResponsive(value); return true; } catch { return false; } },
+    },
+    /** Density: `sm`, `md` (default) or `lg`. */
+    size: {
+      type: String as PropType<TableSize>, default: 'md',
+      validator: (value: unknown) => { try { checkSize(value); return true; } catch { return false; } },
+    },
   },
   slots: Object as SlotsType<{ cell: CellSlotProps; empty: Record<string, never>; [name: `cell-${string}`]: CellSlotProps }>,
   setup(props, { slots }) {
@@ -78,9 +90,42 @@ export const AcunDataTable = defineComponent({
       stopStatus = source?.subscribe(state => { phase.value = state.status; });
     }, { immediate: true });
     onScopeDispose(() => stopStatus?.());
+    const uid = `adt-vue-${++tables}`;
+    // Responsive collapse: open rows. Modal: the row shown in the dialog.
+    const expanded = shallowRef<ReadonlySet<string>>(new Set());
+    const dialogRow = shallowRef<string | undefined>();
+    const dialog = shallowRef<HTMLDialogElement | null>(null);
+    const openDialog = (id: string): void => {
+      dialogRow.value = id;
+      void nextTick(() => {
+        const node = dialog.value;
+        if (node && !node.open) {
+          if (typeof node.showModal === 'function') node.showModal();
+          else node.setAttribute('open', '');
+        }
+      });
+    };
+    const closeDialog = (): void => {
+      const node = dialog.value;
+      if (node?.open && typeof node.close === 'function') node.close();
+      else node?.removeAttribute('open');
+    };
+    const onDialogClose = (): void => {
+      const id = dialogRow.value;
+      dialogRow.value = undefined;
+      // Back to the row's button (Safari does not focus a clicked button).
+      const buttons = dialog.value?.closest('.adt-table-wrap')?.querySelectorAll<HTMLElement>('.adt-expand') ?? [];
+      [...buttons].find(button => button.dataset['row'] === id)?.focus();
+    };
+    // Close the dialog when its row leaves the page.
+    watch(() => binding.page.value, page => {
+      if (dialogRow.value !== undefined && !page.rows.some(row => row.id === dialogRow.value)) closeDialog();
+    });
 
     return (): VNode => {
       const { table } = props;
+      const responsive = props.responsive;
+      const collapsible = responsive === 'collapse' || responsive === 'modal';
       const state = binding.state.value;
       const page = binding.page.value;
       const columns = binding.visibleColumns.value;
@@ -90,6 +135,10 @@ export const AcunDataTable = defineComponent({
       const label = labels.value;
 
       const head: VNode[] = [];
+      const levels = new Set(columns.map((column, index) => priorityOf(column, index)));
+      if (actions.length > 0) levels.add(2);
+      const level = (column: AnyColumn): string => (collapsible ? ` adt-col--p${priorityOf(column, columns.indexOf(column))}` : '');
+      if (collapsible) head.push(h('td', { class: 'adt-expand-cell', key: '__expand' }));
       if (props.selectable) {
         const status = table.getSelectionStatus(pageIds);
         head.push(h('th', { scope: 'col', class: 'adt-select', key: '__select' },
@@ -107,7 +156,7 @@ export const AcunDataTable = defineComponent({
         const index = state.sorting.findIndex(rule => rule.field === column.id);
         const rule = state.sorting[index];
         head.push(h('th', {
-          scope: 'col', class: 'adt-th', key: column.id,
+          scope: 'col', class: `adt-th${level(column)}`, key: column.id,
           'aria-sort': primary?.field === column.id ? (primary.direction === 'asc' ? 'ascending' : 'descending') : undefined,
         }, column.enableSorting
           ? [h('button', {
@@ -117,42 +166,94 @@ export const AcunDataTable = defineComponent({
             rule ? `${rule.direction === 'asc' ? '▲' : '▼'}${state.sorting.length > 1 ? index + 1 : ''}` : '')])]
           : column.header));
       }
-      if (actions.length > 0) head.push(h('th', { scope: 'col', class: 'adt-th adt-actions', key: '__actions' }, label.actions));
+      if (actions.length > 0) {
+        head.push(h('th', { scope: 'col', class: `adt-th adt-actions${collapsible ? ' adt-col--p2' : ''}`, key: '__actions' }, label.actions));
+      }
+      const span = columns.length + (props.selectable ? 1 : 0) + (actions.length > 0 ? 1 : 0) + (collapsible ? 1 : 0);
+      const actionButtons = (row: AnyRow, name: string): VNode[] => actions.filter(action => action.hidden?.(row) !== true).map(action => {
+        const disabled = action.disabled?.(row) === true;
+        return h('button', {
+          type: 'button', class: 'adt-action', 'data-action': action.id, key: action.id,
+          'aria-label': label.rowAction(action.label, name), 'aria-disabled': disabled ? 'true' : undefined,
+          onClick: () => { if (!disabled) action.onSelect(row); },
+        }, action.label);
+      });
+      const contentOf = (column: AnyColumn, row: AnyRow, text: string): unknown => {
+        const slot = slots[`cell-${column.id}`] ?? slots.cell;
+        return slot ? slot({ column, row, value: cellValue(column, row), text }) : text;
+      };
+      // The values of a row: all of them (dialog) or only those a narrow screen hides (details row).
+      const detailList = (row: AnyRow, texts: readonly string[], name: string, all: boolean): VNode => h('dl', { class: 'adt-detail-list' }, [
+        ...columns.flatMap((column, index) => {
+          const priority = priorityOf(column, index);
+          if (!all && priority === 1) return [];
+          return [h('div', { class: all ? 'adt-detail-item' : `adt-detail-item adt-col--p${priority}`, key: column.id }, [
+            h('dt', column.header), h('dd', contentOf(column, row, texts[index]!) as never),
+          ])];
+        }),
+        actions.length > 0
+          ? h('div', { class: all ? 'adt-detail-item' : 'adt-detail-item adt-col--p2', key: '__actions' }, [
+            h('dt', label.actions), h('dd', { class: 'adt-detail-actions' }, actionButtons(row, name)),
+          ])
+          : null,
+      ]);
 
       const body: VNode[] = [];
       if (page.rows.length === 0) {
-        body.push(h('tr', { class: 'adt-empty', key: '__empty' }, [h('td', {
-          colspan: columns.length + (props.selectable ? 1 : 0) + (actions.length > 0 ? 1 : 0),
-        }, slots.empty ? slots.empty({}) : label.empty)]));
+        body.push(h('tr', { class: 'adt-empty', key: '__empty' }, [h('td', { colspan: span }, slots.empty ? slots.empty({}) : label.empty)]));
       }
-      for (const row of page.rows) {
+      let dialogContent: VNode[] | undefined;
+      page.rows.forEach((row, rowIndex) => {
         const texts = columns.map(column => text.value(column, row));
         const name = rowName(row, texts[0] ?? '', rowLabel);
         const selected = table.isSelected(row.id);
+        const open = responsive === 'collapse' && expanded.value.has(row.id);
+        const detailId = `${uid}-detail-${rowIndex}`;
         const cells: VNode[] = [];
+        if (collapsible) {
+          cells.push(h('td', { class: 'adt-expand-cell', key: '__expand' }, [h('button', {
+            type: 'button', class: 'adt-expand', 'aria-label': label.details(name), 'data-row': row.id,
+            ...(responsive === 'collapse' ? { 'aria-expanded': String(open), 'aria-controls': detailId } : { 'aria-haspopup': 'dialog' }),
+            onClick: () => {
+              if (responsive === 'modal') return openDialog(row.id);
+              const next = new Set(expanded.value);
+              if (!next.delete(row.id)) next.add(row.id);
+              expanded.value = next;
+            },
+          }, [iconNode(open ? 'collapse' : 'expand')])]));
+        }
+        if (dialogRow.value === row.id) {
+          dialogContent = [
+            h('div', { class: 'adt-dialog-head' }, [
+              h('h2', { class: 'adt-dialog-title', id: `${uid}-dialog-title` }, label.details(name)),
+              h('button', { type: 'button', class: 'adt-dialog-close', 'aria-label': label.close, onClick: closeDialog }, [iconNode('close')]),
+            ]),
+            detailList(row, texts, name, true),
+          ];
+        }
         if (props.selectable) {
           cells.push(h('td', { class: 'adt-select' }, [h('input', {
             type: 'checkbox', 'aria-label': label.selectRow(name), checked: selected, onChange: () => table.toggleRow(row.id),
           })]));
         }
         columns.forEach((column, index) => {
-          const slot = slots[`cell-${column.id}`] ?? slots.cell;
-          const content = slot ? slot({ column, row, value: cellValue(column, row), text: texts[index]! }) : texts[index];
-          cells.push(h('td', { 'data-label': column.header, key: column.id }, content));
+          cells.push(h('td', {
+            'data-label': column.header, key: column.id, class: collapsible ? `adt-col--p${priorityOf(column, index)}` : undefined,
+          }, contentOf(column, row, texts[index]!) as never));
         });
         if (actions.length > 0) {
-          cells.push(h('td', { class: 'adt-actions', 'data-label': label.actions, key: '__actions' },
-            actions.filter(action => action.hidden?.(row) !== true).map(action => {
-              const disabled = action.disabled?.(row) === true;
-              return h('button', {
-                type: 'button', class: 'adt-action', 'data-action': action.id, key: action.id,
-                'aria-label': label.rowAction(action.label, name), 'aria-disabled': disabled ? 'true' : undefined,
-                onClick: () => { if (!disabled) action.onSelect(row); },
-              }, action.label);
-            })));
+          cells.push(h('td', {
+            class: collapsible ? 'adt-actions adt-col--p2' : 'adt-actions', 'data-label': label.actions, key: '__actions',
+          }, actionButtons(row, name)));
         }
-        body.push(h('tr', { class: selected ? 'adt-row adt-row--selected' : 'adt-row', 'data-row-id': row.id, key: row.id }, cells));
-      }
+        const rowClass = ['adt-row', selected ? 'adt-row--selected' : '', open ? 'adt-row--expanded' : ''].filter(Boolean).join(' ');
+        body.push(h('tr', { class: rowClass, 'data-row-id': row.id, key: row.id }, cells));
+        if (open) {
+          body.push(h('tr', { class: 'adt-detail', id: detailId, key: `${row.id}__detail` }, [
+            h('td', { colspan: span }, [detailList(row, texts, name, false)]),
+          ]));
+        }
+      });
 
       const busy = phase.value === 'loading';
       const notice = phase.value === 'loading'
@@ -165,13 +266,23 @@ export const AcunDataTable = defineComponent({
               : null,
           ])
           : h('div', { class: 'adt-notice', role: 'status', 'aria-live': 'polite' });
-      return h('div', { class: busy ? 'adt-table-wrap adt-loading' : 'adt-table-wrap', 'aria-busy': props.status ? String(busy) : undefined }, [
+      const wrapClass = ['adt-table-wrap', `adt-responsive--${responsive}`, props.size === 'md' ? '' : `adt-size--${props.size}`, busy ? 'adt-loading' : '']
+        .filter(Boolean).join(' ');
+      const tableClass = ['adt-table', collapsible && levels.has(2) ? 'adt-has-p2' : '', collapsible && levels.has(3) ? 'adt-has-p3' : '']
+        .filter(Boolean).join(' ');
+      return h('div', { class: wrapClass, 'aria-busy': props.status ? String(busy) : undefined }, [
         notice,
-        h('div', { class: 'adt-scroll' }, [h('table', { class: 'adt-table' }, [
+        h('div', { class: 'adt-scroll' }, [h('table', { class: tableClass }, [
           props.caption !== undefined ? h('caption', props.caption) : null,
           h('thead', [h('tr', head)]),
           h('tbody', body),
         ])]),
+        responsive === 'modal'
+          ? h('dialog', {
+            ref: dialog, class: 'adt-dialog', 'aria-labelledby': `${uid}-dialog-title`, onClose: onDialogClose,
+            onClick: (event: MouseEvent) => { if (event.target === event.currentTarget) closeDialog(); },
+          }, dialogContent ?? [])
+          : null,
       ]);
     };
   },

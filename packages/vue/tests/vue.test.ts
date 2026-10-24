@@ -220,3 +220,37 @@ describe('useDataTable', () => {
     expect(listener).not.toHaveBeenCalled(); // destroyed
   });
 });
+
+describe('responsive modes and sizes', () => {
+  const wide: readonly ColumnDef<Order>[] = [
+    { id: 'customer', header: 'Müşteri', accessorKey: 'customer', enableSorting: true },
+    { id: 'total', header: 'Tutar', accessorKey: 'total', type: 'decimal', priority: 3 },
+  ];
+  const makeWide = () => createDataTable<Order>({ data: orders, columns: wide });
+
+  it('collapse opens the hidden values below the row', async () => {
+    const edit = vi.fn();
+    await mount(() => h(AcunDataTable, { table: makeWide(), responsive: 'collapse', size: 'sm', rowActions: [{ id: 'edit', label: 'Edit', onSelect: edit }] }));
+    expect(host.querySelector('.adt-table-wrap')!.className).toBe('adt-table-wrap adt-responsive--collapse adt-size--sm');
+    expect(host.querySelector('table')!.className).toBe('adt-table adt-has-p2 adt-has-p3');
+    const button = host.querySelector<HTMLButtonElement>('.adt-expand[aria-label="Details of Ayşe"]')!;
+    button.click();
+    await nextTick();
+    expect(button.getAttribute('aria-expanded')).toBe('true');
+    const detail = document.getElementById(button.getAttribute('aria-controls')!)!;
+    expect([...detail.querySelectorAll('dt')].map(dt => dt.textContent)).toEqual(['Tutar', 'Actions']);
+    detail.querySelector<HTMLButtonElement>('.adt-action')!.click();
+    expect(edit).toHaveBeenCalledOnce();
+  });
+
+  it('modal shows every value of the row in a dialog', async () => {
+    await mount(() => h(AcunDataTable, { table: makeWide(), responsive: 'modal', labels: labelsTr }));
+    host.querySelector<HTMLButtonElement>('.adt-expand')!.click();
+    await nextTick();
+    await nextTick();
+    const dialog = host.querySelector('dialog')!;
+    expect(dialog.open).toBe(true);
+    expect(dialog.querySelector('h2')!.textContent).toBe('Ayşe ayrıntıları');
+    expect([...dialog.querySelectorAll('dt')].map(dt => dt.textContent)).toEqual(['Müşteri', 'Tutar']);
+  });
+});

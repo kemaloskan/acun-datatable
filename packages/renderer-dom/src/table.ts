@@ -1,7 +1,7 @@
-import type { DataTable, Row } from '@acunsoft/datatable-core';
+import type { ColumnDef, DataTable, Row } from '@acunsoft/datatable-core';
 import { actionCell, checkActions, type RowAction } from './actions';
 import { createCellText, nextSorting, rowName, type CellFormatter } from './cells';
-import { checkTarget, element, keepFocus, type RenderedComponent } from './dom';
+import { checkTarget, element, icon, keepFocus, type RenderedComponent } from './dom';
 import { labelsEn, type DataTableLabels } from './labels';
 
 export type { CellFormatter } from './cells';
@@ -40,7 +40,32 @@ export interface RenderTableOptions<TData> {
    * row it acts on.
    */
   readonly rowActions?: readonly RowAction<TData>[];
+  /**
+   * Narrow screens (with the optional `styles.css`): `'cards'` (default) shows
+   * each row as a card; `'scroll'` keeps the table and scrolls it sideways;
+   * `'collapse'` hides lower-priority columns (`ColumnDef.priority`) and adds
+   * a button that opens their values below the row; `'modal'` opens every
+   * value of the row in a dialog instead.
+   */
+  readonly responsive?: ResponsiveMode;
+  /** Density with the optional `styles.css`: `'sm'` compact, `'md'` (default), `'lg'` spacious. */
+  readonly size?: TableSize;
 }
+
+export type TableSize = 'sm' | 'md' | 'lg';
+export function checkResponsive(mode: unknown): ResponsiveMode {
+  if (mode !== undefined && !RESPONSIVE_MODES.includes(mode as ResponsiveMode)) {
+    throw new RangeError(`responsive must be one of ${RESPONSIVE_MODES.join(', ')}`);
+  }
+  return (mode ?? 'cards') as ResponsiveMode;
+}
+export function checkSize(size: unknown): TableSize {
+  if (size !== undefined && size !== 'sm' && size !== 'md' && size !== 'lg') throw new RangeError('size must be sm, md or lg');
+  return (size ?? 'md') as TableSize;
+}
+export type ResponsiveMode = 'cards' | 'scroll' | 'collapse' | 'modal';
+const RESPONSIVE_MODES: readonly ResponsiveMode[] = ['cards', 'scroll', 'collapse', 'modal'];
+let tables = 0;
 
 /**
  * Render a semantic, accessible `<table>` for a `createDataTable` instance and
@@ -73,13 +98,73 @@ export function renderTable<TData>(
     throw new TypeError('status must have getState and subscribe');
   }
 
+  const responsive = checkResponsive(options.responsive);
+  const collapsible = responsive === 'collapse' || responsive === 'modal';
+  const uid = `adt-${++tables}`;
+
   const nameOf = (row: Row<TData>, cells: readonly string[]): string => rowName(row, cells[0] ?? '', options.rowLabel);
 
-  const root = element(doc, 'div', { class: 'adt-table-wrap' });
+  const size = checkSize(options.size);
+  const root = element(doc, 'div', { class: `adt-table-wrap adt-responsive--${responsive}${size === 'md' ? '' : ` adt-size--${size}`}` });
   const scroller = element(doc, 'div', { class: 'adt-scroll' });
   const notice = element(doc, 'div', { class: 'adt-notice', role: 'status', 'aria-live': 'polite' });
   root.append(notice, scroller);
   container.replaceChildren(root);
+
+  // Responsive collapse: rows whose details are open (kept across re-renders).
+  const expanded = new Set<string>();
+  // Responsive modal: one dialog, filled for the row whose button was pressed.
+  let dialog: HTMLDialogElement | undefined;
+  let dialogRow: string | undefined;
+  const closeDialog = (): void => {
+    if (!dialog) return;
+    if (typeof dialog.close === 'function' && dialog.open) dialog.close();
+    else dialog.removeAttribute('open');
+  };
+  const detailList = (row: Row<TData>, cells: readonly string[], columns: readonly ColumnDef<TData>[], all: boolean): HTMLDListElement => {
+    const list = element(doc, 'dl', { class: 'adt-detail-list' });
+    columns.forEach((column, index) => {
+      const level = priorityOf(column, index);
+      if (!all && level === 1) return;
+      const item = element(doc, 'div', { class: `adt-detail-item${all ? '' : ` adt-col--p${level}`}` });
+      item.append(element(doc, 'dt', {}, column.header), element(doc, 'dd', {}, cells[index]));
+      list.append(item);
+    });
+    if (rowActions.length > 0) {
+      const item = element(doc, 'div', { class: `adt-detail-item${all ? '' : ' adt-col--p2'}` });
+      const actions = actionCell(doc, rowActions, row, nameOf(row, cells), labels);
+      const value = element(doc, 'dd', { class: 'adt-detail-actions' });
+      value.append(...actions.childNodes);
+      item.append(element(doc, 'dt', {}, labels.actions), value);
+      list.append(item);
+    }
+    return list;
+  };
+  const openDialog = (row: Row<TData>, cells: readonly string[], columns: readonly ColumnDef<TData>[]): void => {
+    if (!dialog) {
+      dialog = element(doc, 'dialog', { class: 'adt-dialog', 'aria-labelledby': `${uid}-dialog-title` });
+      // A click on the backdrop lands on the dialog itself.
+      dialog.addEventListener('click', event => { if (event.target === dialog) closeDialog(); });
+      dialog.addEventListener('close', () => {
+        // Back to the row's button (Safari does not focus a clicked button, so the browser cannot restore it).
+        const opener = [...root.querySelectorAll<HTMLElement>('.adt-expand')].find(node => node.dataset['adtFocus'] === `expand:${dialogRow}`);
+        dialogRow = undefined;
+        opener?.focus();
+      });
+      root.append(dialog);
+    }
+    const head = element(doc, 'div', { class: 'adt-dialog-head' });
+    const close = element(doc, 'button', { type: 'button', class: 'adt-dialog-close', 'aria-label': labels.close });
+    close.append(icon(doc, 'close'));
+    close.addEventListener('click', closeDialog);
+    head.append(element(doc, 'h2', { class: 'adt-dialog-title', id: `${uid}-dialog-title` }, labels.details(nameOf(row, cells))), close);
+    dialog.replaceChildren(head, detailList(row, cells, columns, true));
+    dialogRow = row.id;
+    if (!dialog.open) {
+      if (typeof dialog.showModal === 'function') dialog.showModal();
+      else dialog.setAttribute('open', '');
+    }
+  };
 
   // Elements that a selection change updates in place.
   let selectAll: HTMLInputElement | undefined;
@@ -112,6 +197,13 @@ export function renderTable<TData>(
     if (options.caption !== undefined) tableEl.append(element(doc, 'caption', {}, options.caption));
 
     const headRow = element(doc, 'tr');
+    const levels = new Set(columns.map((column, index) => priorityOf(column, index)));
+    if (rowActions.length > 0) levels.add(2);
+    if (collapsible) {
+      if (levels.has(2)) tableEl.classList.add('adt-has-p2');
+      if (levels.has(3)) tableEl.classList.add('adt-has-p3');
+      headRow.append(element(doc, 'td', { class: 'adt-expand-cell' }));
+    }
     if (selectable) {
       const th = element(doc, 'th', { scope: 'col', class: 'adt-select' });
       if (table.getSelectionMode() === 'multiple' && pageIds.length > 0) {
@@ -130,7 +222,7 @@ export function renderTable<TData>(
     }
     const primary = state.sorting[0];
     for (const column of columns) {
-      const th = element(doc, 'th', { scope: 'col', class: 'adt-th' });
+      const th = element(doc, 'th', { scope: 'col', class: `adt-th${collapsible ? ` adt-col--p${priorityOf(column, columns.indexOf(column))}` : ''}` });
       if (column.enableSorting) {
         const index = state.sorting.findIndex(rule => rule.field === column.id);
         const rule = state.sorting[index];
@@ -151,20 +243,45 @@ export function renderTable<TData>(
       }
       headRow.append(th);
     }
-    if (rowActions.length > 0) headRow.append(element(doc, 'th', { scope: 'col', class: 'adt-th adt-actions' }, labels.actions));
+    if (rowActions.length > 0) {
+      headRow.append(element(doc, 'th', { scope: 'col', class: `adt-th adt-actions${collapsible ? ' adt-col--p2' : ''}` }, labels.actions));
+    }
     const head = element(doc, 'thead');
     head.append(headRow);
 
     const body = element(doc, 'tbody');
+    const span = columns.length + (selectable ? 1 : 0) + (rowActions.length > 0 ? 1 : 0) + (collapsible ? 1 : 0);
     if (page.rows.length === 0) {
       const tr = element(doc, 'tr', { class: 'adt-empty' });
-      const span = columns.length + (selectable ? 1 : 0) + (rowActions.length > 0 ? 1 : 0);
       tr.append(element(doc, 'td', { colspan: String(span) }, labels.empty));
       body.append(tr);
     }
     for (const row of page.rows) {
       const cells = columns.map(column => text(column, row));
       const tr = element(doc, 'tr', { class: 'adt-row', 'data-row-id': row.id });
+      const open = responsive === 'collapse' && expanded.has(row.id);
+      const detailId = `${uid}-detail-${rowParts.length}`;
+      if (collapsible) {
+        const td = element(doc, 'td', { class: 'adt-expand-cell' });
+        const button = element(doc, 'button', {
+          type: 'button', class: 'adt-expand', 'aria-label': labels.details(nameOf(row, cells)), 'data-adt-focus': `expand:${row.id}`,
+          ...(responsive === 'collapse'
+            ? { 'aria-expanded': open ? 'true' : 'false', 'aria-controls': detailId }
+            : { 'aria-haspopup': 'dialog' }),
+        });
+        button.append(icon(doc, open ? 'collapse' : 'expand'));
+        button.addEventListener('click', () => {
+          if (responsive === 'modal') {
+            openDialog(row, cells, columns);
+            return;
+          }
+          if (expanded.has(row.id)) expanded.delete(row.id);
+          else expanded.add(row.id);
+          render();
+        });
+        td.append(button);
+        tr.append(td);
+      }
       let box: HTMLInputElement | undefined;
       if (selectable) {
         const td = element(doc, 'td', { class: 'adt-select' });
@@ -175,11 +292,27 @@ export function renderTable<TData>(
         td.append(box);
         tr.append(td);
       }
-      columns.forEach((column, index) => tr.append(element(doc, 'td', { 'data-label': column.header }, cells[index])));
-      if (rowActions.length > 0) tr.append(actionCell(doc, rowActions, row, nameOf(row, cells), labels));
+      columns.forEach((column, index) => tr.append(element(doc, 'td', {
+        'data-label': column.header, ...(collapsible ? { class: `adt-col--p${priorityOf(column, index)}` } : {}),
+      }, cells[index])));
+      if (rowActions.length > 0) {
+        const cell = actionCell(doc, rowActions, row, nameOf(row, cells), labels);
+        if (collapsible) cell.classList.add('adt-col--p2');
+        tr.append(cell);
+      }
       rowParts.push({ id: row.id, tr, box });
       body.append(tr);
+      if (open) {
+        tr.classList.add('adt-row--expanded');
+        const detail = element(doc, 'tr', { class: 'adt-detail', id: detailId });
+        const td = element(doc, 'td', { colspan: String(span) });
+        td.append(detailList(row, cells, columns, false));
+        detail.append(td);
+        body.append(detail);
+      }
+      if (dialogRow === row.id) openDialog(row, cells, columns); // keep an open dialog current
     }
+    if (dialogRow !== undefined && !pageIds.includes(dialogRow)) closeDialog(); // its row left the page
     tableEl.append(head, body);
     scroller.replaceChildren(tableEl);
     patchSelection();
@@ -219,7 +352,13 @@ export function renderTable<TData>(
     destroy: () => {
       unsubscribe();
       unsubscribeStatus();
+      closeDialog();
       root.remove();
     },
   };
+}
+
+/** The responsive priority of a visible column: its own, else 1 for the first column and 2 for the rest. */
+export function priorityOf(column: { readonly priority?: 1 | 2 | 3 }, index: number): 1 | 2 | 3 {
+  return column.priority ?? (index === 0 ? 1 : 2);
 }

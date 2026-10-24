@@ -81,4 +81,12 @@ describe('column visibility', () => {
     table.setColumnVisibility('city', false);
     expect(table.getState().hiddenColumns).toEqual([]);
   });
+
+  it('keeps a valid responsive priority and rejects others', () => {
+    const table = createDataTable<Order>({ data, columns: [{ id: 'city', header: 'City', accessorKey: 'city', priority: 3 }] });
+    expect(table.getColumns()[0]!.priority).toBe(3);
+    expect(() => createDataTable<Order>({
+      data, columns: [{ id: 'city', header: 'City', accessorKey: 'city', priority: 4 as never }],
+    })).toThrow('priority must be 1, 2 or 3');
+  });
 });

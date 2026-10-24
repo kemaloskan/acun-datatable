@@ -202,3 +202,37 @@ describe('useDataTable', () => {
     expect(live.length).toBeGreaterThan(0);
   });
 });
+
+describe('responsive modes and sizes', () => {
+  const wide: readonly ColumnDef<Order>[] = [
+    { id: 'customer', header: 'Müşteri', accessorKey: 'customer', enableSorting: true },
+    { id: 'total', header: 'Tutar', accessorKey: 'total', type: 'decimal', priority: 3 },
+  ];
+  const makeWide = () => createDataTable<Order>({ data: orders, columns: wide });
+
+  it('collapse opens the hidden values below the row', () => {
+    const edit = vi.fn();
+    render(h(DataTable<Order>, { table: makeWide(), responsive: 'collapse', size: 'lg', rowActions: [{ id: 'edit', label: 'Edit', onSelect: edit }] }));
+    expect(host.querySelector('.adt-table-wrap')!.className).toBe('adt-table-wrap adt-responsive--collapse adt-size--lg');
+    expect(host.querySelector('table')!.className).toBe('adt-table adt-has-p2 adt-has-p3');
+    click(host.querySelector('.adt-expand[aria-label="Details of Ayşe"]'));
+    const button = host.querySelector('.adt-expand[aria-label="Details of Ayşe"]')!;
+    expect(button.getAttribute('aria-expanded')).toBe('true');
+    const detail = document.getElementById(button.getAttribute('aria-controls')!)!;
+    expect([...detail.querySelectorAll('dt')].map(dt => dt.textContent)).toEqual(['Tutar', 'Actions']);
+    click(detail.querySelector('.adt-action'));
+    expect(edit).toHaveBeenCalledOnce();
+    expect(() => render(h(DataTable<Order>, { table: makeWide(), size: 'xl' as never }))).toThrow('size must be sm, md or lg');
+  });
+
+  it('modal shows every value of the row in a dialog', () => {
+    render(h(DataTable<Order>, { table: makeWide(), responsive: 'modal', labels: labelsTr }));
+    click(host.querySelector('.adt-expand'));
+    const dialog = host.querySelector('dialog')!;
+    expect(dialog.open).toBe(true);
+    expect(dialog.querySelector('h2')!.textContent).toBe('Ayşe ayrıntıları');
+    expect([...dialog.querySelectorAll('dt')].map(dt => dt.textContent)).toEqual(['Müşteri', 'Tutar']);
+    click(dialog.querySelector('.adt-dialog-close'));
+    expect(dialog.open).toBe(false);
+  });
+});

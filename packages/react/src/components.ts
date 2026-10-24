@@ -1,10 +1,11 @@
 import {
-  createElement as h, useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore,
+  createElement as h, useCallback, useEffect, useId, useMemo, useRef, useState, useSyncExternalStore,
   type ChangeEvent, type KeyboardEvent, type MouseEvent, type ReactElement, type ReactNode,
 } from 'react';
 import { getPageItems, type ColumnDef, type DataTable, type Row } from '@acunsoft/datatable-core';
 import {
-  cellValue, checkPageSizes, createCellText, ICONS, labelsEn, nextSorting, pageInfoText, pageSizeChoices, rowName,
+  cellValue, checkPageSizes, checkResponsive, checkSize, createCellText, ICONS, labelsEn, nextSorting, pageInfoText,
+  pageSizeChoices, priorityOf, rowName, type ResponsiveMode, type TableSize,
   type BulkAction, type BulkSelection, type CellFormatter, type DataTableLabels, type RowAction, type StatusSource,
 } from '@acunsoft/datatable-dom';
 import { useTable } from './hooks.js';
@@ -41,6 +42,10 @@ export interface DataTableProps<TData> {
   readonly rowActions?: readonly RowAction<TData>[];
   /** Server mode: loading and error states, e.g. the HTTP package's runner. */
   readonly status?: StatusSource;
+  /** Narrow screens: `cards` (default), `scroll`, `collapse` or `modal`; see `ColumnDef.priority`. */
+  readonly responsive?: ResponsiveMode;
+  /** Density: `sm`, `md` (default) or `lg`. */
+  readonly size?: TableSize;
 }
 
 const noStatus = (): (() => void) => () => undefined;
@@ -79,8 +84,68 @@ export function DataTable<TData>(props: DataTableProps<TData>): ReactElement {
   useEffect(() => {
     if (selectAll.current) selectAll.current.indeterminate = pageStatus === 'some';
   });
+  const responsive = checkResponsive(props.responsive);
+  const size = checkSize(props.size);
+  const collapsible = responsive === 'collapse' || responsive === 'modal';
+  const uid = useId();
+  // Responsive collapse: open rows. Modal: the row shown in the dialog.
+  const [expanded, setExpanded] = useState<ReadonlySet<string>>(() => new Set());
+  const [dialogRow, setDialogRow] = useState<string | undefined>();
+  const dialog = useRef<HTMLDialogElement>(null);
+  const wrap = useRef<HTMLDivElement>(null);
+  const dialogVisible = dialogRow !== undefined && pageIds.includes(dialogRow);
+  useEffect(() => {
+    const node = dialog.current;
+    if (!node) return;
+    if (dialogVisible && !node.open) {
+      if (typeof node.showModal === 'function') node.showModal();
+      else node.setAttribute('open', '');
+    } else if (!dialogVisible && node.open) {
+      if (typeof node.close === 'function') node.close();
+      else node.removeAttribute('open');
+    }
+  }, [dialogVisible]);
+  const closeDialog = (): void => {
+    const node = dialog.current;
+    if (node?.open && typeof node.close === 'function') node.close();
+    else node?.removeAttribute('open');
+  };
+  const onDialogClose = (): void => {
+    const id = dialogRow;
+    setDialogRow(undefined);
+    // Back to the row's button (Safari does not focus a clicked button).
+    [...(wrap.current?.querySelectorAll<HTMLElement>('.adt-expand') ?? [])].find(button => button.dataset['row'] === id)?.focus();
+  };
+  const levels = new Set(columns.map((column, index) => priorityOf(column, index)));
+  if (rowActions.length > 0) levels.add(2);
+  const span = columns.length + (selectable ? 1 : 0) + (rowActions.length > 0 ? 1 : 0) + (collapsible ? 1 : 0);
+  const actionButtons = (row: Row<TData>, name: string): ReactNode[] => rowActions.filter(action => action.hidden?.(row) !== true).map(action => {
+    const disabled = action.disabled?.(row) === true;
+    return h('button', {
+      type: 'button', className: 'adt-action', 'data-action': action.id, key: action.id,
+      'aria-label': labels.rowAction(action.label, name), 'aria-disabled': disabled ? 'true' : undefined,
+      onClick: () => { if (!disabled) action.onSelect(row); },
+    }, action.label);
+  });
+  const contentOf = (column: ColumnDef<TData>, row: Row<TData>, value: string): ReactNode => {
+    const render = props.cells?.[column.id];
+    return render ? render({ column, row, value: cellValue(column, row), text: value }) : value;
+  };
+  // The values of a row: all of them (dialog) or only those a narrow screen hides (details row).
+  const detailList = (row: Row<TData>, texts: readonly string[], name: string, all: boolean): ReactElement => h('dl', { className: 'adt-detail-list' },
+    ...columns.flatMap((column, index) => {
+      const priority = priorityOf(column, index);
+      if (!all && priority === 1) return [];
+      return [h('div', { className: all ? 'adt-detail-item' : `adt-detail-item adt-col--p${priority}`, key: column.id },
+        h('dt', null, column.header), h('dd', null, contentOf(column, row, texts[index]!)))];
+    }),
+    rowActions.length > 0
+      ? h('div', { className: all ? 'adt-detail-item' : 'adt-detail-item adt-col--p2', key: '__actions' },
+        h('dt', null, labels.actions), h('dd', { className: 'adt-detail-actions' }, actionButtons(row, name)))
+      : null);
 
   const head: ReactNode[] = [];
+  if (collapsible) head.push(h('td', { className: 'adt-expand-cell', key: '__expand' }));
   if (selectable) {
     head.push(h('th', { scope: 'col', className: 'adt-select', key: '__select' },
       table.getSelectionMode() === 'multiple' && pageIds.length > 0
@@ -97,7 +162,7 @@ export function DataTable<TData>(props: DataTableProps<TData>): ReactElement {
     const index = state.sorting.findIndex(rule => rule.field === column.id);
     const rule = state.sorting[index];
     head.push(h('th', {
-      scope: 'col', className: 'adt-th', key: column.id,
+      scope: 'col', className: collapsible ? `adt-th adt-col--p${priorityOf(column, columns.indexOf(column))}` : 'adt-th', key: column.id,
       'aria-sort': primary?.field === column.id ? (primary.direction === 'asc' ? 'ascending' : 'descending') : undefined,
     }, column.enableSorting
       ? h('button', {
@@ -107,42 +172,66 @@ export function DataTable<TData>(props: DataTableProps<TData>): ReactElement {
         rule ? `${rule.direction === 'asc' ? '▲' : '▼'}${state.sorting.length > 1 ? index + 1 : ''}` : ''))
       : column.header));
   }
-  if (rowActions.length > 0) head.push(h('th', { scope: 'col', className: 'adt-th adt-actions', key: '__actions' }, labels.actions));
+  if (rowActions.length > 0) {
+    head.push(h('th', { scope: 'col', className: collapsible ? 'adt-th adt-actions adt-col--p2' : 'adt-th adt-actions', key: '__actions' }, labels.actions));
+  }
 
   const body: ReactNode[] = [];
   if (page.rows.length === 0) {
-    body.push(h('tr', { className: 'adt-empty', key: '__empty' }, h('td', {
-      colSpan: columns.length + (selectable ? 1 : 0) + (rowActions.length > 0 ? 1 : 0),
-    }, props.empty ?? labels.empty)));
+    body.push(h('tr', { className: 'adt-empty', key: '__empty' }, h('td', { colSpan: span }, props.empty ?? labels.empty)));
   }
-  for (const row of page.rows) {
+  let dialogContent: ReactNode[] = [];
+  page.rows.forEach((row, rowIndex) => {
     const texts = columns.map(column => text(column, row));
     const name = rowName(row, texts[0] ?? '', props.rowLabel);
     const selected = table.isSelected(row.id);
+    const open = responsive === 'collapse' && expanded.has(row.id);
+    const detailId = `${uid}-detail-${rowIndex}`;
     const cells: ReactNode[] = [];
+    if (collapsible) {
+      cells.push(h('td', { className: 'adt-expand-cell', key: '__expand' }, h('button', {
+        type: 'button', className: 'adt-expand', 'aria-label': labels.details(name), 'data-row': row.id,
+        ...(responsive === 'collapse' ? { 'aria-expanded': open, 'aria-controls': detailId } : { 'aria-haspopup': 'dialog' as const }),
+        onClick: () => {
+          if (responsive === 'modal') return setDialogRow(row.id);
+          setExpanded(current => {
+            const next = new Set(current);
+            if (!next.delete(row.id)) next.add(row.id);
+            return next;
+          });
+        },
+      }, icon(open ? 'collapse' : 'expand'))));
+    }
+    if (dialogRow === row.id) {
+      dialogContent = [
+        h('div', { className: 'adt-dialog-head', key: 'head' },
+          h('h2', { className: 'adt-dialog-title', id: `${uid}-dialog-title` }, labels.details(name)),
+          h('button', { type: 'button', className: 'adt-dialog-close', 'aria-label': labels.close, onClick: closeDialog }, icon('close'))),
+        h('div', { key: 'body' }, detailList(row, texts, name, true)),
+      ];
+    }
     if (selectable) {
       cells.push(h('td', { className: 'adt-select', key: '__select' }, h('input', {
         type: 'checkbox', 'aria-label': labels.selectRow(name), checked: selected, onChange: () => table.toggleRow(row.id),
       })));
     }
     columns.forEach((column, index) => {
-      const render = props.cells?.[column.id];
-      cells.push(h('td', { 'data-label': column.header, key: column.id },
-        render ? render({ column, row, value: cellValue(column, row), text: texts[index]! }) : texts[index]));
+      cells.push(h('td', {
+        'data-label': column.header, key: column.id, className: collapsible ? `adt-col--p${priorityOf(column, index)}` : undefined,
+      }, contentOf(column, row, texts[index]!)));
     });
     if (rowActions.length > 0) {
-      cells.push(h('td', { className: 'adt-actions', 'data-label': labels.actions, key: '__actions' },
-        rowActions.filter(action => action.hidden?.(row) !== true).map(action => {
-          const disabled = action.disabled?.(row) === true;
-          return h('button', {
-            type: 'button', className: 'adt-action', 'data-action': action.id, key: action.id,
-            'aria-label': labels.rowAction(action.label, name), 'aria-disabled': disabled ? 'true' : undefined,
-            onClick: () => { if (!disabled) action.onSelect(row); },
-          }, action.label);
-        })));
+      cells.push(h('td', {
+        className: collapsible ? 'adt-actions adt-col--p2' : 'adt-actions', 'data-label': labels.actions, key: '__actions',
+      }, actionButtons(row, name)));
     }
-    body.push(h('tr', { className: selected ? 'adt-row adt-row--selected' : 'adt-row', 'data-row-id': row.id, key: row.id }, cells));
-  }
+    const rowClass = ['adt-row', selected ? 'adt-row--selected' : '', open ? 'adt-row--expanded' : ''].filter(Boolean).join(' ');
+    body.push(h('tr', { className: rowClass, 'data-row-id': row.id, key: row.id }, cells));
+    if (open) {
+      body.push(h('tr', { className: 'adt-detail', id: detailId, key: `${row.id}__detail` },
+        h('td', { colSpan: span }, detailList(row, texts, name, false))));
+    }
+  });
 
   const busy = phase === 'loading';
   const notice = phase === 'loading'
@@ -154,12 +243,22 @@ export function DataTable<TData>(props: DataTableProps<TData>): ReactElement {
           ? h('button', { type: 'button', className: 'adt-retry', onClick: () => { void props.status!.retry!(); } }, labels.retry)
           : null)
       : h('div', { className: 'adt-notice', role: 'status', 'aria-live': 'polite' });
-  return h('div', { className: busy ? 'adt-table-wrap adt-loading' : 'adt-table-wrap', 'aria-busy': props.status ? busy : undefined },
+  const wrapClass = ['adt-table-wrap', `adt-responsive--${responsive}`, size === 'md' ? '' : `adt-size--${size}`, busy ? 'adt-loading' : '']
+    .filter(Boolean).join(' ');
+  const tableClass = ['adt-table', collapsible && levels.has(2) ? 'adt-has-p2' : '', collapsible && levels.has(3) ? 'adt-has-p3' : '']
+    .filter(Boolean).join(' ');
+  return h('div', { className: wrapClass, ref: wrap, 'aria-busy': props.status ? busy : undefined },
     notice,
-    h('div', { className: 'adt-scroll' }, h('table', { className: 'adt-table' },
+    h('div', { className: 'adt-scroll' }, h('table', { className: tableClass },
       props.caption !== undefined ? h('caption', null, props.caption) : null,
       h('thead', null, h('tr', null, head)),
-      h('tbody', null, body))));
+      h('tbody', null, body))),
+    responsive === 'modal'
+      ? h('dialog', {
+        ref: dialog, className: 'adt-dialog', 'aria-labelledby': `${uid}-dialog-title`, onClose: onDialogClose,
+        onClick: (event: MouseEvent) => { if (event.target === event.currentTarget) closeDialog(); },
+      }, dialogContent)
+      : null);
 }
 
 const icon = (name: keyof typeof ICONS): ReactElement => h('svg', {

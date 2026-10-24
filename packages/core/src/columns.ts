@@ -14,6 +14,13 @@ interface ColumnBase {
    * as they are.
    */
   readonly type?: ColumnType;
+  /**
+   * Which columns stay on narrow screens when a renderer collapses rows
+   * (responsive `collapse` or `modal`): `1` always, `2` hidden below 640px,
+   * `3` hidden below 960px; hidden values move into the row's details.
+   * Default: `1` for the first column, `2` for the others.
+   */
+  readonly priority?: 1 | 2 | 3;
 }
 
 type ValueKey<TData, TValue> = {
@@ -37,7 +44,7 @@ export function createColumns<TData>(
     if (!definition || typeof definition !== 'object') {
       throw new TypeError(`column[${index}] must be an object`);
     }
-    const { id, header, accessorKey, accessorFn, enableSorting, enableFiltering, enableHiding, type } = definition;
+    const { id, header, accessorKey, accessorFn, enableSorting, enableFiltering, enableHiding, type, priority } = definition;
     if (typeof id !== 'string' || id.trim().length === 0) {
       throw new TypeError(`column[${index}].id must be a non-empty string`);
     }
@@ -63,11 +70,15 @@ export function createColumns<TData>(
     if (type !== undefined && !COLUMN_TYPES.includes(type)) {
       throw new TypeError(`column "${id}".type must be one of ${COLUMN_TYPES.join(', ')}`);
     }
+    if (priority !== undefined && priority !== 1 && priority !== 2 && priority !== 3) {
+      throw new TypeError(`column "${id}".priority must be 1, 2 or 3`);
+    }
     ids.add(id);
     const base = {
       id, header, enableSorting: enableSorting ?? false, enableFiltering: enableFiltering ?? false,
       ...(enableHiding !== undefined ? { enableHiding } : {}),
       ...(type !== undefined ? { type } : {}),
+      ...(priority !== undefined ? { priority } : {}),
     };
     // Validation above establishes the exclusive accessor branch at runtime.
     const copy = 'accessorKey' in definition

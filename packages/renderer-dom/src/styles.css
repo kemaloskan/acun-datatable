@@ -4,14 +4,16 @@
  *   import '@acunsoft/datatable-dom/styles.css';
  *
  * Every colour, size and radius is a --adt-* custom property: set them on
- * .adt (or any ancestor) to theme the table without touching selectors.
+ * .adt (the outermost adt-* element) to theme the table without touching
+ * selectors; the defaults are declared only there, so they inherit. Sizes:
+ * add adt-size--sm or adt-size--lg (on .adt or an ancestor).
  * Selectors use :where() where possible, so your own rules win easily.
  *
  * Light by default. Dark when an ancestor has data-theme="dark" or the class
  * "dark" (Tailwind); follow the system setting with data-theme="auto". The
  * component cannot see the page background, so it never turns dark on its own.
  */
-:where(.adt, .adt-table-wrap, .adt-paging, .adt-info, .adt-length, .adt-search, .adt-selection, .adt-columns, .adt-toolbar, .adt-import) {
+:where(.adt, .adt-table-wrap, .adt-paging, .adt-info, .adt-length, .adt-search, .adt-selection, .adt-columns, .adt-toolbar, .adt-import):not(:where(.adt, .adt-table-wrap, .adt-paging, .adt-info, .adt-length, .adt-search, .adt-selection, .adt-columns, .adt-toolbar, .adt-import) *) {
   --adt-bg: #ffffff;
   --adt-surface: #ffffff;        /* panels: bars and the table */
   --adt-fg: #1f2430;
@@ -33,6 +35,7 @@
   --adt-font: inherit;
   --adt-font-size: 0.9375rem;
   --adt-cell-padding: 0.875rem 1rem;
+  --adt-bar-padding: 0.75rem 1rem;
   --adt-head-transform: uppercase; /* none for normal-case headers */
   --adt-stack-below: 640px;      /* documentation only: media queries cannot read variables */
   color-scheme: light;           /* native checkboxes, selects and scrollbars follow the theme */
@@ -40,17 +43,26 @@
   font-size: var(--adt-font-size);
   color: var(--adt-fg);
 }
-:where([data-theme="dark"], .dark) :where(.adt, .adt-table-wrap, .adt-paging, .adt-info, .adt-length, .adt-search, .adt-selection, .adt-columns, .adt-toolbar, .adt-import) {
+:where([data-theme="dark"], .dark) :where(.adt, .adt-table-wrap, .adt-paging, .adt-info, .adt-length, .adt-search, .adt-selection, .adt-columns, .adt-toolbar, .adt-import):not(:where(.adt, .adt-table-wrap, .adt-paging, .adt-info, .adt-length, .adt-search, .adt-selection, .adt-columns, .adt-toolbar, .adt-import) *) {
   --adt-bg: #0f1218; --adt-surface: #151922; --adt-fg: #e6e8ec; --adt-muted: #98a2b3; --adt-line: #262c38;
   --adt-head-fg: #98a2b3; --adt-hover: #1b202b; --adt-selected: #221c3d; --adt-accent: #8f75ff; --adt-danger: #ff6b61;
   --adt-shadow: none; color-scheme: dark;
 }
 @media (prefers-color-scheme: dark) {
-  :where([data-theme="auto"]) :where(.adt, .adt-table-wrap, .adt-paging, .adt-info, .adt-length, .adt-search, .adt-selection, .adt-columns, .adt-toolbar, .adt-import) {
+  :where([data-theme="auto"]) :where(.adt, .adt-table-wrap, .adt-paging, .adt-info, .adt-length, .adt-search, .adt-selection, .adt-columns, .adt-toolbar, .adt-import):not(:where(.adt, .adt-table-wrap, .adt-paging, .adt-info, .adt-length, .adt-search, .adt-selection, .adt-columns, .adt-toolbar, .adt-import) *) {
     --adt-bg: #0f1218; --adt-surface: #151922; --adt-fg: #e6e8ec; --adt-muted: #98a2b3; --adt-line: #262c38;
     --adt-head-fg: #98a2b3; --adt-hover: #1b202b; --adt-selected: #221c3d; --adt-accent: #8f75ff; --adt-danger: #ff6b61;
     --adt-shadow: none; color-scheme: dark;
   }
+}
+/* Sizes: compact and spacious; md is the default above. */
+:where(.adt-size--sm), :where(.adt-size--sm) :where(.adt, .adt-table-wrap, .adt-paging, .adt-info, .adt-length, .adt-search, .adt-selection, .adt-columns, .adt-toolbar, .adt-import):not(:where(.adt, .adt-table-wrap, .adt-paging, .adt-info, .adt-length, .adt-search, .adt-selection, .adt-columns, .adt-toolbar, .adt-import) *) {
+  --adt-font-size: 0.875rem; --adt-cell-padding: 0.5rem 0.75rem; --adt-control-height: 2rem;
+  --adt-bar-padding: 0.5rem 0.75rem; --adt-gap: 0.75rem;
+}
+:where(.adt-size--lg), :where(.adt-size--lg) :where(.adt, .adt-table-wrap, .adt-paging, .adt-info, .adt-length, .adt-search, .adt-selection, .adt-columns, .adt-toolbar, .adt-import):not(:where(.adt, .adt-table-wrap, .adt-paging, .adt-info, .adt-length, .adt-search, .adt-selection, .adt-columns, .adt-toolbar, .adt-import) *) {
+  --adt-font-size: 1rem; --adt-cell-padding: 1.125rem 1.25rem; --adt-control-height: 2.75rem;
+  --adt-bar-padding: 1rem 1.25rem; --adt-gap: 1.25rem;
 }
 :where(.adt, .adt-table-wrap, .adt-paging, .adt-info, .adt-length, .adt-search, .adt-selection, .adt-columns, .adt-toolbar, .adt-import),
 :where(.adt, .adt-table-wrap, .adt-paging, .adt-length, .adt-search, .adt-selection, .adt-columns, .adt-toolbar, .adt-import) * {
@@ -68,7 +80,7 @@
 .adt { display: flex; flex-direction: column; gap: var(--adt-gap); }
 .adt-bar {
   display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.75rem 1rem;
-  padding: 0.75rem 1rem; background: var(--adt-surface); border: 1px solid var(--adt-line);
+  padding: var(--adt-bar-padding); background: var(--adt-surface); border: 1px solid var(--adt-line);
   border-radius: var(--adt-radius); box-shadow: var(--adt-shadow);
 }
 .adt-bar-start, .adt-bar-end { display: flex; flex-wrap: wrap; align-items: center; gap: 0.625rem; min-width: 0; }
@@ -130,7 +142,7 @@
   background: var(--adt-head-bg); color: var(--adt-head-fg); font-size: 0.8em; font-weight: 600;
   letter-spacing: 0.04em; text-transform: var(--adt-head-transform); white-space: nowrap;
 }
-.adt-table tbody tr:last-child td { border-bottom: 0; }
+.adt-table tbody:last-child > tr:last-child > td, .adt-table tbody:last-child > .adt-row:has(+ .adt-detail[style*="none"]) > td { border-bottom: 0; }
 .adt-row { transition: background-color 0.1s; }
 .adt-row:hover { background: var(--adt-hover); }
 .adt-row--selected, .adt-row--selected:hover { background: var(--adt-selected); }
@@ -257,9 +269,70 @@
 .adt-action:hover { background: var(--adt-hover); border-color: color-mix(in srgb, var(--adt-line) 50%, var(--adt-muted)); }
 .adt-action[aria-disabled="true"] { opacity: 0.45; cursor: not-allowed; }
 
+/* Responsive collapse / modal: a details button per row (hidden while every column fits) */
+.adt-table .adt-expand-cell { display: none; width: 2.75rem; padding-right: 0; }
+.adt-expand {
+  display: inline-flex; align-items: center; justify-content: center; width: 1.75rem; height: 1.75rem; padding: 0;
+  color: var(--adt-accent); background: none; border: 0; border-radius: 999px; cursor: pointer;
+}
+.adt-expand .adt-icon { width: 1.25rem; height: 1.25rem; }
+.adt-expand:hover { background: color-mix(in srgb, var(--adt-accent) 10%, transparent); }
+.adt-row--expanded, .adt-row--expanded:hover { background: var(--adt-hover); }
+.adt-row--expanded > td { border-bottom-color: transparent; }
+.adt-table .adt-detail > td { padding: 0 1rem 0.75rem 3.75rem; background: var(--adt-hover); }
+.adt-detail-list { display: grid; margin: 0; }
+.adt-detail-item {
+  display: none; grid-template-columns: minmax(7rem, 35%) 1fr; gap: 0.75rem; align-items: center;
+  padding: 0.5rem 0; border-bottom: 1px solid var(--adt-line);
+}
+.adt-detail-item:last-child { border-bottom: 0; }
+.adt-detail-item dt { color: var(--adt-muted); font-size: 0.875em; font-weight: 600; }
+.adt-detail-item dd { margin: 0; overflow-wrap: anywhere; }
+.adt-detail-actions { display: flex; flex-wrap: wrap; gap: 0.375rem; }
+.adt-detail-actions .adt-action + .adt-action { margin-left: 0; }
+@media (max-width: 960px) {
+  :is(.adt-responsive--collapse, .adt-responsive--modal) .adt-table :is(th, td).adt-col--p3 { display: none; }
+  :is(.adt-responsive--collapse, .adt-responsive--modal) .adt-has-p3 .adt-expand-cell { display: table-cell; }
+  .adt-responsive--collapse .adt-detail-item.adt-col--p3 { display: grid; }
+}
+@media (max-width: 640px) {
+  :is(.adt-responsive--collapse, .adt-responsive--modal) .adt-table :is(th, td).adt-col--p2 { display: none; }
+  :is(.adt-responsive--collapse, .adt-responsive--modal) .adt-has-p2 .adt-expand-cell { display: table-cell; }
+  .adt-responsive--collapse .adt-detail-item.adt-col--p2 { display: grid; }
+  .adt-table .adt-detail > td { padding-left: 1rem; }
+}
+@media (min-width: 961px) { .adt-table .adt-detail { display: none; } }
+
+/* Responsive scroll: the table keeps its columns and scrolls sideways */
+@media (max-width: 640px) {
+  .adt-responsive--scroll .adt-table :is(th, td) { white-space: nowrap; }
+}
+
+/* Details dialog (responsive: 'modal') */
+.adt-dialog {
+  width: min(36rem, calc(100vw - 2rem)); max-height: calc(100dvh - 2rem); padding: 0; overflow: auto;
+  color: var(--adt-fg); background: var(--adt-bg); border: 1px solid var(--adt-line); border-radius: calc(var(--adt-radius) + 4px);
+  box-shadow: 0 24px 48px -12px rgb(16 24 40 / 0.25);
+}
+.adt-dialog::backdrop { background: rgb(16 24 40 / 0.45); }
+.adt-dialog-head {
+  position: sticky; top: 0; display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+  padding: 1rem 1.25rem; background: var(--adt-bg); border-bottom: 1px solid var(--adt-line);
+}
+.adt-dialog-title { margin: 0; font-size: 1.125rem; font-weight: 600; line-height: 1.3; }
+.adt-dialog-close {
+  display: inline-flex; align-items: center; justify-content: center; flex: none; width: 2rem; height: 2rem; padding: 0;
+  color: var(--adt-muted); background: none; border: 0; border-radius: var(--adt-control-radius); cursor: pointer;
+}
+.adt-dialog-close:hover { color: var(--adt-fg); background: var(--adt-hover); }
+.adt-dialog .adt-detail-list { padding: 0.25rem 1.25rem 1rem; }
+.adt-dialog .adt-detail-item { display: grid; padding: 0.75rem 0; }
+.adt-dialog :focus-visible { outline: 2px solid var(--adt-accent); outline-offset: 2px; }
+
 /* Printing: only the table, without the controls */
 @media print {
-  .adt-bar, .adt-selection, .adt-import, .adt-notice, .adt-table .adt-select, .adt-table .adt-actions { display: none !important; }
+  .adt-bar, .adt-selection, .adt-import, .adt-notice, .adt-dialog, .adt-table .adt-select, .adt-table .adt-actions, .adt-table .adt-expand-cell, .adt-table .adt-detail { display: none !important; }
+  .adt-table :is(th, td)[class*="adt-col--p"] { display: table-cell !important; }
   .adt-scroll { overflow: visible; border: 0; box-shadow: none; }
   .adt-table th, .adt-table td { padding: 0.35rem 0.5rem; }
   .adt-sort-mark { display: none; }
@@ -279,23 +352,24 @@
   .adt-top .adt-bar-end { justify-content: flex-start; }
   .adt-feature--search { flex: 1 1 10rem; max-width: none; }
   .adt-paging { gap: 0.25rem; }
-  /* Compact pager: arrows, the ends and the current page (‹ 1 … 7 … 48 ›) */
+  /* Compact pager when pages are left out: arrows, the ends and the current page (‹ 1 … 7 … 48 ›) */
   .adt-page { min-width: 2.25rem; height: 2.25rem; }
-  .adt-page-numbers > .adt-page:not([aria-current]):not(:first-child):not(:last-child) { display: none; }
+  .adt-page-numbers:has(> .adt-page-gap) > .adt-page:not([aria-current]):not(:first-child):not(:last-child) { display: none; }
   .adt-page-gap { min-width: 1rem; }
 
-  .adt-scroll { border: 0; background: transparent; overflow: visible; box-shadow: none; }
-  .adt-table, .adt-table tbody, .adt-table tr, .adt-table td { display: block; width: 100%; }
-  .adt-table thead tr { display: flex; flex-wrap: wrap; gap: 0.25rem 0.75rem; padding: 0 0 0.75rem; }
-  .adt-table thead th { display: inline-block; padding: 0.25rem 0; border: 0; background: transparent; }
-  .adt-row, .adt-empty { border: 1px solid var(--adt-line); border-radius: var(--adt-radius); margin-bottom: 0.75rem; background: var(--adt-surface); overflow: hidden; }
-  .adt-table td { display: grid; grid-template-columns: minmax(7rem, 40%) 1fr; gap: 0.75rem; padding: 0.625rem 0.875rem; border-bottom: 1px solid var(--adt-line); overflow-wrap: anywhere; }
-  .adt-table td::before { content: attr(data-label); font-weight: 600; font-size: 0.875em; color: var(--adt-muted); }
-  .adt-table td.adt-select, .adt-empty td { display: block; width: 100%; }
-  .adt-table caption { padding: 0 0 0.5rem; }
-  .adt-table td.adt-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 0.375rem; width: 100%; white-space: normal; text-align: left; }
-  .adt-table td.adt-actions::before { flex: 0 0 calc(40% - 0.375rem); min-width: 7rem; margin-right: 0.375rem; }
-  .adt-table td.adt-actions .adt-action + .adt-action { margin-left: 0; }
-  .adt-table th.adt-actions { display: none; }
-  .adt-table td.adt-select::before, .adt-empty td::before { content: none; }
+  /* Cards (responsive: 'cards', the default): each row a card, each cell with its header */
+  .adt-responsive--cards .adt-scroll { border: 0; background: transparent; overflow: visible; box-shadow: none; }
+  .adt-responsive--cards .adt-table, .adt-responsive--cards .adt-table tbody, .adt-responsive--cards .adt-table tr, .adt-responsive--cards .adt-table td { display: block; width: 100%; }
+  .adt-responsive--cards .adt-table thead tr { display: flex; flex-wrap: wrap; gap: 0.25rem 0.75rem; padding: 0 0 0.75rem; }
+  .adt-responsive--cards .adt-table thead th { display: inline-block; padding: 0.25rem 0; border: 0; background: transparent; }
+  .adt-responsive--cards .adt-row, .adt-responsive--cards .adt-empty { border: 1px solid var(--adt-line); border-radius: var(--adt-radius); margin-bottom: 0.75rem; background: var(--adt-surface); overflow: hidden; }
+  .adt-responsive--cards .adt-table td { display: grid; grid-template-columns: minmax(7rem, 40%) 1fr; gap: 0.75rem; padding: 0.625rem 0.875rem; border-bottom: 1px solid var(--adt-line); overflow-wrap: anywhere; }
+  .adt-responsive--cards .adt-table td::before { content: attr(data-label); font-weight: 600; font-size: 0.875em; color: var(--adt-muted); }
+  .adt-responsive--cards .adt-table td.adt-select, .adt-responsive--cards .adt-empty td { display: block; width: 100%; }
+  .adt-responsive--cards .adt-table caption { padding: 0 0 0.5rem; }
+  .adt-responsive--cards .adt-table td.adt-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 0.375rem; width: 100%; white-space: normal; text-align: left; }
+  .adt-responsive--cards .adt-table td.adt-actions::before { flex: 0 0 calc(40% - 0.375rem); min-width: 7rem; margin-right: 0.375rem; }
+  .adt-responsive--cards .adt-table td.adt-actions .adt-action + .adt-action { margin-left: 0; }
+  .adt-responsive--cards .adt-table th.adt-actions { display: none; }
+  .adt-responsive--cards .adt-table td.adt-select::before, .adt-responsive--cards .adt-empty td::before { content: none; }
 }
