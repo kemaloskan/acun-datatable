@@ -1388,6 +1388,29 @@ const GUIDES = {
       "const table = createDataTable({ mode: 'server', paging: 'cursor', columns });\nconst source = createHttpDataSource({ url: '/api/orders', paging: 'cursor' });"
      ]
     ]
+   },
+   {
+    "id": "engine",
+    "title": {
+     "tr": "Arama motoru (Scout)",
+     "en": "Search engine (Scout)"
+    },
+    "desc": {
+     "tr": "Birkaç milyonun üzerindeki satırda metin araması Meilisearch, Typesense veya OpenSearch’e gider; filtre, sıralama, sayfalama ve sayım veritabanında kalır. Paket Scout’a bağımlı değil: anahtar döndüren her fonksiyon çalışır.",
+     "en": "Past a few million rows the text search goes to Meilisearch, Typesense or OpenSearch; filters, sorting, paging and the count stay in the database. The package does not depend on Scout: any function returning keys works."
+    },
+    "tabs": [
+     [
+      "Livewire",
+      "php",
+      "protected function searchEngine(string $search): ?iterable\n{\n    return Order::search($search)->take(10_000)->keys();   // asked once per request\n}"
+     ],
+     [
+      "JSON uç noktası",
+      "php",
+      "TableResponse::for(Order::query())\n    ->columns([...])\n    ->searchEngine(fn (string $search) => Order::search($search)->take(10_000)->keys());"
+     ]
+    ]
    }
   ]
  },
