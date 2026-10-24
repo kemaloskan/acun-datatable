@@ -64,6 +64,9 @@
   .ib svg{width:19px;height:19px}
   .cta{height:38px;padding:0 16px;border:0;border-radius:var(--radius);background:var(--brand);color:#fff;font-weight:600;font-size:14px;cursor:pointer;margin-left:6px;white-space:nowrap}
   .cta:hover{filter:brightness(1.07)}
+  .btn{display:inline-flex;align-items:center;height:38px;padding:0 16px;margin-right:10px;border-radius:var(--radius);background:var(--brand-text);color:#fff;font-weight:600;font-size:14px;text-decoration:none}
+  .btn:hover{filter:brightness(1.07)}
+  .muted{color:var(--muted);font-size:14px}
   .burger{display:none}
 
   /* ---------- layout ---------- */
@@ -2037,6 +2040,7 @@ const T = {
        h_s2:"Neler var?", h_s2d:"Her ortamda aynı çekirdek yetenekler.",
        h_s3:"Kod örneği", h_s3d:"Çekirdek bugün kullanılabilir.",
        h_core_install:"npm'de yayında (0.3.0). Yalnızca çekirdek için:", go:"İncele →",
+       demo:"Canlı demoyu aç", demo_d:"Kurulum olmadan tarayıcıda: sunucu tarafı sayfalama, filtreler, alt toplam, hücrede düzenleme, 100.000 satırlık sanal kaydırma.",
        fw_desc:{vue:"Hazır: composable\'lar ve bileşenler.",react:"Hazır: hook\'lar ve bileşenler.",html:"Hazır: framework olmadan DOM renderer.",laravel:"Hazır: Livewire tablosu ve JSON uç nokta, tek Composer paketi.",nextjs:"Route handler için Node sunucu paketi ve React ön yüz.",nuxt:"Nitro API rotası ve Vue bileşenleri.",inertia:"Laravel JSON uç noktası, Inertia sayfasında tablo.",webcomponent:"<acun-datatable>: Angular, Svelte, Astro, Alpine, düz HTML."},
        api_title:"API referansı", api_lead:"Paketlerin genel API'si: tek çağrılık AcunDataTable, çekirdek, HTTP, Node sunucusu, DOM, dışa/içe aktarma, Vue, React (npm'de 0.3.0) ve Laravel (Packagist'te 0.4.0).",
        a_s1:"Fonksiyonlar", a_s1d:"İmza ve kısa açıklama.", a_s2:"Örnek", a_s2d:"Fonksiyonların birlikte kullanımı." },
@@ -2061,6 +2065,7 @@ const T = {
        h_s2:"What's inside?", h_s2d:"The same core capabilities everywhere.",
        h_s3:"Code example", h_s3d:"The core is available today.",
        h_core_install:"Published on npm (0.3.0). Core only:", go:"Open →",
+       demo:"Open the live demo", demo_d:"In the browser, no install: server-side paging, filters, footer totals, editing in place, virtual scrolling over 100,000 rows.",
        fw_desc:{vue:"Ready: composables and components.",react:"Ready: hooks and components.",html:"Ready: DOM renderer, no framework.",laravel:"Ready: a Livewire table and a JSON endpoint, one Composer package.",nextjs:"A Node server package for route handlers, and the React front end.",nuxt:"A Nitro API route and the Vue components.",inertia:"A Laravel JSON endpoint, the table on an Inertia page.",webcomponent:"<acun-datatable>: Angular, Svelte, Astro, Alpine, plain HTML."},
        api_title:"API reference", api_lead:"Public API of the packages: the one-call AcunDataTable, core, HTTP, Node server, DOM, export/import, Vue, React (on npm, 0.3.0) and Laravel (on Packagist, 0.4.0).",
        a_s1:"Functions", a_s1d:"Signature and short description.", a_s2:"Example", a_s2d:"Using the functions together." }
@@ -2103,7 +2108,7 @@ function page(r) {
       return `<a class="card link${i===0?' feat':''}" href="#/${id}" data-go="${id}"><div class="ct"><span class="ico">${ICON[id]}</span><h3>${f.name}</h3></div><span class="lb">${esc(f.pkg)}</span><p>${esc(t.fw_desc[id])}</p><span class="go">${t.go}</span></a>`; }).join('');
     return { toc:[['s1',t.h_s1],['s2',t.h_s2],['s3',t.h_s3]], html:
       `<h1>${t.h_title}</h1><p class="lead">${t.h_lead}</p><div class="meta"><span>${t.h_meta}</span><span>${t.updated}</span></div>` +
-      sec('s1',1,t.h_s1,t.h_s1d,`<div class="cards">${cards}</div><p style="margin-top:18px">${t.h_core_install} <code>npm install @acunsoft/datatable-core</code></p>`) +
+      sec('s1',1,t.h_s1,t.h_s1d,`<p style="margin:0 0 18px"><a class="btn" href="demo/">${t.demo} →</a> <span class="muted">${t.demo_d}</span></p><div class="cards">${cards}</div><p style="margin-top:18px">${t.h_core_install} <code>npm install @acunsoft/datatable-core</code></p>`) +
       sec('s2',2,t.h_s2,t.h_s2d,featCards()) +
       sec('s3',3,t.h_s3,t.h_s3d,code(EX_TABLE,'typescript')) };
   }

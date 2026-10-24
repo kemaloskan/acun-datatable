@@ -1,9 +1,11 @@
 name: Docs site
-# Publishes site/ (static HTML, no build step) to GitHub Pages.
+# Publishes site/ to GitHub Pages: the docs (static HTML) and the live demo
+# (site/demo, with the <script> build of this commit copied in).
 on:
   push:
     branches: [main]
-    paths: ['site/**', '.github/workflows/pages.yml']
+    # The docs and the live demo; the demo runs the packages' current build.
+    paths: ['site/**', 'packages/**', '.github/workflows/pages.yml']
   workflow_dispatch:
 
 permissions:
@@ -23,6 +25,13 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: '.nvmrc'
+          cache: 'npm'
+      - run: npm ci
+      # site/demo runs the <script> build of @acunsoft/datatable, built from this commit.
+      - run: npm run demo
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:

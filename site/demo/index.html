@@ -1,0 +1,290 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Canlı demo · Acun DataTable</title>
+<meta name="description" content="Acun DataTable canlı demo: sunucu tarafı sayfalama, filtreler, alt toplamlar, hücrede düzenleme, kolon araçları, alt satırlar ve 100.000 satırlık sanal kaydırma.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='9' fill='%236d3fff'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="styles.css">
+<script src="acun-datatable.min.js"></script>
+<style>
+  :root {
+    --page-bg: #f4f5f8; --page-fg: #141b2d; --page-muted: #5b6273; --page-line: #e3e6eb; --page-card: #ffffff;
+    --page-accent: #6d3fff; --page-soft: #f1ecff;
+    color-scheme: light;
+  }
+  :root[data-theme="dark"] {
+    --page-bg: #0b0d12; --page-fg: #e6e8ec; --page-muted: #a3aab8; --page-line: #262c38; --page-card: #12151c;
+    --page-accent: #a48bff; --page-soft: #1d1830;
+    color-scheme: dark;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font: 15px/1.5 system-ui, -apple-system, 'Segoe UI', sans-serif; color: var(--page-fg); background: var(--page-bg); }
+  a { color: var(--page-accent); }
+  /* The table's fixed header stops under the page's own sticky bar. */
+  #server { --adt-sticky-top: var(--header-height, 59px); }
+  header { position: sticky; top: 0; z-index: 30; display: flex; align-items: center; gap: 16px; padding: 12px 24px; background: var(--page-card); border-bottom: 1px solid var(--page-line); }
+  header .brand { display: flex; align-items: center; gap: 10px; font-weight: 700; color: inherit; text-decoration: none; }
+  header .brand small { display: block; font-weight: 500; font-size: 12px; color: var(--page-muted); }
+  header nav { margin-left: auto; display: flex; gap: 16px; font-size: 14px; }
+  main { max-width: 1240px; margin: 0 auto; padding: 24px 16px 64px; }
+  h1 { margin: 0 0 6px; font-size: 26px; }
+  .lead { margin: 0 0 20px; color: var(--page-muted); max-width: 70ch; }
+  .controls { display: flex; flex-wrap: wrap; gap: 12px 20px; align-items: end; margin-bottom: 18px; padding: 14px 16px; background: var(--page-card); border: 1px solid var(--page-line); border-radius: 12px; }
+  .controls label { display: grid; gap: 4px; font-size: 12px; font-weight: 600; color: var(--page-muted); text-transform: uppercase; letter-spacing: .04em; }
+  .controls select { min-width: 9rem; height: 36px; padding: 0 10px; font: inherit; font-size: 14px; color: var(--page-fg); background: var(--page-bg); border: 1px solid var(--page-line); border-radius: 8px; }
+  .tabs { display: flex; gap: 6px; margin-bottom: 14px; flex-wrap: wrap; }
+  .tabs button { padding: 8px 14px; font: inherit; font-size: 14px; font-weight: 600; color: var(--page-muted); background: transparent; border: 1px solid var(--page-line); border-radius: 999px; cursor: pointer; }
+  .tabs button[aria-selected="true"] { color: var(--page-accent); background: var(--page-soft); border-color: color-mix(in srgb, var(--page-accent) 40%, transparent); }
+  .panel[hidden] { display: none; }
+  .panel > p { margin: 0 0 14px; color: var(--page-muted); font-size: 14px; max-width: 80ch; }
+  .features { margin: 0 0 14px; padding: 0; list-style: none; display: flex; flex-wrap: wrap; gap: 6px; }
+  .features li { padding: 2px 10px; font-size: 12px; color: var(--page-muted); background: var(--page-card); border: 1px solid var(--page-line); border-radius: 999px; }
+  .badge { display: inline-block; padding: 1px 8px; border-radius: 999px; font-size: 12px; font-weight: 600; }
+  .badge--paid { color: #067647; background: #ecfdf3; } .badge--new { color: #175cd3; background: #eff8ff; }
+  .badge--shipped { color: #6941c6; background: #f4f3ff; } .badge--cancelled { color: #b42318; background: #fef3f2; }
+  :root[data-theme="dark"] .badge { filter: brightness(.9) saturate(1.2); background: color-mix(in srgb, currentColor 16%, transparent); }
+  .lines { margin: 0; padding: 0 0 0 18px; }
+  footer { max-width: 1240px; margin: 0 auto; padding: 0 16px 40px; color: var(--page-muted); font-size: 13px; }
+  @media (max-width: 640px) { header { padding: 10px 16px; } header nav { gap: 10px; } main { padding-top: 16px; } h1 { font-size: 22px; } }
+</style>
+</head>
+<body>
+<header>
+  <a class="brand" href="../"><svg width="30" height="30" viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="9" fill="#6d3fff"/><path d="M9 22 15 9h2l6 13M11.5 17h9" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Acun DataTable<small>Canlı demo</small></span></a>
+  <nav><a href="../">Dokümantasyon</a><a href="https://github.com/kemaloskan/acun-datatable">GitHub</a></nav>
+</header>
+<main>
+  <h1>Canlı demo</h1>
+  <p class="lead">Tarayıcıda, kurulum olmadan. Sunucu tarafı örnekte istekler sayfanın içindeki sahte bir API'ye gider (300 ms gecikmeyle); gerçek uygulamada bu, Laravel ya da Node uç noktanızdır.</p>
+
+  <div class="controls" role="group" aria-label="Görünüm ayarları">
+    <label>Mobil görünüm
+      <select id="responsive"><option value="auto">Otomatik</option><option value="cards">Kart</option><option value="scroll">Yana kaydır</option><option value="collapse">Açılır satır</option><option value="modal">Modal</option></select>
+    </label>
+    <label>Boyut
+      <select id="size"><option value="md">Orta (md)</option><option value="sm">Küçük (sm)</option><option value="lg">Büyük (lg)</option></select>
+    </label>
+    <label>Dil
+      <select id="language"><option value="tr">Türkçe</option><option value="en">English</option><option value="de">Deutsch</option><option value="fr">Français</option><option value="es">Español</option></select>
+    </label>
+    <label>Tema
+      <select id="theme"><option value="light">Açık</option><option value="dark">Koyu</option></select>
+    </label>
+  </div>
+
+  <div class="tabs" role="tablist" aria-label="Örnekler">
+    <button role="tab" id="tab-server" aria-controls="panel-server" aria-selected="true">Sunucu tarafı · 5.000 sipariş</button>
+    <button role="tab" id="tab-local" aria-controls="panel-local" aria-selected="false" tabindex="-1">Yerel · düzenleme ve alt satır</button>
+    <button role="tab" id="tab-virtual" aria-controls="panel-virtual" aria-selected="false" tabindex="-1">Sanal kaydırma · 100.000 satır</button>
+  </div>
+
+  <section class="panel" id="panel-server" role="tabpanel" aria-labelledby="tab-server">
+    <p>Her sayfa sunucudan gelir: sıralama, arama ("ayse" Ayşe'yi bulur), filtreler ve sayfalama sunucuda; alt toplam filtrelere uyan tüm siparişlerin toplamıdır. İlk yüklemede iskelet satırlar görünür.</p>
+    <ul class="features"><li>serverSide</li><li>filtreler ve etiketler</li><li>alt toplam</li><li>toplu işlem</li><li>kolon genişliği ve sırası</li><li>Excel / CSV</li><li>stateSave</li></ul>
+    <div id="server"></div>
+  </section>
+  <section class="panel" id="panel-local" role="tabpanel" aria-labelledby="tab-local" hidden>
+    <p>Ürün ve stok hücrelerindeki kalemle (ya da çift tıklayarak) düzenleyin; ⊕ satırın altında ürünün ayrıntılarını açar. Ürün kolonu yana kaydırırken yerinde kalır.</p>
+    <ul class="features"><li>hücrede düzenleme</li><li>alt satır</li><li>sabit kolon</li><li>özel hücre</li><li>kopyala / yazdır</li></ul>
+    <div id="local"></div>
+  </section>
+  <section class="panel" id="panel-virtual" role="tabpanel" aria-labelledby="tab-virtual" hidden>
+    <p>100.000 satır tek listede: yalnızca görünen satırlar çizilir. Arama ve sıralama tarayıcıda, anında.</p>
+    <ul class="features"><li>virtual</li><li>scrollY</li><li>akıllı arama</li></ul>
+    <div id="virtual"></div>
+  </section>
+</main>
+<footer>MIT lisanslı, ücretsiz. Veriler örnek ve rastgele üretilmiştir; sayfadan ayrılınca kaybolur.</footer>
+
+<script>
+(() => {
+  // ---------- Sample data (deterministic) ----------
+  const FIRST = ['Ayşe', 'Ali', 'Can', 'Deniz', 'Ece', 'Fatma', 'Gül', 'Hakan', 'İrem', 'Kaan', 'Lale', 'Mert', 'Nur', 'Oğuz', 'Özge', 'Selin', 'Şule', 'Tolga', 'Ümit', 'Zeynep'];
+  const LAST = ['Yılmaz', 'Kaya', 'Demir', 'Şahin', 'Çelik', 'Yıldız', 'Öztürk', 'Aydın', 'Arslan', 'Doğan', 'Kılıç', 'Koç'];
+  const CITIES = ['İstanbul', 'Ankara', 'İzmir', 'Bursa', 'Antalya', 'Konya', 'Eskişehir', 'Trabzon'];
+  const STATUS = [['new', 'Yeni'], ['paid', 'Ödendi'], ['shipped', 'Kargoda'], ['cancelled', 'İptal']];
+  let seed = 7;
+  const random = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+  const pick = list => list[Math.floor(random() * list.length)];
+  const fold = text => String(text).toLocaleLowerCase('tr').replace(/ı/g, 'i').normalize('NFD').replace(/[̀-ͯ]/g, '');
+  const pad = n => String(n).padStart(2, '0');
+
+  const orders = Array.from({ length: 5000 }, (_, i) => {
+    const day = new Date(2026, 9, 24 - Math.floor(random() * 365), Math.floor(random() * 24), Math.floor(random() * 60));
+    return {
+      id: i + 1, customer: `${pick(FIRST)} ${pick(LAST)}`, city: pick(CITIES), status: pick(STATUS)[0],
+      total: (Math.round(random() * 2_500_000) / 100).toFixed(2),
+      ordered_at: `${day.getFullYear()}-${pad(day.getMonth() + 1)}-${pad(day.getDate())} ${pad(day.getHours())}:${pad(day.getMinutes())}:00`,
+    };
+  });
+
+  // ---------- A fake server: the same request format as the Laravel and Node back ends ----------
+  const realFetch = window.fetch.bind(window);
+  window.fetch = async (input, init) => {
+    const url = new URL(typeof input === 'string' ? input : input.url, location.href);
+    if (!url.pathname.endsWith('/demo-api/orders')) return realFetch(input, init);
+    await new Promise(resolve => setTimeout(resolve, 300));
+    const q = url.searchParams;
+    let rows = orders;
+    for (let i = 0; q.has(`filters[${i}][field]`); i++) {
+      const field = q.get(`filters[${i}][field]`), op = q.get(`filters[${i}][op]`);
+      const value = q.get(`filters[${i}][value]`);
+      const list = []; for (let j = 0; q.has(`filters[${i}][value][${j}]`); j++) list.push(q.get(`filters[${i}][value][${j}]`));
+      const read = row => (field === 'total' ? Number(row.total) : field === 'ordered' ? row.ordered_at.slice(0, 10) : row[field]);
+      const typed = v => (field === 'total' ? Number(v) : field === 'ordered' ? String(v).slice(0, 10) : v);
+      rows = rows.filter(row => {
+        const v = read(row);
+        switch (op) {
+          case 'contains': return fold(v).includes(fold(value));
+          case 'eq': return v === typed(value);
+          case 'in': return list.includes(String(v));
+          case 'gte': return v >= typed(value);
+          case 'lte': return v <= typed(value);
+          case 'gt': return v > typed(value);
+          case 'lt': return v < typed(value);
+          case 'between': return v >= typed(list[0]) && v <= typed(list[1]);
+          default: return true;
+        }
+      });
+    }
+    const words = (q.get('search') ?? '').match(/"[^"]+"|\S+/g) ?? [];
+    for (const word of words.map(w => fold(w.replace(/"/g, '')))) rows = rows.filter(row => fold(`${row.customer} ${row.city}`).includes(word));
+    const sort = (q.get('sort') ?? '').split(',').filter(Boolean).map(part => part.split(':'));
+    if (sort.length) {
+      const key = field => row => (field === 'total' ? Number(row.total) : field === 'ordered' ? row.ordered_at : fold(row[field]));
+      rows = [...rows].sort((a, b) => {
+        for (const [field, dir] of sort) { const x = key(field)(a), y = key(field)(b); if (x !== y) return (x < y ? -1 : 1) * (dir === 'desc' ? -1 : 1); }
+        return a.id - b.id;
+      });
+    }
+    const page = Number(q.get('page') ?? 1), size = Number(q.get('pageSize') ?? 25);
+    const sum = rows.reduce((total, row) => total + Math.round(Number(row.total) * 100), 0);
+    const body = { rows: rows.slice((page - 1) * size, page * size), totalRows: rows.length, totals: { total: (sum / 100).toFixed(2) } };
+    return new Response(JSON.stringify(body), { headers: { 'Content-Type': 'application/json' } });
+  };
+
+  const products = Array.from({ length: 300 }, (_, i) => ({
+    id: i + 1,
+    sku: `SKU-${String(i + 1).padStart(5, '0')}`,
+    name: `${pick(['Defter', 'Kalem seti', 'Masa lambası', 'Sırt çantası', 'Termos', 'Kulaklık', 'Mouse', 'Ajanda', 'Kupa', 'Matara'])} ${pick(['Mavi', 'Siyah', 'Beyaz', 'Kırmızı', 'Yeşil'])}`,
+    category: pick(['Kırtasiye', 'Elektronik', 'Ev', 'Çanta']),
+    price: (Math.round(random() * 400_000) / 100 + 9.9).toFixed(2),
+    stock: Math.floor(random() * 250),
+    active: random() > 0.2,
+  }));
+  const people = Array.from({ length: 100_000 }, (_, i) => ({ id: i + 1, name: `${pick(FIRST)} ${pick(LAST)}`, city: pick(CITIES), score: Math.floor(random() * 1000), joined: `2026-${pad(1 + Math.floor(random() * 10))}-${pad(1 + Math.floor(random() * 28))}` }));
+
+  // ---------- The tables ----------
+  const { el } = AcunDataTable;
+  const settings = () => ({
+    responsive: document.getElementById('responsive').value,
+    size: document.getElementById('size').value,
+    language: document.getElementById('language').value,
+  });
+  const tables = {};
+  const builders = {
+    server: () => new AcunDataTable('#server', {
+      ...settings(),
+      serverSide: true,
+      ajax: 'demo-api/orders',
+      pagination: { pageSize: 25, pageSizes: [10, 25, 50, 100], firstLast: true },
+      fixedHeader: true,
+      selectable: true,
+      columnResize: true,
+      columnReorder: true,
+      stateSave: { key: 'demo-orders', storage: 'session' },
+      buttons: ['excel', 'csv', 'copy', 'print'],
+      exportFilename: 'siparisler',
+      columns: [
+        { data: 'customer', title: 'Müşteri', filter: true, priority: 1 },
+        { data: 'city', title: 'Şehir', filter: CITIES.map(city => ({ value: city, label: city })) },
+        { data: 'total', title: 'Tutar', type: 'decimal', filter: true, aggregate: 'sum', priority: 1, render: value => (value == null ? '' : `${Number(value).toLocaleString('tr-TR', { minimumFractionDigits: 2 })} ₺`) },
+        { data: 'status', title: 'Durum', filter: STATUS.map(([value, label]) => ({ value, label })), cell: value => el('span', { class: `badge badge--${value}` }, Object.fromEntries(STATUS)[value] ?? String(value)) },
+        { data: 'ordered_at', title: 'Sipariş tarihi', type: 'datetime', filter: true, priority: 3 },
+      ],
+      rowActions: [{ id: 'view', label: 'Görüntüle', icon: 'view', iconOnly: true, onSelect: row => alert(`Sipariş #${row.id}: ${row.original.customer}`) }],
+      bulkActions: [{ id: 'ship', label: 'Kargoya ver', onSelect: ({ rows }) => alert(`${rows.length} sipariş kargoya verilecek (demo).`) }],
+    }),
+    local: () => {
+      let data = products;
+      const table = new AcunDataTable('#local', {
+        ...settings(),
+        data,
+        pagination: { pageSize: 10, pageSizes: [10, 25, 50] },
+        fixedColumns: { start: 1 },
+        buttons: ['copy', 'print'],
+        columns: [
+          { data: 'name', title: 'Ürün', editable: true, priority: 1 },
+          { data: 'sku', title: 'Kod' },
+          { data: 'category', title: 'Kategori', filter: ['Kırtasiye', 'Elektronik', 'Ev', 'Çanta'].map(value => ({ value, label: value })) },
+          { data: 'price', title: 'Fiyat', type: 'decimal', aggregate: 'avg', priority: 1 },
+          { data: 'stock', title: 'Stok', type: 'number', editable: true, aggregate: 'sum' },
+          { data: 'active', title: 'Satışta', type: 'boolean', editable: true },
+        ],
+        onEdit: async ({ field, value }) => {
+          await new Promise(resolve => setTimeout(resolve, 250)); // the save request
+          if (field === 'stock' && value < 0) throw new Error('Stok eksi olamaz.');
+        },
+        detail: row => el('ul', { class: 'lines' },
+          el('li', {}, `Ürün kodu: ${row.sku}`),
+          el('li', {}, `Stok değeri: ${(Number(row.price) * row.stock).toLocaleString('tr-TR', { minimumFractionDigits: 2 })} ₺`),
+          el('li', {}, row.stock < 20 ? 'Stok azaldı: sipariş verin.' : 'Stok yeterli.')),
+      });
+      return table;
+    },
+    virtual: () => new AcunDataTable('#virtual', {
+      ...settings(),
+      data: people,
+      virtual: { rowHeight: 0 },
+      scrollY: '520px',
+      columns: [
+        { data: 'name', title: 'Ad', priority: 1 },
+        { data: 'city', title: 'Şehir' },
+        { data: 'score', title: 'Puan', type: 'number', priority: 1 },
+        { data: 'joined', title: 'Katılım', type: 'date' },
+      ],
+    }),
+  };
+  const show = name => {
+    for (const tab of document.querySelectorAll('[role="tab"]')) {
+      const on = tab.id === `tab-${name}`;
+      tab.setAttribute('aria-selected', String(on));
+      tab.tabIndex = on ? 0 : -1;
+      document.getElementById(tab.getAttribute('aria-controls')).hidden = !on;
+    }
+    tables[name] ??= builders[name]();
+  };
+  const rebuild = () => {
+    for (const [name, table] of Object.entries(tables)) {
+      table.destroy();
+      tables[name] = builders[name]();
+    }
+  };
+
+  // ---------- Controls ----------
+  for (const tab of document.querySelectorAll('[role="tab"]')) {
+    tab.addEventListener('click', () => show(tab.id.slice(4)));
+    tab.addEventListener('keydown', event => {
+      const tabs = [...document.querySelectorAll('[role="tab"]')];
+      const index = tabs.indexOf(tab) + (event.key === 'ArrowRight' ? 1 : event.key === 'ArrowLeft' ? -1 : 0);
+      if (index !== tabs.indexOf(tab)) { const next = tabs[(index + tabs.length) % tabs.length]; next.focus(); next.click(); }
+    });
+  }
+  for (const id of ['responsive', 'size', 'language']) document.getElementById(id).addEventListener('change', rebuild);
+  const theme = document.getElementById('theme');
+  theme.value = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+  const applyTheme = () => document.documentElement.setAttribute('data-theme', theme.value);
+  theme.addEventListener('change', applyTheme);
+  applyTheme();
+  const header = document.querySelector('header');
+  const measure = () => document.documentElement.style.setProperty('--header-height', `${header.offsetHeight}px`);
+  new ResizeObserver(measure).observe(header);
+  measure();
+  show('server');
+  window.demoTables = tables; // for the browser tests
+})();
+</script>
+</body>
+</html>
