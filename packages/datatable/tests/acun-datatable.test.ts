@@ -316,6 +316,69 @@ describe('cursor paging', () => {
   });
 });
 
+describe('review fixes', () => {
+  it('exports every row of a cursor-paged table by following nextCursor, from any page', async () => {
+    const fetch = vi.fn(async (url: string) => {
+      const query = new URL(url, 'http://x').searchParams;
+      const after = Number(query.get('cursor') ?? 0);
+      const size = Number(query.get('pageSize'));
+      const big = Array.from({ length: 1500 }, (_, i) => ({ id: i + 1, customer: `C${i + 1}` }));
+      return new Response(JSON.stringify({ rows: big.slice(after, after + size), totalRows: 1500, ...(after + size < 1500 ? { nextCursor: String(after + size) } : {}) }));
+    });
+    vi.stubGlobal('fetch', fetch);
+    const writeText = vi.fn(async () => undefined);
+    Object.defineProperty(navigator, 'clipboard', { value: { writeText }, configurable: true });
+    const dt = new AcunDataTable('#orders', { serverSide: true, ajax: '/api/orders', buttons: ['copy'], pagination: { pageSize: 10, cursor: true }, columns: [{ data: 'customer' }] });
+    await dt.ready;
+    dt.page(2);
+    await vi.waitFor(() => expect(document.querySelector('tbody td')!.textContent).toBe('C11'));
+    document.querySelector<HTMLButtonElement>('.adt-menu-item[data-action="copy"]')!.click();
+    await vi.waitFor(() => expect(writeText).toHaveBeenCalled());
+    const lines = (writeText.mock.calls[0] as unknown as [string])[0].trim().split('\n');
+    expect(lines).toHaveLength(1501);
+    expect([lines[1], lines[1500]]).toEqual(['C1', 'C1500']);
+  });
+
+  it('shows a DataTables error answer as an error and refuses cursor paging with that protocol', async () => {
+    vi.stubGlobal('fetch', json({ draw: 1, error: 'unknown column "secret"', data: [] }));
+    const dt = new AcunDataTable('#orders', { serverSide: true, ajax: { url: '/dt', protocol: 'datatables' }, columns: [{ data: 'customer' }] });
+    await expect(dt.ready).rejects.toThrow('unknown column "secret"');
+    const cursor = new AcunDataTable(document.body.appendChild(document.createElement('div')), {
+      serverSide: true, ajax: { url: '/dt', protocol: 'datatables' }, columns: [{ data: 'customer' }], pagination: { cursor: true },
+    });
+    await expect(cursor.ready).rejects.toThrow('pagination.cursor does not work');
+  });
+
+  it('treats a returned fetch response as a result, not as the new row', async () => {
+    let status = 200;
+    const dt = new AcunDataTable('#orders', {
+      data: orders, onEdit: async () => new Response(null, { status }), columns: [{ data: 'customer', editable: true }],
+    });
+    await dt.ready;
+    const edit = (value: string) => {
+      dt.element.querySelector<HTMLButtonElement>('.adt-edit')!.click();
+      const input = dt.element.querySelector<HTMLInputElement>('.adt-edit-control')!;
+      input.value = value;
+      input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+    };
+    edit('Saved');
+    await vi.waitFor(() => expect(dt.element.querySelector('tbody tr:first-child td')!.textContent).toBe('Saved'));
+    status = 500;
+    edit('Lost');
+    await vi.waitFor(() => expect(dt.element.querySelector('.adt-edit-message')?.textContent).toMatch(/500/));
+    expect(dt.element.querySelector('.adt-editor')).not.toBeNull();
+  });
+
+  it('replaces the rows of a browser table with setData and keeps the state', async () => {
+    const dt = new AcunDataTable('#orders', { data: orders, pagination: { pageSize: 10 } });
+    await dt.ready;
+    dt.page(2);
+    dt.setData(orders.map(row => ({ ...row, total: row.total + 1 })));
+    expect(info()).toBe('Showing 11 to 20 of 30 rows');
+    expect(document.querySelector('tbody tr:first-child td:last-child')!.textContent).toBe('111');
+  });
+});
+
 describe('editing in place', () => {
   it('saves through onEdit and shows the new value', async () => {
     const onEdit = vi.fn(async () => undefined);

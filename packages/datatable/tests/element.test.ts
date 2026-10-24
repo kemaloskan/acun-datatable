@@ -44,4 +44,26 @@ describe('<acun-datatable>', () => {
     expect(element.querySelector('thead')!.textContent).toContain('Ürün');
     expect(element.querySelector('.adt-tools')).not.toBeNull();
   });
+
+  it('keeps the table on a move and takes new rows without starting over', async () => {
+    const element = document.createElement('acun-datatable') as AcunDataTableElement;
+    element.columns = [{ data: 'name' }];
+    element.data = Array.from({ length: 30 }, (_, i) => ({ id: i + 1, name: `N${i + 1}` }));
+    element.setAttribute('page-size', '10');
+    element.setAttribute('state-save', '');
+    document.body.append(element);
+    await tick();
+    const table = element.table!;
+    await table.ready;
+    table.page(2);
+    const other = document.body.appendChild(document.createElement('section'));
+    other.append(element); // moved
+    await tick();
+    expect(element.table).toBe(table);
+    element.data = Array.from({ length: 30 }, (_, i) => ({ id: i + 1, name: `M${i + 1}` }));
+    await tick();
+    expect(element.table).toBe(table);
+    expect(element.querySelector('tbody td')!.textContent).toBe('M11');
+    expect(Object.keys(localStorage).some(key => key.startsWith(`acun-datatable:${location.pathname}#`))).toBe(true);
+  });
 });

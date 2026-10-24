@@ -157,7 +157,8 @@ and the sort buttons.
 
 ## Methods
 
-`ready` (a promise for the first rows), `reload()`, `search(text)`,
+`ready` (a promise for the first rows), `reload()`, `setData(rows)` (new rows
+for a table in the browser; page, sorting, search and selection stay), `search(text)`,
 `page(n)`, `pageSize(n)`, `order([{ field, direction }])`, `selectedRows()`,
 `on(listener)` and `destroy()` (an original `<table>` is put back). `table` is
 the headless `@acunsoft/datatable-core` table for everything else.

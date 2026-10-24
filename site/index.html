@@ -276,7 +276,7 @@ const API = [
   ]],
   ['@acunsoft/datatable', [
     ["new AcunDataTable(target, options)", {tr:"DataTables gibi tek çağrıda tablo: mevcut <table>, data, bir kez yüklenen ajax JSON'u veya serverSide. fixedHeader, processing, pagination, sorting, searching, language, responsive, size; <script> ile de kullanılır.", en:"A table in one call, like DataTables: an existing <table>, data, an ajax JSON loaded once, or serverSide. fixedHeader, processing, pagination, sorting, searching, language, responsive, size; also as a <script>."}],
-    ["ready · reload() · search() · page() · pageSize() · order() · selectedRows() · on() · destroy()", {tr:"Tabloyu yöneten metotlar; table özelliği headless çekirdek tablosudur.", en:"Methods that control the table; the table property is the headless core table."}],
+    ["ready · reload() · setData() · search() · page() · pageSize() · order() · selectedRows() · on() · destroy()", {tr:"Tabloyu yöneten metotlar; table özelliği headless çekirdek tablosudur.", en:"Methods that control the table; the table property is the headless core table."}],
   ]],
   ['@acunsoft/datatable-http', [
     ["createHttpDataSource({ url, method?, headers?, parseResponse? })", {tr:"fetch ile salt okunur veri kaynağı; GET veya POST (form gövdesi), sayfa boyutu sınırı, HttpError, yanıt doğrulama.", en:"Read-only fetch data source; GET or POST (form body), page-size limit, HttpError, response validation."}],
@@ -995,7 +995,7 @@ const GUIDES = {
     },
     "code": [
      "typescript",
-     "const table = new AcunDataTable('#orders', { serverSide: true, ajax: '/api/orders' });\n\nawait table.ready;                                  // the first rows are on screen\ntable.search('ayşe istanbul');                      // smart search: every word, \"quoted phrases\"\ntable.order([{ field: 'total', direction: 'desc' }]);\ntable.page(2);\ntable.pageSize(50);\ntable.reload();                                     // load the current page again\nconst off = table.on((state, event) => console.log(event.type));\ntable.selectedRows();\ntable.destroy();                                    // an original \u003ctable> is put back"
+     "const table = new AcunDataTable('#orders', { serverSide: true, ajax: '/api/orders' });\n\nawait table.ready;                                  // the first rows are on screen\ntable.search('ayşe istanbul');                      // smart search: every word, \"quoted phrases\"\ntable.order([{ field: 'total', direction: 'desc' }]);\ntable.page(2);\ntable.pageSize(50);\ntable.reload();                                     // load the current page again\ntable.setData(rows);                                // new rows for a table in the browser (state kept)\nconst off = table.on((state, event) => console.log(event.type));\ntable.selectedRows();\ntable.destroy();                                    // an original \u003ctable> is put back"
     ]
    }
   ]

@@ -7,7 +7,7 @@ import {
   type CellEdit, type FixedColumns, type MenuItem, type RenderedComponent, type ResponsiveMode, type RowAction, type StatusSource, type TableSize,
 } from '@acunsoft/datatable-dom';
 import { tableToSheet, toCsv, toXlsx, type Sheet } from '@acunsoft/datatable-export';
-import { connectTable, createHttpDataSource, createQueryRunner, serializeDataTablesQuery, type QueryRunner } from '@acunsoft/datatable-http';
+import { connectTable, createHttpDataSource, createQueryRunner, fromDataTablesResponse, serializeDataTablesQuery, type QueryRunner } from '@acunsoft/datatable-http';
 
 type Data = Record<string, unknown>;
 
@@ -182,8 +182,9 @@ export interface AcunDataTableOptions {
    * Save a cell edited in place (columns with `editable`), e.g. with
    * `fetch(…, { method: 'PATCH' })`. Throw (or reject) to keep the editor
    * open with the message. Once it resolves the table shows the new value:
-   * the row is updated in place (or replaced by the object you return), and
-   * a `serverSide` table reloads its page.
+   * the row is updated in place (or replaced by the plain object you return),
+   * and a `serverSide` table reloads its page. A returned `fetch` response
+   * that is not `ok` counts as a failure.
    */
   readonly onEdit?: (edit: EditEvent) => unknown;
   readonly detail?: (row: Data) => Node | string | null | undefined | Promise<Node | string | null | undefined>;
@@ -289,6 +290,7 @@ export class AcunDataTable {
     if (ajax && options.serverSide) {
       const datatables = ajax.protocol === 'datatables';
       if (datatables && !columns) throw new TypeError('AcunDataTable: ajax.protocol "datatables" needs columns (DataTables sends them by index)');
+      if (datatables && cursorPaging(options)) throw new TypeError('AcunDataTable: pagination.cursor does not work with ajax.protocol "datatables", which has no cursor');
       let draw = 0;
       const source = createHttpDataSource<Data>({
         ...(datatables ? {
@@ -299,7 +301,8 @@ export class AcunDataTable {
         url: ajax.url,
         method: ajax.method ?? 'GET',
         headers: requestHeaders(ajax),
-        parseResponse: body => serverRows(body, ajax.dataSrc),
+        // DataTables answers a refused query with 200 and `error`: shown as the error it is.
+        parseResponse: body => serverRows(datatables && typeof ajax.dataSrc !== 'function' && body && typeof body === 'object' && 'error' in body ? fromDataTablesResponse(body) : body, ajax.dataSrc),
         maxPageSize: 1000,
         ...(cursorPaging(options) ? { paging: 'cursor' as const } : {}),
         ...(ajax.credentials ? { credentials: ajax.credentials } : {}),
@@ -543,14 +546,17 @@ export class AcunDataTable {
     }
     const limit = this.#options.exportLimit ?? 10_000;
     const labels = resolveLabels(this.#options.language, this.#options.labels);
-    const query = table.getQuery();
+    const { cursor: _current, ...query } = table.getQuery();
+    const byCursor = cursorPaging(this.#options);
     const rows: Data[] = [];
+    let cursor: string | undefined; // with cursor paging: from the first row on, each answer's nextCursor
     for (let page = 1; ; page++) {
-      const result = await this.#source.getPage({ ...query, page, pageSize: 1000 });
+      const result = await this.#source.getPage({ ...query, page, pageSize: 1000, ...(cursor === undefined ? {} : { cursor }) });
       if (result.totalRows !== undefined && result.totalRows > limit) throw new Error(labels.exportTooLarge(limit));
       rows.push(...result.rows);
       if (rows.length > limit) throw new Error(labels.exportTooLarge(limit));
-      if (result.rows.length < 1000) break;
+      if (byCursor ? result.nextCursor === undefined || result.rows.length === 0 : result.rows.length < 1000) break;
+      cursor = result.nextCursor;
     }
     // A local copy in the server's order, with the same visible columns.
     const copy = createDataTable<Data>({
@@ -569,12 +575,14 @@ export class AcunDataTable {
   async #saveEdit(edit: CellEdit<Data>): Promise<void> {
     const field = edit.column.id;
     const result = await this.#options.onEdit!({ row: edit.row.original, field, value: edit.value, previous: edit.previous });
+    // `return fetch(…)`: a failed response keeps the editor open; the response itself is not a row.
+    if (typeof Response !== 'undefined' && result instanceof Response && !result.ok) throw new Error(`${result.status} ${result.statusText}`.trim());
     if (!this.table || this.#destroyed) return;
     if (this.table.getMode() === 'server') {
       await this.reload();
       return;
     }
-    const updated = result && typeof result === 'object' && !Array.isArray(result) ? result as Data : { ...edit.row.original, [field]: edit.value };
+    const updated = isPlainObject(result) ? result as Data : { ...edit.row.original, [field]: edit.value };
     this.#setData(this.table.getCoreRows().map(row => (row.id === edit.row.id ? updated : row.original)));
   }
 
@@ -597,6 +605,14 @@ export class AcunDataTable {
       this.#loader?.fail(error);
       throw error;
     }
+  }
+
+  /** Replace the rows of a table in the browser; page, sorting, search and selection stay. */
+  setData(rows: readonly Data[]): void {
+    if (!Array.isArray(rows)) throw new TypeError('AcunDataTable: setData needs an array of rows');
+    if (this.#source || this.#runner) throw new TypeError('AcunDataTable: setData is for tables in the browser; a serverSide table asks its server (reload)');
+    if (this.table) this.#setData([...rows]);
+    else void this.ready.then(() => this.#setData([...rows]), () => undefined);
   }
 
   /** Search every searchable column (smart search: all words, "quoted phrases"). */
@@ -650,6 +666,12 @@ function firstQuery(options: AcunDataTableOptions): TableQuery {
 /** The parts of a query that pick a page, as a comparable string. */
 function queryKey(query: TableQuery): string {
   return JSON.stringify([query.page, query.pageSize, query.sorting, query.filters, query.globalSearch ?? '']);
+}
+
+function isPlainObject(value: unknown): value is Data {
+  if (!value || typeof value !== 'object') return false;
+  const prototype = Object.getPrototypeOf(value);
+  return prototype === Object.prototype || prototype === null;
 }
 
 function cursorPaging(options: AcunDataTableOptions): boolean {

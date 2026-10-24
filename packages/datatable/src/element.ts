@@ -33,6 +33,7 @@ export class AcunDataTableElement extends Base {
   #columns: readonly ColumnOptions[] | undefined;
   #data: readonly Data[] | undefined;
   #queued = false;
+  #rebuild = false; // anything but the rows changed: build the table again
   #source: HTMLTableElement | undefined;
 
   /** The running table (after it is connected). */
@@ -40,33 +41,39 @@ export class AcunDataTableElement extends Base {
 
   /** Every `AcunDataTable` option; attributes win over these. */
   get options(): AcunDataTableOptions { return this.#options; }
-  set options(value: AcunDataTableOptions) { this.#options = value ?? {}; this.#schedule(); }
+  set options(value: AcunDataTableOptions) { this.#options = value ?? {}; this.#schedule(true); }
 
   get columns(): readonly ColumnOptions[] | undefined { return this.#columns; }
-  set columns(value: readonly ColumnOptions[] | undefined) { this.#columns = value; this.#schedule(); }
+  set columns(value: readonly ColumnOptions[] | undefined) { this.#columns = value; this.#schedule(true); }
 
-  /** Rows for a table in the browser (instead of `src`). */
+  /** Rows for a table in the browser (instead of `src`). New rows keep the page, sorting, search and selection. */
   get data(): readonly Data[] | undefined { return this.#data; }
-  set data(value: readonly Data[] | undefined) { this.#data = value; this.#schedule(); }
+  set data(value: readonly Data[] | undefined) { this.#data = value; this.#schedule(value === undefined); }
 
-  connectedCallback(): void { this.#schedule(); }
+  // Moved within the page: the running table stays as it is.
+  connectedCallback(): void { if (!this.#instance) this.#schedule(true); }
 
   disconnectedCallback(): void {
     // Moved within the page: it is connected again before this runs.
     queueMicrotask(() => { if (!this.isConnected) this.#destroy(); });
   }
 
-  attributeChangedCallback(): void { this.#schedule(); }
+  attributeChangedCallback(_name: string, before: string | null, after: string | null): void { if (before !== after) this.#schedule(true); }
 
   /** Load the rows again. */
   reload(): Promise<void> { return this.#instance?.reload() ?? Promise.resolve(); }
 
-  #schedule(): void {
+  #schedule(rebuild: boolean): void {
+    this.#rebuild ||= rebuild;
     if (this.#queued) return;
     this.#queued = true;
     queueMicrotask(() => {
       this.#queued = false;
-      if (this.isConnected) this.#render();
+      const rebuildNow = this.#rebuild || !this.#instance || !this.#data || this.#instance.table?.getMode() === 'server' || this.hasAttribute('src');
+      this.#rebuild = false;
+      if (!this.isConnected) return;
+      if (rebuildNow) this.#render();
+      else this.#instance!.setData(this.#data!);
     });
   }
 
@@ -99,7 +106,7 @@ export class AcunDataTableElement extends Base {
       ...(flag(attr('fixed-header')) !== undefined ? { fixedHeader: flag(attr('fixed-header'))! } : {}),
       ...(attr('scroll-y') ? { scrollY: attr('scroll-y')! } : {}),
       ...(flag(attr('virtual')) !== undefined ? { virtual: flag(attr('virtual'))! } : {}),
-      ...(flag(attr('state-save')) ? { stateSave: { key: this.id || 'acun-datatable' } } : {}),
+      ...(flag(attr('state-save')) ? { stateSave: this.id ? { key: `${location.pathname}#${this.id}` } : true } : {}),
     } as AcunDataTableOptions;
     // A <table> written inside the element is the source when nothing else gives rows.
     this.#source ??= this.querySelector<HTMLTableElement>(':scope > table') ?? undefined;
