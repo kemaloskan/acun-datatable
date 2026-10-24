@@ -55,6 +55,12 @@ export interface DataTableProps<TData> {
   readonly maxInlineActions?: number;
   /** A fixed height to scroll inside, header in place (DataTables `scrollY`): `'60vh'`, `480`. */
   readonly scrollY?: string | number;
+  /**
+   * A child row under each row (DataTables child rows), opened by a ⊕
+   * button; in the dialog with `responsive="modal"`. It renders only while
+   * its row is open, so a component in it can load its own data on mount.
+   */
+  readonly detail?: (row: Row<TData>) => ReactNode;
 }
 
 const noStatus = (): (() => void) => () => undefined;
@@ -96,6 +102,8 @@ export function DataTable<TData>(props: DataTableProps<TData>): ReactElement {
   const responsive = checkResponsive(props.responsive);
   const size = checkSize(props.size);
   const collapsible = responsive === 'collapse' || responsive === 'modal';
+  const detail = props.detail;
+  const expandable = collapsible || detail !== undefined;
   const uid = useId();
   // Responsive collapse: open rows. Modal: the row shown in the dialog.
   const [expanded, setExpanded] = useState<ReadonlySet<string>>(() => new Set());
@@ -138,7 +146,7 @@ export function DataTable<TData>(props: DataTableProps<TData>): ReactElement {
   };
   const levels = new Set(columns.map((column, index) => priorityOf(column, index)));
   if (rowActions.length > 0) levels.add(2);
-  const span = columns.length + (selectable ? 1 : 0) + (rowActions.length > 0 ? 1 : 0) + (collapsible ? 1 : 0);
+  const span = columns.length + (selectable ? 1 : 0) + (rowActions.length > 0 ? 1 : 0) + (expandable ? 1 : 0);
   // Buttons in the row, the rest in a "⋮" menu; icons, danger colour and a confirm question.
   const actionButtons = (row: Row<TData>, name: string, maxInline = props.maxInlineActions ?? Infinity): ReactNode[] => {
     const { inline, menu } = splitActions(rowActions, row, maxInline);
@@ -194,7 +202,7 @@ export function DataTable<TData>(props: DataTableProps<TData>): ReactElement {
       : null);
 
   const head: ReactNode[] = [];
-  if (collapsible) head.push(h('td', { className: 'adt-expand-cell', key: '__expand' }));
+  if (expandable) head.push(h('td', { className: 'adt-expand-cell', key: '__expand' }));
   if (selectable) {
     head.push(h('th', { scope: 'col', className: 'adt-select', key: '__select' },
       table.getSelectionMode() === 'multiple' && pageIds.length > 0
@@ -235,13 +243,13 @@ export function DataTable<TData>(props: DataTableProps<TData>): ReactElement {
     const texts = columns.map(column => text(column, row));
     const name = rowName(row, texts[0] ?? '', props.rowLabel);
     const selected = table.isSelected(row.id);
-    const open = responsive === 'collapse' && expanded.has(row.id);
+    const open = responsive !== 'modal' && expanded.has(row.id);
     const detailId = `${uid}-detail-${rowIndex}`;
     const cells: ReactNode[] = [];
-    if (collapsible) {
+    if (expandable) {
       cells.push(h('td', { className: 'adt-expand-cell', key: '__expand' }, h('button', {
         type: 'button', className: 'adt-expand', 'aria-label': labels.details(name), 'data-row': row.id,
-        ...(responsive === 'collapse' ? { 'aria-expanded': open, 'aria-controls': detailId } : { 'aria-haspopup': 'dialog' as const }),
+        ...(responsive !== 'modal' ? { 'aria-expanded': open, 'aria-controls': detailId } : { 'aria-haspopup': 'dialog' as const }),
         onClick: () => {
           if (responsive === 'modal') return setDialogRow(row.id);
           setExpanded(current => {
@@ -258,6 +266,7 @@ export function DataTable<TData>(props: DataTableProps<TData>): ReactElement {
           h('h2', { className: 'adt-dialog-title', id: `${uid}-dialog-title` }, labels.details(name)),
           h('button', { type: 'button', className: 'adt-dialog-close', 'aria-label': labels.close, onClick: closeDialog }, icon('close'))),
         h('div', { key: 'body' }, detailList(row, texts, name, true)),
+        detail ? h('div', { className: 'adt-detail-content', key: 'detail' }, detail(row)) : null,
       ];
     }
     if (selectable) {
@@ -292,7 +301,9 @@ export function DataTable<TData>(props: DataTableProps<TData>): ReactElement {
     body.push(h('tr', { className: rowClass, 'data-row-id': row.id, key: row.id }, cells));
     if (open) {
       body.push(h('tr', { className: 'adt-detail', id: detailId, key: `${row.id}__detail` },
-        h('td', { colSpan: span }, detailList(row, texts, name, false))));
+        h('td', { colSpan: span },
+          responsive === 'collapse' ? detailList(row, texts, name, false) : null,
+          detail ? h('div', { className: 'adt-detail-content' }, detail(row)) : null)));
     }
   });
 
@@ -309,7 +320,7 @@ export function DataTable<TData>(props: DataTableProps<TData>): ReactElement {
   const height = scrollHeight(props.scrollY);
   const wrapClass = ['adt-table-wrap', `adt-responsive--${responsive}`, size === 'md' ? '' : `adt-size--${size}`,
     props.stickyHeader === true ? 'adt-sticky-header' : '', height ? 'adt-scroll-y' : '', busy ? 'adt-loading' : ''].filter(Boolean).join(' ');
-  const tableClass = ['adt-table', collapsible && levels.has(2) ? 'adt-has-p2' : '', collapsible && levels.has(3) ? 'adt-has-p3' : '']
+  const tableClass = ['adt-table', collapsible && levels.has(2) ? 'adt-has-p2' : '', collapsible && levels.has(3) ? 'adt-has-p3' : '', detail ? 'adt-has-detail' : '']
     .filter(Boolean).join(' ');
   return h('div', {
     className: wrapClass, ref: wrap, 'aria-busy': props.status ? busy : undefined,
@@ -324,7 +335,7 @@ export function DataTable<TData>(props: DataTableProps<TData>): ReactElement {
       columns.some(column => column.aggregate !== undefined) ? h('tfoot', null, h('tr', { className: 'adt-total' }, ...(() => {
         const totals = table.getAggregates();
         const cells: ReactNode[] = [];
-        if (collapsible) cells.push(h('td', { className: 'adt-expand-cell', key: '__expand' }));
+        if (expandable) cells.push(h('td', { className: 'adt-expand-cell', key: '__expand' }));
         if (selectable) cells.push(h('td', { className: 'adt-select', key: '__select' }));
         columns.forEach((column, index) => {
           const result = totals[column.id];

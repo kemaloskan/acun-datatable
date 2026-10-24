@@ -40,6 +40,11 @@ export interface CellSlotProps {
   readonly text: string;
 }
 
+/** What the `detail` slot (a row's child row) receives. */
+export interface DetailSlotProps {
+  readonly row: AnyRow;
+}
+
 /**
  * An accessible `<table>` for a `createDataTable` table, with the same markup
  * and `adt-*` classes as `@acunsoft/datatable-dom` (so its `styles.css`
@@ -48,7 +53,7 @@ export interface CellSlotProps {
  * narrow-screen layout, loading and error states from a `status` source.
  *
  * Slots: `cell` and `cell-<columnId>` (`{ column, row, value, text }`) for
- * custom cells, `empty` for the empty state. Slot content is rendered by Vue,
+ * custom cells, `empty` for the empty state, `detail` (`{ row }`) for child rows. Slot content is rendered by Vue,
  * so it is escaped unless you inject HTML yourself.
  */
 export const AcunDataTable = defineComponent({
@@ -85,7 +90,14 @@ export const AcunDataTable = defineComponent({
       validator: (value: unknown) => { try { scrollHeight(value); return true; } catch { return false; } },
     },
   },
-  slots: Object as SlotsType<{ cell: CellSlotProps; empty: Record<string, never>; [name: `cell-${string}`]: CellSlotProps }>,
+  /**
+   * Slots: `cell` / `cell-{id}` for custom cells, `empty`, and `detail`
+   * (`{ row }`): a child row under each row, opened by a ⊕ button
+   * (DataTables child rows; in the dialog with `responsive="modal"`).
+   * The slot renders only while its row is open, so a component inside it
+   * can load its own data when it mounts.
+   */
+  slots: Object as SlotsType<{ cell: CellSlotProps; empty: Record<string, never>; detail: DetailSlotProps; [name: `cell-${string}`]: CellSlotProps }>,
   setup(props, { slots }) {
     const binding = useTable(props.table);
     const labels = computed(() => withLabels(props.labels));
@@ -147,6 +159,8 @@ export const AcunDataTable = defineComponent({
       const { table } = props;
       const responsive = props.responsive;
       const collapsible = responsive === 'collapse' || responsive === 'modal';
+      const detailSlot = slots.detail as ((props: DetailSlotProps) => VNode[]) | undefined; // absent unless given
+      const expandable = collapsible || detailSlot !== undefined;
       const state = binding.state.value;
       const page = binding.page.value;
       const columns = binding.visibleColumns.value;
@@ -159,7 +173,7 @@ export const AcunDataTable = defineComponent({
       const levels = new Set(columns.map((column, index) => priorityOf(column, index)));
       if (actions.length > 0) levels.add(2);
       const level = (column: AnyColumn): string => (collapsible ? ` adt-col--p${priorityOf(column, columns.indexOf(column))}` : '');
-      if (collapsible) head.push(h('td', { class: 'adt-expand-cell', key: '__expand' }));
+      if (expandable) head.push(h('td', { class: 'adt-expand-cell', key: '__expand' }));
       if (props.selectable) {
         const status = table.getSelectionStatus(pageIds);
         head.push(h('th', { scope: 'col', class: 'adt-select', key: '__select' },
@@ -190,7 +204,7 @@ export const AcunDataTable = defineComponent({
       if (actions.length > 0) {
         head.push(h('th', { scope: 'col', class: `adt-th adt-actions${collapsible ? ' adt-col--p2' : ''}`, key: '__actions' }, label.actions));
       }
-      const span = columns.length + (props.selectable ? 1 : 0) + (actions.length > 0 ? 1 : 0) + (collapsible ? 1 : 0);
+      const span = columns.length + (props.selectable ? 1 : 0) + (actions.length > 0 ? 1 : 0) + (expandable ? 1 : 0);
       // Buttons in the row, the rest in a "⋮" menu; icons, danger colour and a confirm question.
       const actionButtons = (row: AnyRow, name: string, maxInline = props.maxInlineActions): VNode[] => {
         const { inline, menu } = splitActions(actions, row, maxInline);
@@ -259,13 +273,13 @@ export const AcunDataTable = defineComponent({
         const texts = columns.map(column => text.value(column, row));
         const name = rowName(row, texts[0] ?? '', rowLabel);
         const selected = table.isSelected(row.id);
-        const open = responsive === 'collapse' && expanded.value.has(row.id);
+        const open = responsive !== 'modal' && expanded.value.has(row.id);
         const detailId = `${uid}-detail-${rowIndex}`;
         const cells: VNode[] = [];
-        if (collapsible) {
+        if (expandable) {
           cells.push(h('td', { class: 'adt-expand-cell', key: '__expand' }, [h('button', {
             type: 'button', class: 'adt-expand', 'aria-label': label.details(name), 'data-row': row.id,
-            ...(responsive === 'collapse' ? { 'aria-expanded': String(open), 'aria-controls': detailId } : { 'aria-haspopup': 'dialog' }),
+            ...(responsive !== 'modal' ? { 'aria-expanded': String(open), 'aria-controls': detailId } : { 'aria-haspopup': 'dialog' }),
             onClick: () => {
               if (responsive === 'modal') return openDialog(row.id);
               const next = new Set(expanded.value);
@@ -281,7 +295,8 @@ export const AcunDataTable = defineComponent({
               h('button', { type: 'button', class: 'adt-dialog-close', 'aria-label': label.close, onClick: closeDialog }, [iconNode('close')]),
             ]),
             detailList(row, texts, name, true),
-          ];
+            detailSlot ? h('div', { class: 'adt-detail-content' }, detailSlot({ row })) : null,
+          ].filter((node): node is VNode => node !== null);
         }
         if (props.selectable) {
           cells.push(h('td', { class: 'adt-select' }, [h('input', {
@@ -315,7 +330,10 @@ export const AcunDataTable = defineComponent({
         body.push(h('tr', { class: rowClass, 'data-row-id': row.id, key: row.id }, cells));
         if (open) {
           body.push(h('tr', { class: 'adt-detail', id: detailId, key: `${row.id}__detail` }, [
-            h('td', { colspan: span }, [detailList(row, texts, name, false)]),
+            h('td', { colspan: span }, [
+              responsive === 'collapse' ? detailList(row, texts, name, false) : null,
+              detailSlot ? h('div', { class: 'adt-detail-content' }, detailSlot({ row })) : null,
+            ]),
           ]));
         }
       });
@@ -334,7 +352,7 @@ export const AcunDataTable = defineComponent({
       const height = scrollHeight(props.scrollY);
       const wrapClass = ['adt-table-wrap', `adt-responsive--${responsive}`, props.size === 'md' ? '' : `adt-size--${props.size}`,
         props.stickyHeader ? 'adt-sticky-header' : '', height ? 'adt-scroll-y' : '', busy ? 'adt-loading' : ''].filter(Boolean).join(' ');
-      const tableClass = ['adt-table', collapsible && levels.has(2) ? 'adt-has-p2' : '', collapsible && levels.has(3) ? 'adt-has-p3' : '']
+      const tableClass = ['adt-table', collapsible && levels.has(2) ? 'adt-has-p2' : '', collapsible && levels.has(3) ? 'adt-has-p3' : '', detailSlot ? 'adt-has-detail' : '']
         .filter(Boolean).join(' ');
       return h('div', { ref: wrapEl, class: wrapClass, style: height ? { '--adt-scroll-y': height } : undefined, 'aria-busy': props.status ? String(busy) : undefined }, [
         notice,
@@ -346,7 +364,7 @@ export const AcunDataTable = defineComponent({
           columns.some(column => column.aggregate !== undefined) ? h('tfoot', [h('tr', { class: 'adt-total' }, (() => {
             const totals = table.getAggregates();
             const cells: VNode[] = [];
-            if (collapsible) cells.push(h('td', { class: 'adt-expand-cell' }));
+            if (expandable) cells.push(h('td', { class: 'adt-expand-cell' }));
             if (props.selectable) cells.push(h('td', { class: 'adt-select' }));
             columns.forEach((column, index) => {
               const result = totals[column.id];
@@ -630,7 +648,7 @@ export const AcunDataTableLayout = defineComponent({
     return (): VNode => {
       const common = { table: props.table, labels: props.labels };
       const hasFilters = props.filters && filterControls(props.table.getColumns()).length > 0;
-      const tableSlots = Object.fromEntries(Object.entries(slots).filter(([name]) => name === 'cell' || name === 'empty' || name.startsWith('cell-')));
+      const tableSlots = Object.fromEntries(Object.entries(slots).filter(([name]) => name === 'cell' || name === 'empty' || name === 'detail' || name.startsWith('cell-')));
       const bar = (position: 'top' | 'bottom', start: (VNode | null | VNode[] | undefined)[], end: (VNode | null | VNode[] | undefined)[]): VNode =>
         h('div', { class: `adt-bar adt-${position}` }, [h('div', { class: 'adt-bar-start' }, start.flat()), h('div', { class: 'adt-bar-end' }, end.flat())]);
       return h('div', { class: props.size === 'md' ? 'adt' : `adt adt-size--${props.size}` }, [

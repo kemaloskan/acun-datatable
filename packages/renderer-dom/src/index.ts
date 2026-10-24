@@ -5,7 +5,7 @@ export {
 } from './labels';
 export {
   checkResponsive, checkSize, numeric, priorityOf, rangeOf, renderTable, scrollHeight,
-  type CellContext, type CellFormatter, type CellRenderer, type RenderTableOptions, type ResponsiveMode, type StatusSource, type TableSize,
+  type CellContext, type CellFormatter, type CellRenderer, type DetailRenderer, type RenderTableOptions, type ResponsiveMode, type StatusSource, type TableSize,
 } from './table';
 export {
   checkPageSizes, pageInfoText, pageSizeChoices, renderPageInfo, renderPageSize, renderPagination, renderSearch,

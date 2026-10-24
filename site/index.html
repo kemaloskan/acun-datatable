@@ -716,6 +716,10 @@ const GUIDES = {
      [
       "footerCallback (sum)",
       "columns: [{ data: 'total', aggregate: 'sum' }]"
+     ],
+     [
+      "row().child()",
+      "detail: row => …"
      ]
     ]
    },
@@ -1354,8 +1358,8 @@ const GUIDES = {
  },
  "tools": {
   "title": {
-   "tr": "Araçlar ve özel hücreler",
-   "en": "Tools and custom cells"
+   "tr": "Araçlar, hücreler ve alt satırlar",
+   "en": "Tools, cells and child rows"
   },
   "lead": {
    "tr": "Excel, CSV, kopyalama ve yazdırma tek menüde (DataTables “buttons”); hücrelere rozet, avatar veya bağlantı gibi kendi içeriğiniz — HTML metni yorumlanmadan, güvenle.",
@@ -1463,6 +1467,44 @@ const GUIDES = {
       "Vue / React",
       "typescript",
       "// columns: { id: 'total', …, type: 'decimal', aggregate: 'sum' }\n// \u003cAcunDataTable :table=\"table\" />  ·  \u003cDataTable table={table} />  draw the \u003ctfoot> themselves\ntable.getAggregates(); // { total: { aggregate: 'sum', value: … } } for your own footer"
+     ]
+    ]
+   },
+   {
+    "id": "detail",
+    "title": {
+     "tr": "Alt satır (detay)",
+     "en": "Child rows"
+    },
+    "desc": {
+     "tr": "Her satıra ⊕ düğmesi gelir; açılınca altında sizin içeriğiniz görünür. İçerik yalnızca açılan satır için hazırlanır, o satırın verisini o an yükleyebilirsiniz. Modal modunda pencerede açılır.",
+     "en": "Every row gets a ⊕ button that opens your content below it. It is built only for the opened row, so you can load that row's data then. In modal mode it opens in the dialog."
+    },
+    "tabs": [
+     [
+      "AcunDataTable",
+      "typescript",
+      "import { AcunDataTable, el } from '@acunsoft/datatable';\n\nnew AcunDataTable('#orders', {\n  serverSide: true,\n  ajax: '/api/orders',\n  // A node, text or a promise of either: \"Loading…\" until it arrives.\n  detail: order => fetch('/api/orders/' + order.id + '/lines')\n    .then(response => response.json())\n    .then(lines => el('ul', {}, ...lines.map(line => el('li', {}, line.product + ' × ' + line.quantity)))),\n});"
+     ],
+     [
+      "Livewire",
+      "php",
+      "protected function detailView(): ?string\n{\n    return 'orders.lines';   // rendered with $row and $key, only for opened rows\n}\n\n// resources/views/orders/lines.blade.php\n// \u003cul>@foreach ($row->lines as $line)\u003cli>{{ $line->product }} × {{ $line->quantity }}\u003c/li>@endforeach\u003c/ul>"
+     ],
+     [
+      "Vue",
+      "xml",
+      "\u003cAcunDataTable :table=\"table\">\n  \u003c!-- rendered only while the row is open: OrderLines can fetch on mount -->\n  \u003ctemplate #detail=\"{ row }\">\u003cOrderLines :order-id=\"row.id\" />\u003c/template>\n\u003c/AcunDataTable>"
+     ],
+     [
+      "React",
+      "typescript",
+      "\u003cDataTable table={table} detail={row => \u003cOrderLines orderId={row.id} />} />"
+     ],
+     [
+      "HTML (parçalar)",
+      "typescript",
+      "renderDataTable(el_, table, {\n  detail: row => el('p', {}, 'Not: ' + row.original.note),\n});"
      ]
     ]
    }

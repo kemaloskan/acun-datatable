@@ -190,6 +190,22 @@ table without the controls.
 draws cells yourself: return a DOM node (`el()` builds one without parsing
 HTML) or a string (shown as text). Sorting, search and exports keep the value.
 
+## Child rows
+
+```ts
+renderDataTable(el, table, {
+  detail: row => fetch(`/orders/${row.id}/lines`).then(r => r.json())
+    .then(lines => el('ul', {}, ...lines.map(line => el('li', {}, `${line.product} × ${line.quantity}`)))),
+});
+```
+
+`detail` adds a ⊕ button to every row that opens a child row under it
+(DataTables child rows): return a DOM node, text, or a promise of either
+("Loading…" until it settles, an error message if it fails). It is called
+when a row opens, and the result is kept while the row stays open and its
+data is the same. With `responsive: 'collapse'` the hidden columns come
+first; with `'modal'` the detail opens in the dialog.
+
 ## Footer totals
 
 A column with `aggregate: 'sum' | 'avg' | 'min' | 'max' | 'count'` gets a

@@ -74,7 +74,7 @@ const bulk = [{ id: 'archive', label: 'Arşivle', onSelect: ({ ids }) => archive
 |---|---|
 | `AcunDataTableLayout` | `table`, `labels`, `locale`, `pageSizes`, `search`, `searchPlaceholder`, `debounceMs`, `filters`, `columnToggle`, `tools`, `bulkActions`, `paging`, `size`; other attributes and the cell slots go to `AcunDataTable`; slots `top-start`, `top-end`, `bottom-start`, `bottom-end` |
 | `AcunFilters` · `AcunFilterChips` · `AcunTools` | `table`, `labels`, `locale` · `items` |
-| `AcunDataTable` | `table`, `caption`, `selectable`, `locale`, `labels`, `format`, `rowLabel`, `rowActions`, `status`, `responsive`, `size` |
+| `AcunDataTable` | `table`, `caption`, `selectable`, `locale`, `labels`, `format`, `rowLabel`, `rowActions`, `maxInlineActions`, `status`, `responsive`, `size`, `stickyHeader`, `scrollY`, `multiSort` |
 | `AcunPagination` | `table`, `siblings`, `boundaries`, `firstLast`, `locale`, `labels` |
 | `AcunPageSize` | `table`, `pageSizes`, `labels` |
 | `AcunPageInfo` | `table`, `labels` |
@@ -86,8 +86,18 @@ The markup, `adt-*` class names, keyboard behaviour and accessibility match
 [`@acunsoft/datatable-dom`](https://www.npmjs.com/package/@acunsoft/datatable-dom)
 (its README describes them), so `@acunsoft/datatable-dom/styles.css` styles
 both. `AcunDataTable` slots: `cell-<columnId>` or `cell` with
-`{ column, row, value, text }`, and `empty`. Everything is rendered as text by
-Vue; nothing uses `v-html`.
+`{ column, row, value, text }`, `empty`, and `detail` with `{ row }`: a child
+row under each row, opened by a ⊕ button (in the dialog with
+`responsive="modal"`). The `detail` slot renders only while its row is open,
+so a component in it can fetch its own data when it mounts:
+
+```vue
+<AcunDataTable :table="table">
+  <template #detail="{ row }"><OrderLines :order-id="row.id" /></template>
+</AcunDataTable>
+```
+
+Everything is rendered as text by Vue; nothing uses `v-html`.
 
 Server mode: pass the HTTP runner as `status` to show loading and error
 states, as with the DOM renderer.

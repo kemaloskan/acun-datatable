@@ -74,7 +74,18 @@ export interface RenderTableOptions<TData> {
   readonly cells?: Readonly<Record<string, CellRenderer<TData>>>;
   /** Row actions shown as buttons in the row; the rest go into a "⋮" menu. Default: all in the row. */
   readonly maxInlineActions?: number;
+  /**
+   * A child row under each row (DataTables child rows): every row gets a ⊕
+   * button that opens what this returns — a DOM node, a string (shown as
+   * text) or a promise of either, e.g. order lines fetched from the server
+   * (shown as "Loading…" until it settles; the result is kept until the row
+   * changes). With `responsive: 'modal'` it opens in the dialog instead.
+   */
+  readonly detail?: DetailRenderer<TData>;
 }
+
+/** The content of a row's child row (`detail`). */
+export type DetailRenderer<TData> = (row: Row<TData>) => Node | string | null | undefined | Promise<Node | string | null | undefined>;
 
 /** What a custom cell gets. */
 export interface CellContext<TData> {
@@ -141,7 +152,11 @@ export function renderTable<TData>(
   }
 
   const responsive = checkResponsive(options.responsive);
+  if (options.detail !== undefined && typeof options.detail !== 'function') throw new TypeError('detail must be a function');
+  const detailOf = options.detail;
+  // The expand column: hidden columns (collapse, modal) or a child row (detail).
   const collapsible = responsive === 'collapse' || responsive === 'modal';
+  const expandable = collapsible || detailOf !== undefined;
   const uid = `adt-${++tables}`;
 
   const nameOf = (row: Row<TData>, cells: readonly string[]): string => rowName(row, cells[0] ?? '', options.rowLabel);
@@ -182,8 +197,52 @@ export function renderTable<TData>(
   };
   doc.addEventListener('click', closeMenus);
 
-  // Responsive collapse: rows whose details are open (kept across re-renders).
+  // Rows whose details are open (kept across re-renders).
   const expanded = new Set<string>();
+  // Child row content per row ID, kept while the row's data stays the same.
+  const details = new Map<string, { original: TData; state: 'loading' | 'done' | 'error'; content?: Node | string | null | undefined }>();
+  const detailContent = (row: Row<TData>): HTMLElement => {
+    const box = element(doc, 'div', { class: 'adt-detail-content' });
+    let entry = details.get(row.id);
+    if (!entry || entry.original !== row.original) {
+      let result: ReturnType<DetailRenderer<TData>>;
+      try {
+        result = detailOf!(row);
+      } catch {
+        result = Promise.reject(new Error('detail failed'));
+      }
+      if (result && typeof (result as Promise<unknown>).then === 'function') {
+        const pending = { original: row.original, state: 'loading' as const };
+        details.set(row.id, pending);
+        entry = pending;
+        (result as Promise<Node | string | null | undefined>).then(
+          content => { if (details.get(row.id) === pending) { details.set(row.id, { original: row.original, state: 'done', content }); refresh(row.id); } },
+          () => { if (details.get(row.id) === pending) { details.set(row.id, { original: row.original, state: 'error' }); refresh(row.id); } },
+        );
+      } else {
+        entry = { original: row.original, state: 'done', content: result as Node | string | null | undefined };
+        details.set(row.id, entry);
+      }
+    }
+    if (entry.state === 'loading') {
+      box.setAttribute('aria-busy', 'true');
+      box.append(element(doc, 'span', { class: 'adt-detail-status' }, labels.loading));
+    } else if (entry.state === 'error') {
+      box.setAttribute('role', 'alert');
+      box.append(element(doc, 'span', { class: 'adt-detail-status adt-detail-status--error' }, labels.error));
+    } else if (typeof entry.content === 'string') {
+      box.textContent = entry.content;
+    } else if (entry.content && typeof entry.content.nodeType === 'number') {
+      box.append(entry.content);
+    } else if (entry.content !== null && entry.content !== undefined) {
+      throw new TypeError('detail must return a DOM node, a string, null or a promise of one');
+    }
+    return box;
+  };
+  /** Re-render once a row's loaded detail arrives, if it is still showing. */
+  const refresh = (id: string): void => {
+    if (expanded.has(id) || dialogRow === id) render();
+  };
   // Responsive modal: one dialog, filled for the row whose button was pressed.
   let dialog: HTMLDialogElement | undefined;
   let dialogRow: string | undefined;
@@ -229,7 +288,7 @@ export function renderTable<TData>(
     close.append(icon(doc, 'close'));
     close.addEventListener('click', closeDialog);
     head.append(element(doc, 'h2', { class: 'adt-dialog-title', id: `${uid}-dialog-title` }, labels.details(nameOf(row, cells))), close);
-    dialog.replaceChildren(head, detailList(row, cells, columns, true));
+    dialog.replaceChildren(head, detailList(row, cells, columns, true), ...(detailOf ? [detailContent(row)] : []));
     dialogRow = row.id;
     if (!dialog.open) {
       if (typeof dialog.showModal === 'function') dialog.showModal();
@@ -275,8 +334,9 @@ export function renderTable<TData>(
     if (collapsible) {
       if (levels.has(2)) tableEl.classList.add('adt-has-p2');
       if (levels.has(3)) tableEl.classList.add('adt-has-p3');
-      headRow.append(element(doc, 'td', { class: 'adt-expand-cell' }));
     }
+    if (detailOf) tableEl.classList.add('adt-has-detail');
+    if (expandable) headRow.append(element(doc, 'td', { class: 'adt-expand-cell' }));
     if (selectable) {
       const th = element(doc, 'th', { scope: 'col', class: 'adt-select' });
       if (table.getSelectionMode() === 'multiple' && pageIds.length > 0) {
@@ -325,7 +385,7 @@ export function renderTable<TData>(
     head.append(headRow);
 
     const body = element(doc, 'tbody');
-    const span = columns.length + (selectable ? 1 : 0) + (rowActions.length > 0 ? 1 : 0) + (collapsible ? 1 : 0);
+    const span = columns.length + (selectable ? 1 : 0) + (rowActions.length > 0 ? 1 : 0) + (expandable ? 1 : 0);
     if (page.rows.length === 0) {
       const tr = element(doc, 'tr', { class: 'adt-empty' });
       tr.append(element(doc, 'td', { colspan: String(span) }, labels.empty));
@@ -334,13 +394,13 @@ export function renderTable<TData>(
     for (const row of page.rows) {
       const cells = columns.map(column => text(column, row));
       const tr = element(doc, 'tr', { class: 'adt-row', 'data-row-id': row.id });
-      const open = responsive === 'collapse' && expanded.has(row.id);
+      const open = responsive !== 'modal' && expanded.has(row.id);
       const detailId = `${uid}-detail-${rowParts.length}`;
-      if (collapsible) {
+      if (expandable) {
         const td = element(doc, 'td', { class: 'adt-expand-cell' });
         const button = element(doc, 'button', {
           type: 'button', class: 'adt-expand', 'aria-label': labels.details(nameOf(row, cells)), 'data-adt-focus': `expand:${row.id}`,
-          ...(responsive === 'collapse'
+          ...(responsive !== 'modal'
             ? { 'aria-expanded': open ? 'true' : 'false', 'aria-controls': detailId }
             : { 'aria-haspopup': 'dialog' }),
         });
@@ -394,19 +454,21 @@ export function renderTable<TData>(
         tr.classList.add('adt-row--expanded');
         const detail = element(doc, 'tr', { class: 'adt-detail', id: detailId });
         const td = element(doc, 'td', { colspan: String(span) });
-        td.append(detailList(row, cells, columns, false));
+        if (responsive === 'collapse') td.append(detailList(row, cells, columns, false));
+        if (detailOf) td.append(detailContent(row));
         detail.append(td);
         body.append(detail);
       }
       if (dialogRow === row.id) openDialog(row, cells, columns); // keep an open dialog current
     }
     if (dialogRow !== undefined && !pageIds.includes(dialogRow)) closeDialog(); // its row left the page
+    for (const id of details.keys()) if (!expanded.has(id) && dialogRow !== id) details.delete(id); // closed rows load again
     tableEl.append(head, body);
     // Footer totals of the columns with `aggregate` (every matching row, not just the page).
     if (columns.some(column => column.aggregate !== undefined)) {
       const totals = table.getAggregates();
       const tr = element(doc, 'tr', { class: 'adt-total' });
-      if (collapsible) tr.append(element(doc, 'td', { class: 'adt-expand-cell' }));
+      if (expandable) tr.append(element(doc, 'td', { class: 'adt-expand-cell' }));
       if (selectable) tr.append(element(doc, 'td', { class: 'adt-select' }));
       columns.forEach((column, index) => {
         const result = totals[column.id];

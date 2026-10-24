@@ -307,3 +307,26 @@ describe('footer totals', () => {
     expect([...host.querySelectorAll('tfoot tr > *')].map(cell => cell.textContent)).toEqual(['Toplam', '1.740,50']);
   });
 });
+
+describe('detail', () => {
+  it('opens a child row under the row, rendered only while open', () => {
+    const detail = vi.fn((row: Row<Order>) => h('p', { className: 'lines' }, `${row.original.customer}: 3 lines`));
+    render(h(DataTable<Order>, { table: make(), detail }));
+    expect(host.querySelector('table')!.classList.contains('adt-has-detail')).toBe(true);
+    expect(host.querySelectorAll('tbody .adt-expand')).toHaveLength(3);
+    expect(detail).not.toHaveBeenCalled();
+    click(host.querySelector('.adt-expand[aria-label="Details of Ayşe"]'));
+    const button = host.querySelector('.adt-expand[aria-label="Details of Ayşe"]')!;
+    expect(button.getAttribute('aria-expanded')).toBe('true');
+    expect(host.querySelector('.adt-detail')!.id).toBe(button.getAttribute('aria-controls'));
+    expect(texts('.adt-detail .adt-detail-content')).toEqual(['Ayşe: 3 lines']);
+    expect(host.querySelector('.adt-detail td')!.getAttribute('colspan')).toBe('3');
+    click(button);
+    expect(host.querySelector('.adt-detail')).toBeNull();
+  });
+
+  it('passes through DataTableLayout', () => {
+    render(h(DataTableLayout<Order>, { table: make(), detail: () => 'x' }));
+    expect(host.querySelectorAll('tbody .adt-expand')).toHaveLength(3);
+  });
+});

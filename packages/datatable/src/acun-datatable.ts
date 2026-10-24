@@ -123,6 +123,13 @@ export interface AcunDataTableOptions {
   readonly selectable?: boolean;
   readonly rowActions?: readonly RowAction<Data>[];
   readonly bulkActions?: readonly BulkAction<Data>[];
+  /**
+   * A child row under each row (DataTables child rows), opened by a ⊕
+   * button: return a DOM node (`el()`), text, or a promise of either, e.g.
+   * `row => fetch('/orders/' + row.id + '/lines').then(…)` (shows "Loading…"
+   * meanwhile). With `responsive: 'modal'` it opens in the dialog.
+   */
+  readonly detail?: (row: Data) => Node | string | null | undefined | Promise<Node | string | null | undefined>;
   /** Show the column menu. Default `true`. */
   readonly columnToggle?: boolean;
   /**
@@ -371,6 +378,7 @@ export class AcunDataTable {
       ...(options.selectable ? { selectable: true } : {}),
       ...(options.rowActions ? { rowActions: options.rowActions } : {}),
       ...(options.bulkActions ? { bulkActions: options.bulkActions } : {}),
+      ...(options.detail ? { detail: (row: Row<Data>) => options.detail!(row.original) } : {}),
       ...(options.responsive ? { responsive: options.responsive } : {}),
       ...(options.size ? { size: options.size } : {}),
       ...(options.fixedHeader ? { stickyHeader: true } : {}),

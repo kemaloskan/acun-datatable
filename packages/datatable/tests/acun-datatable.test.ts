@@ -214,6 +214,17 @@ describe('footer totals', () => {
   });
 });
 
+describe('detail', () => {
+  it('opens a child row with content loaded for the row', async () => {
+    const detail = vi.fn(async (row: Record<string, unknown>) => `Lines of order ${String(row['id'])}`);
+    const dt = new AcunDataTable('#orders', { data: orders, detail, language: 'tr' });
+    await dt.ready;
+    dt.element.querySelector<HTMLButtonElement>('.adt-expand[aria-label="1 ayrıntıları"]')!.click();
+    await vi.waitFor(() => expect(dt.element.querySelector('.adt-detail-content')!.textContent).toBe('Lines of order 1'));
+    expect(detail).toHaveBeenCalledWith(orders[0]);
+  });
+});
+
 describe('stateSave', () => {
   it('restores page, sorting and search after a reload', async () => {
     localStorage.clear();

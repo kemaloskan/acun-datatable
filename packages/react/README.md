@@ -68,7 +68,7 @@ on every table event through `useSyncExternalStore`.
 |---|---|
 | `DataTableLayout` | every `DataTable` prop plus `pageSizes`, `search`, `searchPlaceholder`, `debounceMs`, `filters`, `columnToggle`, `tools`, `bulkActions`, `paging`, `topStart`, `topEnd`, `bottomStart`, `bottomEnd` |
 | `Filters` · `FilterChips` · `Tools` | `table`, `labels`, `locale` · `items` |
-| `DataTable` | `table`, `caption`, `selectable`, `locale`, `labels`, `format`, `cells`, `empty`, `rowLabel`, `rowActions`, `status`, `responsive`, `size` |
+| `DataTable` | `table`, `caption`, `selectable`, `locale`, `labels`, `format`, `cells`, `detail`, `empty`, `rowLabel`, `rowActions`, `maxInlineActions`, `status`, `responsive`, `size`, `stickyHeader`, `scrollY`, `multiSort` |
 | `Pagination` | `table`, `siblings`, `boundaries`, `firstLast`, `locale`, `labels` |
 | `PageSize` | `table`, `pageSizes`, `labels` |
 | `PageInfo` | `table`, `labels` |
@@ -80,7 +80,10 @@ The markup, `adt-*` class names, keyboard behaviour and accessibility match
 [`@acunsoft/datatable-dom`](https://www.npmjs.com/package/@acunsoft/datatable-dom),
 so `@acunsoft/datatable-dom/styles.css` styles both. `cells` renders React
 elements per column (`{ column, row, value, text }`); values are escaped by
-React; the package never injects HTML. In server mode pass the HTTP runner as
+React; the package never injects HTML. `detail={row => <OrderLines orderId={row.id} />}`
+opens a child row under each row with a ⊕ button (in the dialog with
+`responsive="modal"`); it renders only while the row is open, so the
+component can load its own data on mount. In server mode pass the HTTP runner as
 `status` for loading and error states.
 
 ## License

@@ -331,3 +331,28 @@ describe('footer totals', () => {
     expect([...host.querySelectorAll('tfoot tr > *')].map(cell => cell.textContent)).toEqual(['Toplam', '1.740,50']);
   });
 });
+
+describe('detail slot', () => {
+  it('opens a child row under the row, rendered only while open', async () => {
+    const detail = vi.fn(({ row }: { row: Row<Order> }) => h('p', { class: 'lines' }, `${row.original.customer}: 3 lines`));
+    await mount(() => h(AcunDataTable, { table: make() }, { detail }));
+    expect(host.querySelector('table')!.classList.contains('adt-has-detail')).toBe(true);
+    expect(host.querySelectorAll('tbody .adt-expand')).toHaveLength(3);
+    expect(detail).not.toHaveBeenCalled();
+    host.querySelector<HTMLButtonElement>('.adt-expand[aria-label="Details of Ayşe"]')!.click();
+    await nextTick();
+    const button = host.querySelector<HTMLButtonElement>('.adt-expand[aria-label="Details of Ayşe"]')!;
+    expect(button.getAttribute('aria-expanded')).toBe('true');
+    expect(host.querySelector('.adt-detail')!.id).toBe(button.getAttribute('aria-controls'));
+    expect(host.querySelector('.adt-detail .adt-detail-content')!.textContent).toBe('Ayşe: 3 lines');
+    expect(host.querySelector('.adt-detail td')!.getAttribute('colspan')).toBe('3');
+    button.click();
+    await nextTick();
+    expect(host.querySelector('.adt-detail')).toBeNull();
+  });
+
+  it('passes through AcunDataTableLayout', async () => {
+    await mount(() => h(AcunDataTableLayout, { table: make() }, { detail: () => 'x' }));
+    expect(host.querySelectorAll('tbody .adt-expand')).toHaveLength(3);
+  });
+});

@@ -32,12 +32,16 @@ const table = createDataTable({
   initialState: { pageSize: 5 },
 });
 // Turkish number and date formats with the English texts.
-// ?responsive=collapse|modal|scroll and ?size=sm|lg try the other modes.
+// ?responsive=collapse|modal|scroll and ?size=sm|lg try the other modes; ?detail adds child rows.
 const params = new URLSearchParams(location.search);
+const detail = params.has('detail')
+  ? row => new Promise(resolve => setTimeout(() => resolve(`Order lines of ${row.original.customer}`), 50))
+  : undefined;
 renderDataTable(document.getElementById('orders'), table, {
   caption: 'Orders', selectable: true, locale: 'tr', labels: labelsEn, pageSizes: [5, 10], search: { debounceMs: 0 },
   responsive: params.get('responsive') ?? 'cards', size: params.get('size') ?? 'md',
   rowActions: [{ id: 'edit', label: 'Edit', onSelect: row => { window.__edited = row.id; } }],
+  ...(detail ? { detail } : {}),
 });
 window.__table = table;
 document.body.dataset.ready = 'true';

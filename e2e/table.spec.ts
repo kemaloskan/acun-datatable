@@ -217,6 +217,26 @@ test.describe('responsive modes on a phone', () => {
   });
 });
 
+test.describe('child rows', () => {
+  for (const width of [1280, 375]) {
+    test(`load and open below the row at ${width}px`, async ({ page }) => {
+      await page.setViewportSize({ width, height: 800 });
+      await page.goto('/e2e/fixtures/table.html?detail');
+      await expect(page.locator('body[data-ready=true]')).toBeAttached();
+      const toggle = page.getByRole('button', { name: 'Details of Can' });
+      await expect(toggle).toBeVisible(); // on a wide screen too, and in the cards of a phone
+      await toggle.focus();
+      await page.keyboard.press('Enter');
+      await expect(toggle).toHaveAttribute('aria-expanded', 'true');
+      await expect(page.locator('.adt-detail').getByText('Order lines of Can')).toBeVisible();
+      await expect(toggle).toBeFocused();
+      await page.keyboard.press('Space');
+      await expect(page.locator('.adt-detail')).toHaveCount(0);
+      expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
+    });
+  }
+});
+
 test('styles stay light on a light page even when the system is dark', async ({ page }) => {
   await page.emulateMedia({ colorScheme: 'dark' });
   await page.reload();
