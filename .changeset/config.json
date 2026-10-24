@@ -8,6 +8,7 @@
     [
       "@acunsoft/datatable-core",
       "@acunsoft/datatable-http",
+      "@acunsoft/datatable-server",
       "@acunsoft/datatable-dom",
       "@acunsoft/datatable-export",
       "@acunsoft/datatable-vue",

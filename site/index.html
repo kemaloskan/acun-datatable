@@ -219,6 +219,7 @@ const ICON = {
   html:`<svg width="17" height="17" viewBox="0 0 512 512"><path fill="#E34F26" d="M71 460 30 0h452l-41 460-185 52z"/><path fill="#EF652A" d="M256 472l149-41 35-394H256z"/><path fill="#fff" d="M256 208h-75l-5-53h80v-52H119l15 157h122zm0 134-63-17-4-45h-52l7 89 112 31z"/><path fill="#EBEBEB" d="M256 208v52h70l-7 73-63 17v54l112-31 15-165zm0-105v52h132l4-52z"/></svg>`,
   guide:`<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20V3H6.5A2.5 2.5 0 0 0 4 5.5z"/><path d="M4 19.5A2.5 2.5 0 0 0 6.5 22H20v-5"/></svg>`,
   livewire:`<svg width="18" height="18" viewBox="0 0 24 24" fill="#FB70A9"><path d="M13 2 4.5 13H11l-1 9 9-12h-6z"/></svg>`,
+  nextjs:`<svg width="18" height="18" viewBox="0 0 24 24"><circle cx="12" cy="12" r="11" fill="currentColor"/><path d="M9.5 7.5v9M9.5 7.5l7 9.5" stroke="var(--bg, #fff)" stroke-width="1.8" stroke-linecap="round"/><path d="M15 7.5v5" stroke="var(--bg, #fff)" stroke-width="1.8" stroke-linecap="round"/></svg>`,
   laravel:`<svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#FF2D20" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"><path d="M3 7l4.5-2.5L12 7 7.5 9.5z"/><path d="M3 7v5l4.5 2.5V9.5"/><path d="M12 7v5l-4.5 2.5"/><path d="M12 7l4.5-2.5L21 7l-4.5 2.5z"/><path d="M16.5 9.5V15L12 17.5"/></svg>`
 };
 
@@ -258,6 +259,13 @@ const API = [
     ["createTableQuery(state)", {tr:"Sunucuya gidecek doğrulanmış sorgu; geçersiz operatör ve boş filtreler elenir.", en:"Validated query for a server; invalid operators and empty filters are rejected or dropped."}],
     ["validatePageResult(value, { pageSize })", {tr:"Sunucu yanıtını { rows, totalRows } kontratına göre denetler.", en:"Checks a server response against the { rows, totalRows } contract."}],
     ["normalizeValue(value, type) · splitSearchTerms(text)", {tr:"Kolon tipine göre değer okuma ve akıllı arama ayrıştırma; sunucu ve adapter'lar için.", en:"Read a value as a column type and split smart-search text; for servers and adapters."}],
+  ]],
+  ['@acunsoft/datatable-server', [
+    ["defineColumns({ id: { sql?, field?, type?, sortable?, filterable?, searchable?, search? } })", {tr:"Uç noktanın kolon izin listesi; yalnızca bu kimlikler sıralanır, filtrelenir, aranır.", en:"The endpoint's column allowlist; only these IDs are sorted, filtered or searched."}],
+    ["readTableQuery(params | formData | body, columns, { maxPageSize? })", {tr:"İsteği okur ve denetler (bizim biçim veya DataTables protokolü, cursor dahil); hata TableQueryError.", en:"Reads and checks a request (this format or DataTables' protocol, cursors included); errors are TableQueryError."}],
+    ["sqlQuery(query, columns, { dialect, table, key?, select?, scope? })", {tr:"PostgreSQL/MySQL/SQLite için bağlı parametreli sayfa ve sayım SQL'i; cursor için cursorOf(row).", en:"Bound-parameter page and count SQL for PostgreSQL/MySQL/SQLite; cursorOf(row) for cursors."}],
+    ["prismaQuery(query, columns, { key?, where?, insensitive? })", {tr:"Prisma findMany ve count argümanları.", en:"Prisma findMany and count arguments."}],
+    ["tableResponse(query, rows, total?, { cursorOf?, map?, recordsTotal? }) · tableError(error, params)", {tr:"İsteğin biçiminde yanıt (rows/totalRows/nextCursor ya da DataTables) ve 422 / DataTables hatası.", en:"The answer in the request's format (rows/totalRows/nextCursor or DataTables) and 422 / DataTables errors."}],
   ]],
   ['@acunsoft/datatable', [
     ["new AcunDataTable(target, options)", {tr:"DataTables gibi tek çağrıda tablo: mevcut <table>, data, bir kez yüklenen ajax JSON'u veya serverSide. fixedHeader, processing, pagination, sorting, searching, language, responsive, size; <script> ile de kullanılır.", en:"A table in one call, like DataTables: an existing <table>, data, an ajax JSON loaded once, or serverSide. fixedHeader, processing, pagination, sorting, searching, language, responsive, size; also as a <script>."}],
@@ -534,6 +542,88 @@ const { table } = useDataTable({
     <template #top-end><button type="button" class="adt-button">Yeni sipariş</button></template>
   </AcunDataTableLayout>
 </template>` },
+  nextjs:{ name:"Next.js", pkg:"@acunsoft/datatable-server", status:"ready",
+    install:"npm install @acunsoft/datatable-server @acunsoft/datatable-react @acunsoft/datatable-http @acunsoft/datatable-core",
+    unpub:{tr:"MIT lisanslı. Node arka ucu (Next.js route handler, Express, Fastify) ve React ön yüzü:", en:"MIT licensed. The Node back end (Next.js route handlers, Express, Fastify) and the React front end:"},
+    api:'@acunsoft/datatable-server',
+    lead:{tr:"Next.js App Router için uçtan uca: bir route handler isteği <code>readTableQuery</code> ile okur ve kolon izin listesine göre denetler, <code>sqlQuery</code> PostgreSQL/MySQL/SQLite için yalnızca bağlı parametreli SQL üretir (ya da <code>prismaQuery</code> Prisma argümanları), <code>tableResponse</code> yanıtlar. Arama, filtreler, sıralama, OFFSET veya cursor sayfalama ve DataTables protokolü dahil; Edge runtime'da da çalışır.",
+          en:"End to end for the Next.js App Router: a route handler reads the request with <code>readTableQuery</code> and checks it against a column allowlist, <code>sqlQuery</code> builds bound-parameter SQL for PostgreSQL/MySQL/SQLite (or <code>prismaQuery</code> Prisma arguments), and <code>tableResponse</code> answers. Search, filters, sorting, OFFSET or cursor paging and DataTables' protocol included; it runs on the Edge runtime too."},
+    note:{tr:"İstekten gelen kolon adları asla SQL metnine girmez: yalnızca <code>defineColumns</code> içindeki tanımlar kullanılır, her değer bağlı parametredir. <code>scope</code> (ör. kiracı) her sorguya eklenir; route handler'da kullanıcıyı ayrıca yetkilendirin. Türkçe ve aksan duyarsız arama için katlanmış kopya kolonu (<code>search</code>) kullanın.",
+          en:"Column names from a request never reach the SQL text: only definitions from <code>defineColumns</code> are used and every value is bound. <code>scope</code> (e.g. the tenant) is added to every query; authorize the user in the route handler as well. For Turkish- and accent-insensitive search, use a folded copy column (<code>search</code>)."},
+    lang:"typescript", code:
+`// app/api/orders/route.ts — PostgreSQL with pg
+import { defineColumns, readTableQuery, sqlQuery, tableError, tableResponse } from '@acunsoft/datatable-server';
+import { pool } from '@/lib/db';
+import { auth } from '@/lib/auth';
+
+const columns = defineColumns({
+  customer: { sortable: true, filterable: true, search: 'customer_search' }, // folded copy: ayse finds Ayşe
+  city: { sortable: true, filterable: true },
+  total: { type: 'decimal', sortable: true, filterable: true },
+  ordered: { sql: 'ordered_at', type: 'datetime', sortable: true, filterable: true },
+});
+
+export async function GET(request: Request) {
+  const user = await auth();
+  if (!user) return new Response(null, { status: 401 });
+  const params = new URL(request.url).searchParams;
+  try {
+    const query = readTableQuery(params, columns, { maxPageSize: 100 });
+    const sql = sqlQuery(query, columns, {
+      dialect: 'postgres', table: 'orders', select: ['id', 'customer', 'city', 'total', 'ordered_at'],
+      scope: { text: 'tenant_id = ?', values: [user.tenantId] },   // every query stays inside it
+    });
+    const [page, count] = await Promise.all([pool.query(sql.page.text, [...sql.page.values]), pool.query(sql.count.text, [...sql.count.values])]);
+    return Response.json(tableResponse(query, page.rows, count.rows[0].count, { cursorOf: sql.cursorOf }));
+  } catch (error) {
+    const { status, body } = tableError(error, params);   // 422, or DataTables' error
+    return Response.json(body, { status });
+  }
+}`,
+    examples:[
+      { title:{tr:"Prisma ile", en:"With Prisma"}, desc:{tr:"Aynı istek, Prisma'nın findMany ve count argümanlarına dönüşür. MySQL/SQLite'ta insensitive: false verin.", en:"The same request becomes Prisma findMany and count arguments. Pass insensitive: false on MySQL/SQLite."}, lang:"typescript", code:
+`import { prismaQuery, readTableQuery, tableResponse } from '@acunsoft/datatable-server';
+
+export async function GET(request: Request) {
+  const query = readTableQuery(new URL(request.url).searchParams, columns);
+  const q = prismaQuery(query, columns, { where: { tenantId: user.tenantId } });
+  const [rows, total] = await Promise.all([prisma.order.findMany(q.findMany), prisma.order.count(q.count)]);
+  return Response.json(tableResponse(query, rows, total, { cursorOf: q.cursorOf }));
+}` },
+      { title:{tr:"Sayfa (istemci bileşeni)", en:"The page (a client component)"}, desc:{tr:"Tablo tarayıcıda, veriler route handler'dan; React paketi \"use client\" ile işaretli.", en:"The table runs in the browser, the rows come from the route handler; the React package is marked \"use client\"."}, lang:"typescript", code:
+`'use client';
+import { useMemo } from 'react';
+import { createDataTable } from '@acunsoft/datatable-core';
+import { connectTable, createHttpDataSource, createQueryRunner } from '@acunsoft/datatable-http';
+import { DataTableLayout, labelsTr } from '@acunsoft/datatable-react';
+import '@acunsoft/datatable-dom/styles.css';
+
+export default function OrdersPage() {
+  const { table, runner } = useMemo(() => {
+    const table = createDataTable({ mode: 'server', locale: 'tr', columns: [
+      { id: 'customer', header: 'Müşteri', accessorKey: 'customer', enableSorting: true, enableFiltering: true },
+      { id: 'total', header: 'Tutar', accessorKey: 'total', type: 'decimal', enableSorting: true, enableFiltering: true, filter: true },
+    ] });
+    const runner = createQueryRunner(createHttpDataSource({ url: '/api/orders' }));
+    connectTable(table, runner);
+    return { table, runner };
+  }, []);
+  return <DataTableLayout table={table} status={runner} locale="tr" labels={labelsTr} responsive="auto" />;
+}` },
+      { title:{tr:"Express veya Fastify", en:"Express or Fastify"}, desc:{tr:"Aynı üç çağrı; Express'te query parser 'extended' olmalı ya da URLSearchParams verin.", en:"The same three calls; in Express use the 'extended' query parser, or pass URLSearchParams."}, lang:"typescript", code:
+`app.get('/api/orders', requireAuth, async (req, res) => {
+  const params = new URLSearchParams(req.url.split('?')[1] ?? '');
+  try {
+    const query = readTableQuery(params, columns);
+    const sql = sqlQuery(query, columns, { dialect: 'mysql', table: 'orders', scope: { text: 'tenant_id = ?', values: [req.user.tenantId] } });
+    const [[rows], [[{ count }]]] = await Promise.all([db.query(sql.page.text, sql.page.values), db.query(sql.count.text, sql.count.values)]);
+    res.json(tableResponse(query, rows, count, { cursorOf: sql.cursorOf }));
+  } catch (error) {
+    const { status, body } = tableError(error, params);
+    res.status(status).json(body);
+  }
+});` },
+    ] },
   react:{ name:"React", pkg:"@acunsoft/datatable-react", status:"ready",
     install:"npm install react @acunsoft/datatable-core @acunsoft/datatable-react",
     lead:{tr:"React hook'ları ve bileşenleri: erişilebilir tablo, sayfalama, arama, kolon menüsü ve toplu işlemler; özel hücreler için <code>cells</code>. <code>useSyncExternalStore</code> ile eşzamanlı render'da tutarlı.",
@@ -1776,7 +1866,7 @@ const GUIDES = {
  }
 };
 const GUIDE_ORDER = ["quick", "server", "filters", "tools", "pagesize", "mobile", "header", "look", "texts", "bigdata"];
-const FW_ORDER = ["laravel","html","vue","react"];
+const FW_ORDER = ["laravel","html","vue","react","nextjs"];
 
 const T = {
   tr:{ nav_start:"Başlangıç", nav_fw:"Frameworkler", nav_guides:"Kılavuzlar", nav_api:"API", cta:"Kuruluma başla",

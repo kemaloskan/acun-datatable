@@ -10,6 +10,7 @@
   "workspaces": [
     "packages/core",
     "packages/datasource-http",
+    "packages/server",
     "packages/renderer-dom",
     "packages/export",
     "packages/datatable",
