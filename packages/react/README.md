@@ -12,7 +12,7 @@ npm install react @acunsoft/datatable-core @acunsoft/datatable-react
 
 ```tsx
 import {
-  BulkActions, ColumnToggle, DataTable, Pagination, Search, labelsTr, useDataTable,
+  BulkActions, ColumnToggle, DataTable, PageInfo, PageSize, Pagination, Search, labelsTr, useDataTable,
 } from '@acunsoft/datatable-react';
 import '@acunsoft/datatable-dom/styles.css'; // optional neutral styles
 
@@ -26,17 +26,26 @@ export function Orders({ orders }: { orders: Order[] }) {
     ],
     locale: 'tr',
   });
+  // The same layout as renderDataTable: a bar above and a bar below the table.
   return (
-    <>
-      <Search table={table} labels={labelsTr} />
-      <ColumnToggle table={table} labels={labelsTr} />
+    <div className="adt">
+      <div className="adt-bar adt-top">
+        <div className="adt-bar-start">
+          <PageSize table={table} labels={labelsTr} pageSizes={[10, 25, 50]} />
+          <div className="adt-feature--search"><Search table={table} labels={labelsTr} /></div>
+        </div>
+        <div className="adt-bar-end"><ColumnToggle table={table} labels={labelsTr} /></div>
+      </div>
       <BulkActions table={table} labels={labelsTr}
         actions={[{ id: 'archive', label: 'Arşivle', onSelect: ({ ids }) => archive(ids) }]} />
       <DataTable table={table} caption="Siparişler" locale="tr" selectable labels={labelsTr}
         cells={{ status: ({ value }) => <Badge value={String(value)} /> }}
         rowActions={[{ id: 'edit', label: 'Düzenle', onSelect: row => edit(row.original) }]} />
-      <Pagination table={table} labels={labelsTr} pageSizes={[10, 25, 50]} />
-    </>
+      <div className="adt-bar adt-bottom">
+        <div className="adt-bar-start"><PageInfo table={table} labels={labelsTr} /></div>
+        <div className="adt-bar-end"><Pagination table={table} labels={labelsTr} locale="tr" /></div>
+      </div>
+    </div>
   );
 }
 ```
@@ -58,7 +67,9 @@ on every table event through `useSyncExternalStore`.
 | Component | Props |
 |---|---|
 | `DataTable` | `table`, `caption`, `selectable`, `locale`, `labels`, `format`, `cells`, `empty`, `rowLabel`, `rowActions`, `status` |
-| `Pagination` | `table`, `pageSizes`, `labels` |
+| `Pagination` | `table`, `siblings`, `boundaries`, `firstLast`, `locale`, `labels` |
+| `PageSize` | `table`, `pageSizes`, `labels` |
+| `PageInfo` | `table`, `labels` |
 | `Search` | `table`, `placeholder`, `debounceMs`, `labels` |
 | `ColumnToggle` | `table`, `labels` |
 | `BulkActions` | `table`, `actions`, `labels` |

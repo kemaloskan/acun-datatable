@@ -1,11 +1,16 @@
-export type { RenderedComponent } from './dom';
+export { ICONS, type RenderedComponent } from './dom';
 export {
   LABELS, labelsDe, labelsEn, labelsEs, labelsFr, labelsTr, resolveLabels, type DataTableLabels,
 } from './labels';
 export { renderTable, type CellFormatter, type RenderTableOptions, type StatusSource } from './table';
 export {
-  renderPagination, renderSearch, type RenderPaginationOptions, type RenderSearchOptions,
+  checkPageSizes, pageInfoText, pageSizeChoices, renderPageInfo, renderPageSize, renderPagination, renderSearch,
+  type RenderPageInfoOptions, type RenderPageSizeOptions, type RenderPaginationOptions, type RenderSearchOptions,
 } from './controls';
+export {
+  DEFAULT_LAYOUT, renderDataTable,
+  type DataTableLayout, type LayoutFeature, type LayoutSlot, type RenderDataTableOptions,
+} from './layout';
 export {
   renderBulkActions, type BulkAction, type BulkSelection, type RenderBulkActionsOptions, type RowAction,
 } from './actions';

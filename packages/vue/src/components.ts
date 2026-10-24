@@ -2,9 +2,9 @@ import {
   computed, defineComponent, h, onScopeDispose, shallowRef, watch,
   type PropType, type SlotsType, type VNode,
 } from 'vue';
-import type { ColumnDef, DataTable, Row } from '@acunsoft/datatable-core';
+import { getPageItems, type ColumnDef, type DataTable, type Row } from '@acunsoft/datatable-core';
 import {
-  cellValue, createCellText, labelsEn, nextSorting, rowName,
+  cellValue, checkPageSizes, createCellText, ICONS, labelsEn, nextSorting, pageInfoText, pageSizeChoices, rowName,
   type BulkAction, type BulkSelection, type CellFormatter, type DataTableLabels, type RowAction, type StatusSource,
 } from '@acunsoft/datatable-dom';
 import { useTable } from './composables';
@@ -177,44 +177,98 @@ export const AcunDataTable = defineComponent({
   },
 });
 
-/** Previous/Next, a live "Page 2 of 7 · 160 rows" status and a page-size select. */
+const iconNode = (name: keyof typeof ICONS): VNode => h('svg', {
+  class: 'adt-icon', viewBox: '0 0 24 24', width: 16, height: 16, fill: 'none', stroke: 'currentColor', 'stroke-width': 2,
+  'stroke-linecap': 'round', 'stroke-linejoin': 'round', 'aria-hidden': 'true', focusable: 'false',
+}, [h('path', { d: ICONS[name] })]);
+
+/**
+ * Numbered pages: `‹ 1 … 4 5 6 … 20 ›`, with a fixed number of buttons while
+ * there are more pages than fit. With an unknown server total it numbers the
+ * pages seen so far and keeps "next" while the page is full.
+ */
 export const AcunPagination = defineComponent({
   name: 'AcunPagination',
+  props: {
+    table: tableProp,
+    siblings: { type: Number, default: 1, validator: (value: number) => Number.isSafeInteger(value) && value >= 0 && value <= 10 },
+    boundaries: { type: Number, default: 1, validator: (value: number) => Number.isSafeInteger(value) && value >= 0 && value <= 10 },
+    /** Also show "first" and "last" buttons. */
+    firstLast: { type: Boolean, default: false },
+    /** Locale for the page numbers' digit grouping. */
+    locale: { type: String, default: 'en' },
+    labels: labelsProp,
+  },
+  setup(props) {
+    const binding = useTable(props.table);
+    const numbers = computed(() => new Intl.NumberFormat(props.locale));
+    return (): VNode => {
+      const label = withLabels(props.labels);
+      const page = binding.page.value;
+      const known = binding.totalRows.value !== undefined;
+      const { table } = props;
+      const atStart = page.page <= 1;
+      const atEnd = page.page >= page.pageCount;
+      const arrow = (name: 'first' | 'previous' | 'next' | 'last', disabled: boolean, target: number): VNode => h('button', {
+        type: 'button', class: `adt-page adt-page-arrow adt-${name}`, 'aria-label': label[name],
+        'aria-disabled': disabled ? 'true' : undefined, onClick: () => { if (!disabled) table.setPage(target); },
+      }, [iconNode(name)]);
+      const items = getPageItems(page.page, known ? page.pageCount : page.page, { siblings: props.siblings, boundaries: props.boundaries });
+      return h('nav', { class: 'adt-paging', 'aria-label': label.pagination }, [
+        props.firstLast ? arrow('first', atStart, 1) : null,
+        arrow('previous', atStart, page.page - 1),
+        h('span', { class: 'adt-page-numbers' }, items.map((item, index) => item === 'gap'
+          ? h('span', { class: 'adt-page-gap', 'aria-hidden': 'true', key: `gap${index}` }, '…')
+          : h('button', {
+            type: 'button', class: 'adt-page', key: item, 'aria-label': label.page(item),
+            'aria-current': item === page.page ? 'page' : undefined, onClick: () => table.setPage(item),
+          }, numbers.value.format(item)))),
+        arrow('next', atEnd, page.page + 1),
+        props.firstLast && known ? arrow('last', atEnd, page.pageCount) : null,
+      ]);
+    };
+  },
+});
+
+/** A rows-per-page select with a visually hidden label. */
+export const AcunPageSize = defineComponent({
+  name: 'AcunPageSize',
   props: {
     table: tableProp,
     pageSizes: {
       type: Array as PropType<readonly number[]>,
       default: () => [10, 25, 50, 100],
-      validator: (sizes: readonly number[]) => sizes.length > 0 && new Set(sizes).size === sizes.length &&
-        sizes.every(size => Number.isSafeInteger(size) && size >= 1 && size <= 1000),
+      validator: (sizes: readonly number[]) => { try { checkPageSizes(sizes); return true; } catch { return false; } },
     },
     labels: labelsProp,
   },
   setup(props) {
     const binding = useTable(props.table);
     return (): VNode => {
-      const label = withLabels(props.labels);
-      const page = binding.page.value;
-      const { table } = props;
-      const first = page.page <= 1;
-      const last = page.page >= page.pageCount;
-      const choices = props.pageSizes.includes(page.pageSize) ? props.pageSizes : [...props.pageSizes, page.pageSize].sort((a, b) => a - b);
-      return h('nav', { class: 'adt-pagination', 'aria-label': label.pagination }, [
-        h('button', { type: 'button', class: 'adt-previous', 'aria-disabled': first ? 'true' : undefined, onClick: () => { if (!first) table.setPage(page.page - 1); } }, label.previous),
-        h('span', { class: 'adt-status', 'aria-live': 'polite' }, binding.totalRows.value === undefined
-          ? label.pageStatusOpen(page.page) : label.pageStatus(page.page, page.pageCount, page.totalRows)),
-        h('button', { type: 'button', class: 'adt-next', 'aria-disabled': last ? 'true' : undefined, onClick: () => { if (!last) table.setPage(page.page + 1); } }, label.next),
-        h('label', { class: 'adt-page-size' }, [
-          h('span', label.pageSize),
-          h('select', { value: String(page.pageSize), onChange: (event: Event) => table.setPageSize(Number((event.target as HTMLSelectElement).value)) },
-            choices.map(size => h('option', { value: String(size), key: size, selected: size === page.pageSize }, String(size)))),
-        ]),
+      const size = binding.state.value.pageSize;
+      return h('label', { class: 'adt-length' }, [
+        h('span', { class: 'adt-sr-only' }, withLabels(props.labels).pageSize),
+        h('select', { class: 'adt-control', value: String(size), onChange: (event: Event) => props.table.setPageSize(Number((event.target as HTMLSelectElement).value)) },
+          pageSizeChoices(props.pageSizes, size).map(choice => h('option', { value: String(choice), key: choice, selected: choice === size }, String(choice)))),
       ]);
     };
   },
 });
 
-/** A labelled search input bound to the global search, debounced; Enter applies at once. */
+/** The visible range and the total, `1–25 of 5,000 rows`, as a polite live region. */
+export const AcunPageInfo = defineComponent({
+  name: 'AcunPageInfo',
+  props: { table: tableProp, labels: labelsProp },
+  setup(props) {
+    const binding = useTable(props.table);
+    return (): VNode => {
+      void binding.page.value; // re-render on every table change
+      return h('div', { class: 'adt-info', 'aria-live': 'polite', 'aria-atomic': 'true' }, pageInfoText(props.table, withLabels(props.labels)));
+    };
+  },
+});
+
+/** A search input with an icon and a visually hidden label, bound to the global search; debounced, Enter applies at once. */
 export const AcunSearch = defineComponent({
   name: 'AcunSearch',
   props: {
@@ -236,9 +290,11 @@ export const AcunSearch = defineComponent({
     watch(() => binding.state.value.globalSearch, next => { if (!typing && timer === undefined) text.value = next; });
     onScopeDispose(() => clearTimeout(timer));
     return (): VNode => h('label', { class: 'adt-search' }, [
-      h('span', withLabels(props.labels).search),
+      h('span', { class: 'adt-sr-only' }, withLabels(props.labels).search),
+      iconNode('search'),
       h('input', {
-        type: 'search', autocomplete: 'off', value: text.value, placeholder: props.placeholder,
+        type: 'search', class: 'adt-control', autocomplete: 'off', value: text.value,
+        placeholder: props.placeholder ?? `${withLabels(props.labels).search}…`,
         onFocus: () => { typing = true; },
         onBlur: () => { typing = false; },
         onInput: (event: Event) => {
@@ -264,7 +320,7 @@ export const AcunColumnToggle = defineComponent({
       const columns = props.table.getColumns();
       const lastVisible = columns.length - hidden.length === 1;
       return h('details', { class: 'adt-columns' }, [
-        h('summary', label.columns),
+        h('summary', [iconNode('columns'), label.columns]),
         h('fieldset', [h('legend', label.showColumns), ...columns.map(column => {
           const shown = !hidden.includes(column.id);
           return h('label', { key: column.id }, [

@@ -248,20 +248,22 @@ const API = [
     ["serializeTableQuery(query) · formatLocalDate(date)", {tr:"Laravel/qs uyumlu sorgu parametreleri; tarihler yerel saatle.", en:"Laravel/qs-friendly query parameters; dates in local time."}],
   ]],
   ['@acunsoft/datatable-dom', [
+    ["renderDataTable(container, table, options?)", {tr:"Hepsi bir arada: üst çubukta sayfa başı ve arama (solda), kolon menüsü (sağda); altta kayıt aralığı (solda) ve numaralı sayfalar (sağda). layout ile her parça taşınır, kaldırılır veya kendi kontrolünüz eklenir.", en:"All in one: page size and search top left, column menu top right; row range bottom left and numbered pages bottom right. Move, remove or add your own controls with layout."}],
     ["renderTable(container, table, options?)", {tr:"Erişilebilir <table>: sıralama butonları, seçim kutuları, odak koruma.", en:"Accessible <table>: sort buttons, selection checkboxes, focus kept."}],
     ["renderColumnToggle(container, table, options?)", {tr:"\"Kolonlar\" menüsü: her kolon için etiketli bir onay kutusu; son görünen kolon gizlenemez.", en:"\"Columns\" menu: a labelled checkbox per column; the last visible column cannot be hidden."}],
     ["renderBulkActions(container, table, { actions })", {tr:"Seçim varken görünen çubuk: \"3 seçili\", toplu işlem butonları, seçimi temizle. renderTable'a rowActions ile satır butonları eklenir.", en:"A bar shown while rows are selected: \"3 selected\", bulk action buttons, clear selection. renderTable's rowActions adds per-row buttons."}],
-    ["renderPagination(container, table, options?)", {tr:"Önceki/sonraki, canlı durum metni, sayfa boyutu seçimi.", en:"Previous/next, live status, page-size select."}],
+    ["renderPagination(container, table, options?)", {tr:"Numaralı sayfalar: ‹ 1 … 4 5 6 … 20 ›; buton sayısı sabit kalır, aktif sayfa aria-current ile işaretlenir; isteğe bağlı ilk/son.", en:"Numbered pages: ‹ 1 … 4 5 6 … 20 ›; the button count stays fixed, the current page has aria-current; optional first/last."}],
+    ["renderPageSize · renderPageInfo", {tr:"Sayfa başı satır seçimi ve canlı kayıt aralığı metni (Toplam: 5.000 kaydın 1 ile 25 arasını gösteriyor).", en:"Rows-per-page select and the live row range (Showing 1 to 25 of 5,000 rows)."}],
     ["renderSearch(container, table, options?)", {tr:"Gecikmeli arama kutusu; Enter hemen uygular.", en:"Debounced search box; Enter applies at once."}],
     ["resolveLabels(locale, overrides?) · labelsEn/Tr/De/Fr/Es", {tr:"Yerleşik metinler (i18n kütüphanesi gerekmez): en, tr, de, fr, es; tekil/çoğul ve basamak ayırıcı dile göre.", en:"Built-in texts (no i18n library needed): en, tr, de, fr, es; singular/plural and digit grouping per language."}],
   ]],
   ['@acunsoft/datatable-vue', [
     ["useDataTable(options) · useTable(table)", {tr:"Reaktif tablo: state, sayfa, görünen kolonlar; bileşenle birlikte temizlenir.", en:"A reactive table: state, page, visible columns; cleaned up with the component."}],
-    ["<AcunDataTable> · <AcunPagination> · <AcunSearch> · <AcunColumnToggle> · <AcunBulkActions>", {tr:"DOM renderer ile aynı erişilebilir işaretleme; özel hücreler için cell-<id> slot'ları.", en:"The DOM renderer's accessible markup; cell-<id> slots for custom cells."}],
+    ["<AcunDataTable> · <AcunPagination> · <AcunPageSize> · <AcunPageInfo> · <AcunSearch> · <AcunColumnToggle> · <AcunBulkActions>", {tr:"DOM renderer ile aynı erişilebilir işaretleme; özel hücreler için cell-<id> slot'ları.", en:"The DOM renderer's accessible markup; cell-<id> slots for custom cells."}],
   ]],
   ['@acunsoft/datatable-react', [
     ["useDataTable(options) · useTable(table)", {tr:"useSyncExternalStore ile tablo durumu; yeni data dizisi satırları değiştirir; Strict Mode güvenli.", en:"Table state via useSyncExternalStore; a new data array replaces the rows; Strict Mode safe."}],
-    ["<DataTable> · <Pagination> · <Search> · <ColumnToggle> · <BulkActions>", {tr:"DOM renderer ile aynı erişilebilir işaretleme; cells ile özel hücreler.", en:"The DOM renderer's accessible markup; custom cells via cells."}],
+    ["<DataTable> · <Pagination> · <PageSize> · <PageInfo> · <Search> · <ColumnToggle> · <BulkActions>", {tr:"DOM renderer ile aynı erişilebilir işaretleme; cells ile özel hücreler.", en:"The DOM renderer's accessible markup; custom cells via cells."}],
   ]],
   ['@acunsoft/datatable-export', [
     ["tableToSheet(table, { rows, columns })", {tr:"Görünen tablo: başlıklar ve tipli değerler (sayı, ondalık, tarih, mantıksal); tüm satırlar, sayfa ya da seçim.", en:"The visible table: headers and typed values (numbers, decimals, dates, booleans); all rows, the page or the selection."}],
@@ -417,7 +419,8 @@ php artisan vendor:publish --tag=acun-datatable-lang` },
           en:"Cell content is written with <code>textContent</code>; untrusted HTML is never interpreted. Controls are native <code>&lt;button&gt;</code>, <code>&lt;input&gt;</code> and <code>&lt;select&gt;</code>, so they work from the keyboard."},
     lang:"typescript", code:
 `import { createDataTable } from '@acunsoft/datatable-core';
-import { labelsTr, renderPagination, renderSearch, renderTable } from '@acunsoft/datatable-dom';
+import { renderDataTable } from '@acunsoft/datatable-dom';
+import '@acunsoft/datatable-dom/styles.css'; // optional
 
 const table = createDataTable({
   data: orders,
@@ -428,9 +431,8 @@ const table = createDataTable({
   locale: 'tr',
 });
 
-renderSearch(document.querySelector('#search'), table, { labels: labelsTr });
-renderTable(document.querySelector('#orders'), table, { caption: 'Siparişler', selectable: true, locale: 'tr', labels: labelsTr });
-renderPagination(document.querySelector('#pages'), table, { labels: labelsTr });` },
+// Page size + search on top, row range + numbered pages below, Turkish texts.
+renderDataTable(document.querySelector('#orders'), table, { caption: 'Siparişler', selectable: true, locale: 'tr' });` },
   vue:{ name:"Vue", pkg:"@acunsoft/datatable-vue", status:"ready",
     install:"npm install vue @acunsoft/datatable-core @acunsoft/datatable-vue",
     lead:{tr:"Vue 3 bileşenleri ve composable'ları: erişilebilir tablo, sayfalama, arama, kolon menüsü ve toplu işlemler; özel hücreler için slot'lar. Render fonksiyonlarıyla yazıldı, ek derleme eklentisi gerekmez.",
@@ -440,7 +442,9 @@ renderPagination(document.querySelector('#pages'), table, { labels: labelsTr });
     lang:"xml", code:
 `<script setup lang="ts">
 import { ref } from 'vue';
-import { AcunDataTable, AcunPagination, AcunSearch, labelsTr, useDataTable } from '@acunsoft/datatable-vue';
+import {
+  AcunDataTable, AcunPageInfo, AcunPageSize, AcunPagination, AcunSearch, labelsTr, useDataTable,
+} from '@acunsoft/datatable-vue';
 import '@acunsoft/datatable-dom/styles.css';
 
 const orders = ref([]);
@@ -455,11 +459,19 @@ const { table } = useDataTable({
 <\/script>
 
 <template>
-  <AcunSearch :table="table" :labels="labelsTr" />
-  <AcunDataTable :table="table" caption="Siparişler" locale="tr" selectable :labels="labelsTr">
-    <template #cell-total="{ text }"><strong>{{ text }} ₺</strong></template>
-  </AcunDataTable>
-  <AcunPagination :table="table" :labels="labelsTr" />
+  <div class="adt">
+    <div class="adt-bar adt-top"><div class="adt-bar-start">
+      <AcunPageSize :table="table" :labels="labelsTr" />
+      <div class="adt-feature--search"><AcunSearch :table="table" :labels="labelsTr" /></div>
+    </div></div>
+    <AcunDataTable :table="table" caption="Siparişler" locale="tr" selectable :labels="labelsTr">
+      <template #cell-total="{ text }"><strong>{{ text }} ₺</strong></template>
+    </AcunDataTable>
+    <div class="adt-bar adt-bottom">
+      <div class="adt-bar-start"><AcunPageInfo :table="table" :labels="labelsTr" /></div>
+      <div class="adt-bar-end"><AcunPagination :table="table" :labels="labelsTr" locale="tr" /></div>
+    </div>
+  </div>
 </template>` },
   react:{ name:"React", pkg:"@acunsoft/datatable-react", status:"ready",
     install:"npm install react @acunsoft/datatable-core @acunsoft/datatable-react",
@@ -468,7 +480,7 @@ const { table } = useDataTable({
     note:{tr:"React 18.2+ peer dependency (19 ile test edildi). Paket <code>\"use client\"</code> ile işaretli; Next.js App Router'da doğrudan kullanılabilir. Değerler React tarafından kaçışlanır; paket HTML enjekte etmez.",
           en:"React 18.2+ peer dependency (tested with 19). The package is marked <code>\"use client\"</code>, so it works in the Next.js App Router. Values are escaped by React; the package never injects HTML."},
     lang:"typescript", code:
-`import { DataTable, Pagination, Search, labelsTr, useDataTable } from '@acunsoft/datatable-react';
+`import { DataTable, PageInfo, PageSize, Pagination, Search, labelsTr, useDataTable } from '@acunsoft/datatable-react';
 import '@acunsoft/datatable-dom/styles.css';
 
 export function Orders({ orders }: { orders: Order[] }) {
@@ -481,12 +493,18 @@ export function Orders({ orders }: { orders: Order[] }) {
     locale: 'tr',
   });
   return (
-    <>
-      <Search table={table} labels={labelsTr} />
+    <div className="adt">
+      <div className="adt-bar adt-top"><div className="adt-bar-start">
+        <PageSize table={table} labels={labelsTr} />
+        <div className="adt-feature--search"><Search table={table} labels={labelsTr} /></div>
+      </div></div>
       <DataTable table={table} caption="Siparişler" locale="tr" selectable labels={labelsTr}
         cells={{ total: ({ text }) => <strong>{text} ₺</strong> }} />
-      <Pagination table={table} labels={labelsTr} />
-    </>
+      <div className="adt-bar adt-bottom">
+        <div className="adt-bar-start"><PageInfo table={table} labels={labelsTr} /></div>
+        <div className="adt-bar-end"><Pagination table={table} labels={labelsTr} locale="tr" /></div>
+      </div>
+    </div>
   );
 }` }
 };

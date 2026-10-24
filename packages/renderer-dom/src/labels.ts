@@ -7,9 +7,16 @@ export interface DataTableLabels {
   readonly pagination: string;
   readonly previous: string;
   readonly next: string;
-  readonly pageStatus: (page: number, pageCount: number, totalRows: number) => string;
-  /** Server mode when the server does not report a total: only the page is known. */
-  readonly pageStatusOpen: (page: number) => string;
+  readonly first: string;
+  readonly last: string;
+  /** Accessible name of a page-number button. */
+  readonly page: (page: number) => string;
+  /** Range of the visible rows: `Showing 1 to 25 of 5,000 rows`. */
+  readonly pageInfo: (from: number, to: number, totalRows: number) => string;
+  /** Server mode when the server does not report a total: only the range is known. */
+  readonly pageInfoOpen: (from: number, to: number) => string;
+  readonly pageInfoEmpty: string;
+  /** Accessible name of the page-size select. */
   readonly pageSize: string;
   readonly search: string;
   /** Text for `true` / `false` cells. */
@@ -51,9 +58,13 @@ export const labelsEn: DataTableLabels = Object.freeze({
   pagination: 'Pagination',
   previous: 'Previous',
   next: 'Next',
-  pageStatus: (page: number, pageCount: number, totalRows: number) =>
-    `Page ${en.number(page)} of ${en.number(pageCount)} · ${en.number(totalRows)} ${en.one(totalRows) ? 'row' : 'rows'}`,
-  pageStatusOpen: (page: number) => `Page ${en.number(page)}`,
+  first: 'First',
+  last: 'Last',
+  page: (page: number) => `Page ${en.number(page)}`,
+  pageInfo: (from: number, to: number, totalRows: number) =>
+    `Showing ${en.number(from)} to ${en.number(to)} of ${en.number(totalRows)} ${en.one(totalRows) ? 'row' : 'rows'}`,
+  pageInfoOpen: (from: number, to: number) => `Showing rows ${en.number(from)} to ${en.number(to)}`,
+  pageInfoEmpty: 'No rows to show',
   pageSize: 'Rows per page',
   search: 'Search',
   yes: 'Yes',
@@ -77,9 +88,13 @@ export const labelsTr: DataTableLabels = Object.freeze({
   pagination: 'Sayfalama',
   previous: 'Önceki',
   next: 'Sonraki',
-  pageStatus: (page: number, pageCount: number, totalRows: number) =>
-    `Sayfa ${tr.number(page)} / ${tr.number(pageCount)} · ${tr.number(totalRows)} kayıt`,
-  pageStatusOpen: (page: number) => `Sayfa ${tr.number(page)}`,
+  first: 'İlk',
+  last: 'Son',
+  page: (page: number) => `Sayfa ${tr.number(page)}`,
+  pageInfo: (from: number, to: number, totalRows: number) =>
+    `Toplam: ${tr.number(totalRows)} kaydın ${tr.number(from)} ile ${tr.number(to)} arasını gösteriyor`,
+  pageInfoOpen: (from: number, to: number) => `${tr.number(from)} ile ${tr.number(to)} arasındaki kayıtları gösteriyor`,
+  pageInfoEmpty: 'Gösterilecek kayıt yok',
   pageSize: 'Sayfa başına satır',
   search: 'Ara',
   yes: 'Evet',
@@ -103,9 +118,13 @@ export const labelsDe: DataTableLabels = Object.freeze({
   pagination: 'Seitennavigation',
   previous: 'Zurück',
   next: 'Weiter',
-  pageStatus: (page: number, pageCount: number, totalRows: number) =>
-    `Seite ${de.number(page)} von ${de.number(pageCount)} · ${de.number(totalRows)} ${de.one(totalRows) ? 'Eintrag' : 'Einträge'}`,
-  pageStatusOpen: (page: number) => `Seite ${de.number(page)}`,
+  first: 'Erste',
+  last: 'Letzte',
+  page: (page: number) => `Seite ${de.number(page)}`,
+  pageInfo: (from: number, to: number, totalRows: number) =>
+    `${de.number(from)} bis ${de.number(to)} von ${de.number(totalRows)} ${de.one(totalRows) ? 'Eintrag' : 'Einträgen'}`,
+  pageInfoOpen: (from: number, to: number) => `Einträge ${de.number(from)} bis ${de.number(to)}`,
+  pageInfoEmpty: 'Keine Einträge vorhanden',
   pageSize: 'Zeilen pro Seite',
   search: 'Suchen',
   yes: 'Ja',
@@ -129,9 +148,13 @@ export const labelsFr: DataTableLabels = Object.freeze({
   pagination: 'Pagination',
   previous: 'Précédent',
   next: 'Suivant',
-  pageStatus: (page: number, pageCount: number, totalRows: number) =>
-    `Page ${fr.number(page)} sur ${fr.number(pageCount)} · ${fr.number(totalRows)} ${fr.one(totalRows) ? 'ligne' : 'lignes'}`,
-  pageStatusOpen: (page: number) => `Page ${fr.number(page)}`,
+  first: 'Première',
+  last: 'Dernière',
+  page: (page: number) => `Page ${fr.number(page)}`,
+  pageInfo: (from: number, to: number, totalRows: number) =>
+    `Affichage de ${fr.number(from)} à ${fr.number(to)} sur ${fr.number(totalRows)} ${fr.one(totalRows) ? 'ligne' : 'lignes'}`,
+  pageInfoOpen: (from: number, to: number) => `Affichage des lignes ${fr.number(from)} à ${fr.number(to)}`,
+  pageInfoEmpty: 'Aucune ligne à afficher',
   pageSize: 'Lignes par page',
   search: 'Rechercher',
   yes: 'Oui',
@@ -155,9 +178,13 @@ export const labelsEs: DataTableLabels = Object.freeze({
   pagination: 'Paginación',
   previous: 'Anterior',
   next: 'Siguiente',
-  pageStatus: (page: number, pageCount: number, totalRows: number) =>
-    `Página ${es.number(page)} de ${es.number(pageCount)} · ${es.number(totalRows)} ${es.one(totalRows) ? 'fila' : 'filas'}`,
-  pageStatusOpen: (page: number) => `Página ${es.number(page)}`,
+  first: 'Primera',
+  last: 'Última',
+  page: (page: number) => `Página ${es.number(page)}`,
+  pageInfo: (from: number, to: number, totalRows: number) =>
+    `Mostrando ${es.number(from)} a ${es.number(to)} de ${es.number(totalRows)} ${es.one(totalRows) ? 'fila' : 'filas'}`,
+  pageInfoOpen: (from: number, to: number) => `Mostrando filas ${es.number(from)} a ${es.number(to)}`,
+  pageInfoEmpty: 'No hay filas para mostrar',
   pageSize: 'Filas por página',
   search: 'Buscar',
   yes: 'Sí',

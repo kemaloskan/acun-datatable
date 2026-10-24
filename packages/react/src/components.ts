@@ -2,9 +2,9 @@ import {
   createElement as h, useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore,
   type ChangeEvent, type KeyboardEvent, type MouseEvent, type ReactElement, type ReactNode,
 } from 'react';
-import type { ColumnDef, DataTable, Row } from '@acunsoft/datatable-core';
+import { getPageItems, type ColumnDef, type DataTable, type Row } from '@acunsoft/datatable-core';
 import {
-  cellValue, createCellText, labelsEn, nextSorting, rowName,
+  cellValue, checkPageSizes, createCellText, ICONS, labelsEn, nextSorting, pageInfoText, pageSizeChoices, rowName,
   type BulkAction, type BulkSelection, type CellFormatter, type DataTableLabels, type RowAction, type StatusSource,
 } from '@acunsoft/datatable-dom';
 import { useTable } from './hooks.js';
@@ -162,32 +162,84 @@ export function DataTable<TData>(props: DataTableProps<TData>): ReactElement {
       h('tbody', null, body))));
 }
 
+const icon = (name: keyof typeof ICONS): ReactElement => h('svg', {
+  className: 'adt-icon', viewBox: '0 0 24 24', width: 16, height: 16, fill: 'none', stroke: 'currentColor', strokeWidth: 2,
+  strokeLinecap: 'round', strokeLinejoin: 'round', 'aria-hidden': 'true', focusable: 'false',
+}, h('path', { d: ICONS[name] }));
+
 export interface PaginationProps {
   readonly table: AnyTable;
+  /** Pages shown on each side of the current page. Default 1. */
+  readonly siblings?: number;
+  /** Pages always shown at the start and the end. Default 1. */
+  readonly boundaries?: number;
+  /** Also show "first" and "last" buttons. Default `false`. */
+  readonly firstLast?: boolean;
+  /** Locale for the page numbers' digit grouping. Default `'en'`. */
+  readonly locale?: string;
+  readonly labels?: Partial<DataTableLabels>;
+}
+
+/**
+ * Numbered pages: `‹ 1 … 4 5 6 … 20 ›`, with a fixed number of buttons while
+ * there are more pages than fit. With an unknown server total it numbers the
+ * pages seen so far and keeps "next" while the page is full.
+ */
+export function Pagination({
+  table, siblings = 1, boundaries = 1, firstLast = false, locale = 'en', labels: custom,
+}: PaginationProps): ReactElement {
+  const { page, totalRows } = useTable(table);
+  const labels = withLabels(custom);
+  const numbers = useMemo(() => new Intl.NumberFormat(locale), [locale]);
+  const known = totalRows !== undefined;
+  const items = getPageItems(page.page, known ? page.pageCount : page.page, { siblings, boundaries });
+  const atStart = page.page <= 1;
+  const atEnd = page.page >= page.pageCount;
+  const arrow = (name: 'first' | 'previous' | 'next' | 'last', disabled: boolean, target: number): ReactElement => h('button', {
+    type: 'button', className: `adt-page adt-page-arrow adt-${name}`, 'aria-label': labels[name],
+    'aria-disabled': disabled ? 'true' : undefined, onClick: () => { if (!disabled) table.setPage(target); },
+  }, icon(name));
+  return h('nav', { className: 'adt-paging', 'aria-label': labels.pagination },
+    firstLast ? arrow('first', atStart, 1) : null,
+    arrow('previous', atStart, page.page - 1),
+    h('span', { className: 'adt-page-numbers' }, items.map((item, index) => item === 'gap'
+      ? h('span', { className: 'adt-page-gap', 'aria-hidden': 'true', key: `gap${index}` }, '…')
+      : h('button', {
+        type: 'button', className: 'adt-page', key: item, 'aria-label': labels.page(item),
+        'aria-current': item === page.page ? 'page' : undefined, onClick: () => table.setPage(item),
+      }, numbers.format(item)))),
+    arrow('next', atEnd, page.page + 1),
+    firstLast && known ? arrow('last', atEnd, page.pageCount) : null);
+}
+
+export interface PageSizeProps {
+  readonly table: AnyTable;
+  /** Default `[10, 25, 50, 100]`; the current size is always listed. */
   readonly pageSizes?: readonly number[];
   readonly labels?: Partial<DataTableLabels>;
 }
 
-/** Previous/Next, a live "Page 2 of 7 · 160 rows" status and a page-size select. */
-export function Pagination({ table, pageSizes = [10, 25, 50, 100], labels: custom }: PaginationProps): ReactElement {
-  if (pageSizes.length === 0 || new Set(pageSizes).size !== pageSizes.length ||
-      pageSizes.some(size => !Number.isSafeInteger(size) || size < 1 || size > 1000)) {
-    throw new RangeError('pageSizes must be unique integers from 1 to 1000');
-  }
-  const { page, totalRows } = useTable(table);
-  const labels = withLabels(custom);
-  const first = page.page <= 1;
-  const last = page.page >= page.pageCount;
-  const choices = pageSizes.includes(page.pageSize) ? pageSizes : [...pageSizes, page.pageSize].sort((a, b) => a - b);
-  return h('nav', { className: 'adt-pagination', 'aria-label': labels.pagination },
-    h('button', { type: 'button', className: 'adt-previous', 'aria-disabled': first ? 'true' : undefined, onClick: () => { if (!first) table.setPage(page.page - 1); } }, labels.previous),
-    h('span', { className: 'adt-status', 'aria-live': 'polite' }, totalRows === undefined
-      ? labels.pageStatusOpen(page.page) : labels.pageStatus(page.page, page.pageCount, page.totalRows)),
-    h('button', { type: 'button', className: 'adt-next', 'aria-disabled': last ? 'true' : undefined, onClick: () => { if (!last) table.setPage(page.page + 1); } }, labels.next),
-    h('label', { className: 'adt-page-size' },
-      h('span', null, labels.pageSize),
-      h('select', { value: String(page.pageSize), onChange: (event: ChangeEvent<HTMLSelectElement>) => table.setPageSize(Number(event.target.value)) },
-        choices.map(size => h('option', { value: String(size), key: size }, String(size))))));
+/** A rows-per-page select with a visually hidden label. */
+export function PageSize({ table, pageSizes = [10, 25, 50, 100], labels: custom }: PageSizeProps): ReactElement {
+  checkPageSizes(pageSizes);
+  const { state } = useTable(table);
+  return h('label', { className: 'adt-length' },
+    h('span', { className: 'adt-sr-only' }, withLabels(custom).pageSize),
+    h('select', {
+      className: 'adt-control', value: String(state.pageSize),
+      onChange: (event: ChangeEvent<HTMLSelectElement>) => table.setPageSize(Number(event.target.value)),
+    }, pageSizeChoices(pageSizes, state.pageSize).map(size => h('option', { value: String(size), key: size }, String(size)))));
+}
+
+export interface PageInfoProps {
+  readonly table: AnyTable;
+  readonly labels?: Partial<DataTableLabels>;
+}
+
+/** The visible range and the total, `1–25 of 5,000 rows`, as a polite live region. */
+export function PageInfo({ table, labels: custom }: PageInfoProps): ReactElement {
+  useTable(table); // re-render on every table change
+  return h('div', { className: 'adt-info', 'aria-live': 'polite', 'aria-atomic': 'true' }, pageInfoText(table, withLabels(custom)));
 }
 
 export interface SearchProps {
@@ -197,7 +249,7 @@ export interface SearchProps {
   readonly labels?: Partial<DataTableLabels>;
 }
 
-/** A labelled search input bound to the global search, debounced; Enter applies at once. */
+/** A search input with an icon and a visually hidden label, bound to the global search; debounced, Enter applies at once. */
 export function Search({ table, placeholder, debounceMs = 250, labels: custom }: SearchProps): ReactElement {
   if (!Number.isFinite(debounceMs) || debounceMs < 0) throw new RangeError('debounceMs must be a non-negative number');
   const { state } = useTable(table);
@@ -213,10 +265,12 @@ export function Search({ table, placeholder, debounceMs = 250, labels: custom }:
     timer.current = undefined;
     table.setGlobalSearch(value);
   };
+  const labels = withLabels(custom);
   return h('label', { className: 'adt-search' },
-    h('span', null, withLabels(custom).search),
+    h('span', { className: 'adt-sr-only' }, labels.search),
+    icon('search'),
     h('input', {
-      type: 'search', autoComplete: 'off', value: text, placeholder,
+      type: 'search', className: 'adt-control', autoComplete: 'off', value: text, placeholder: placeholder ?? `${labels.search}…`,
       onFocus: () => { typing.current = true; },
       onBlur: () => { typing.current = false; },
       onChange: (event: ChangeEvent<HTMLInputElement>) => {
@@ -241,7 +295,7 @@ export function ColumnToggle({ table, labels: custom }: ColumnToggleProps): Reac
   const columns = table.getColumns();
   const lastVisible = columns.length - state.hiddenColumns.length === 1;
   return h('details', { className: 'adt-columns' },
-    h('summary', null, labels.columns),
+    h('summary', null, icon('columns'), labels.columns),
     h('fieldset', null, h('legend', null, labels.showColumns), columns.map(column => {
       const shown = !state.hiddenColumns.includes(column.id);
       return h('label', { key: column.id },

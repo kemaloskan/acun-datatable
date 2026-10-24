@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createApp, defineComponent, h, nextTick, ref, type App, type Component } from 'vue';
 import { createDataTable, type ColumnDef, type Row } from '@acunsoft/datatable-core';
 import {
-  AcunBulkActions, AcunColumnToggle, AcunDataTable, AcunPagination, AcunSearch, labelsTr, useDataTable, type BulkSelection,
+  AcunBulkActions, AcunColumnToggle, AcunDataTable, AcunPageInfo, AcunPageSize, AcunPagination, AcunSearch, labelsTr, useDataTable, type BulkSelection,
 } from '../src/index';
 
 type Order = { id: number; customer: string; total: string; locked?: boolean };
@@ -115,20 +115,41 @@ describe('AcunDataTable', () => {
 });
 
 describe('controls', () => {
-  it('paginates with aria-disabled ends and a page-size select', async () => {
+  it('numbers the pages with aria-disabled ends', async () => {
     const table = make(2);
-    await mount(() => h(AcunPagination, { table, pageSizes: [2, 10], labels: labelsTr }));
-    expect(host.querySelector('.adt-status')!.textContent).toBe('Sayfa 1 / 2 · 3 kayıt');
+    await mount(() => h(AcunPagination, { table, labels: labelsTr, firstLast: true }));
+    const numbers = () => [...host.querySelectorAll('.adt-page-numbers > *')].map(node => node.textContent);
+    expect(numbers()).toEqual(['1', '2']);
+    expect(host.querySelector('[aria-current="page"]')!.getAttribute('aria-label')).toBe('Sayfa 1');
     expect(host.querySelector('.adt-previous')!.getAttribute('aria-disabled')).toBe('true');
-    host.querySelector<HTMLButtonElement>('.adt-next')!.click();
+    host.querySelector<HTMLButtonElement>('.adt-page[aria-label="Sayfa 2"]')!.click();
     await nextTick();
     expect(table.getState().page).toBe(2);
     expect(host.querySelector('.adt-next')!.getAttribute('aria-disabled')).toBe('true');
+    host.querySelector<HTMLButtonElement>('.adt-first')!.click();
+    await nextTick();
+    expect(table.getState().page).toBe(1);
+  });
+
+  it('keeps a fixed number of page buttons on long tables', async () => {
+    const table = createDataTable<Order>({ data: Array.from({ length: 200 }, (_, i) => ({ id: i + 1, customer: `R${i}`, total: '1.00' })), columns, initialState: { pageSize: 10 } });
+    await mount(() => h(AcunPagination, { table }));
+    table.setPage(10);
+    await nextTick();
+    expect([...host.querySelectorAll('.adt-page-numbers > *')].map(node => node.textContent)).toEqual(['1', '…', '9', '10', '11', '…', '20']);
+  });
+
+  it('changes the page size and shows the range', async () => {
+    const table = make(2);
+    await mount(() => h('div', [h(AcunPageSize, { table, pageSizes: [2, 10], labels: labelsTr }), h(AcunPageInfo, { table, labels: labelsTr })]));
+    expect(host.querySelector('.adt-info')!.textContent).toBe('Toplam: 3 kaydın 1 ile 2 arasını gösteriyor');
+    expect(host.querySelector('.adt-length .adt-sr-only')!.textContent).toBe('Sayfa başına satır');
     const select = host.querySelector('select')!;
     select.value = '10';
     select.dispatchEvent(new Event('change'));
     await nextTick();
     expect(table.getState()).toMatchObject({ page: 1, pageSize: 10 });
+    expect(host.querySelector('.adt-info')!.textContent).toBe('Toplam: 3 kaydın 1 ile 3 arasını gösteriyor');
   });
 
   it('debounces search and follows external changes', async () => {
@@ -136,7 +157,8 @@ describe('controls', () => {
     const table = make();
     await mount(() => h(AcunSearch, { table, debounceMs: 100, labels: labelsTr }));
     const input = host.querySelector('input')!;
-    expect(host.querySelector('label span')!.textContent).toBe('Ara');
+    expect(host.querySelector('label .adt-sr-only')!.textContent).toBe('Ara');
+    expect(input.placeholder).toBe('Ara…');
     input.value = 'ay';
     input.dispatchEvent(new Event('input'));
     vi.advanceTimersByTime(99);

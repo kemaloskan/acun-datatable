@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>E2E · table</title>
 <link rel="stylesheet" href="/packages/renderer-dom/dist/styles.css">
 <!-- Loads the real build output (run `npm run build` first). -->
@@ -13,12 +14,10 @@
 </script>
 </head>
 <body>
-<div id="search"></div>
 <div id="orders"></div>
-<div id="pages"></div>
 <script type="module">
 import { createDataTable } from '@acunsoft/datatable-core';
-import { renderPagination, renderSearch, renderTable } from '@acunsoft/datatable-dom';
+import { labelsEn, renderDataTable } from '@acunsoft/datatable-dom';
 
 const names = ['Ayşe', 'Ali', 'Can', 'Deniz', 'Ece', 'Fatma', 'Gül', 'Hakan', 'İrem', 'Kaan', 'Lale', 'Mert'];
 const table = createDataTable({
@@ -30,9 +29,10 @@ const table = createDataTable({
   locale: 'tr',
   initialState: { pageSize: 5 },
 });
-renderSearch(document.getElementById('search'), table, { debounceMs: 0 });
-renderTable(document.getElementById('orders'), table, { caption: 'Orders', selectable: true, locale: 'tr' });
-renderPagination(document.getElementById('pages'), table, { pageSizes: [5, 10] });
+// Turkish number and date formats with the English texts.
+renderDataTable(document.getElementById('orders'), table, {
+  caption: 'Orders', selectable: true, locale: 'tr', labels: labelsEn, pageSizes: [5, 10], search: { debounceMs: 0 },
+});
 window.__table = table;
 document.body.dataset.ready = 'true';
 </script>

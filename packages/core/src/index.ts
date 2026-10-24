@@ -9,7 +9,7 @@ export {
   type FilterCache, type FilterOperator, type FilterOptions, type FilterQuery, type FilterRule,
 } from './filtering';
 export { createLocalRowModel, type LocalRowModel, type LocalRowModelOptions, type SortComparator, type NullPlacement } from './local-row-model';
-export { paginateRows, type PageView } from './pagination';
+export { getPageItems, paginateRows, type PageItem, type PageItemsOptions, type PageView } from './pagination';
 export {
   createTableQuery, validatePageResult, type AbortSignalLike, type DataSource, type DataSourceRequestOptions,
   type PageResult, type PageResultValidation, type TableQuery, type TableQueryInput,

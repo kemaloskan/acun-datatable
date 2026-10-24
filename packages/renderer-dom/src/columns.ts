@@ -1,5 +1,5 @@
 import type { DataTable } from '@acunsoft/datatable-core';
-import { checkTarget, element, type RenderedComponent } from './dom';
+import { checkTarget, element, icon, type RenderedComponent } from './dom';
 import { labelsEn, type DataTableLabels } from './labels';
 
 export interface RenderColumnToggleOptions {
@@ -30,8 +30,21 @@ export function renderColumnToggle<TData>(
     fieldset.append(label);
     return { column, box };
   });
-  root.append(element(doc, 'summary', {}, labels.columns), fieldset);
+  const summary = element(doc, 'summary', {}, labels.columns);
+  summary.prepend(icon(doc, 'columns'));
+  root.append(summary, fieldset);
   container.replaceChildren(root);
+  // Close like a menu: Escape (focus back on the summary) or a click outside.
+  root.addEventListener('keydown', event => {
+    if (event.key === 'Escape' && root.open) {
+      root.open = false;
+      summary.focus();
+    }
+  });
+  const outside = (event: Event): void => {
+    if (root.open && !root.contains(event.target as Node)) root.open = false;
+  };
+  doc.addEventListener('click', outside);
 
   const update = (): void => {
     const hidden = table.getState().hiddenColumns;
@@ -48,6 +61,7 @@ export function renderColumnToggle<TData>(
   return {
     destroy: () => {
       unsubscribe();
+      doc.removeEventListener('click', outside);
       root.remove();
     },
   };

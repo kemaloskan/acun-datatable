@@ -3,7 +3,7 @@ import { act, createElement as h, StrictMode, useState, type ReactElement } from
 import { createRoot, type Root } from 'react-dom/client';
 import { createDataTable, type ColumnDef, type Row } from '@acunsoft/datatable-core';
 import {
-  BulkActions, ColumnToggle, DataTable, Pagination, Search, labelsTr, useDataTable, type BulkSelection,
+  BulkActions, ColumnToggle, DataTable, PageInfo, PageSize, Pagination, Search, labelsTr, useDataTable, type BulkSelection,
 } from '../src/index';
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
@@ -109,19 +109,40 @@ describe('DataTable', () => {
 });
 
 describe('controls', () => {
-  it('paginates and changes the page size', () => {
+  it('numbers the pages with aria-disabled ends', () => {
     const table = make(2);
-    render(h(Pagination, { table, pageSizes: [2, 10], labels: labelsTr }));
-    expect(host.querySelector('.adt-status')!.textContent).toBe('Sayfa 1 / 2 · 3 kayıt');
-    click(host.querySelector('.adt-next'));
+    render(h(Pagination, { table, labels: labelsTr, firstLast: true }));
+    const numbers = () => [...host.querySelectorAll('.adt-page-numbers > *')].map(node => node.textContent);
+    expect(numbers()).toEqual(['1', '2']);
+    expect(host.querySelector('[aria-current="page"]')!.getAttribute('aria-label')).toBe('Sayfa 1');
+    expect(host.querySelector('.adt-previous')!.getAttribute('aria-disabled')).toBe('true');
+    click(host.querySelector('.adt-page[aria-label="Sayfa 2"]'));
     expect(table.getState().page).toBe(2);
     expect(host.querySelector('.adt-next')!.getAttribute('aria-disabled')).toBe('true');
+    click(host.querySelector('.adt-first'));
+    expect(table.getState().page).toBe(1);
+  });
+
+  it('keeps a fixed number of page buttons on long tables', () => {
+    const table = createDataTable<Order>({ data: Array.from({ length: 200 }, (_, i) => ({ id: i + 1, customer: `R${i}`, total: '1.00' })), columns, initialState: { pageSize: 10 } });
+    render(h(Pagination, { table }));
+    act(() => table.setPage(10));
+    expect([...host.querySelectorAll('.adt-page-numbers > *')].map(node => node.textContent)).toEqual(['1', '…', '9', '10', '11', '…', '20']);
+  });
+
+  it('changes the page size and shows the range', () => {
+    const table = make(2);
+    render(h('div', null, h(PageSize, { table, pageSizes: [2, 10], labels: labelsTr }), h(PageInfo, { table, labels: labelsTr })));
+    expect(host.querySelector('.adt-info')!.textContent).toBe('Toplam: 3 kaydın 1 ile 2 arasını gösteriyor');
+    expect(() => render(h(PageSize, { table, pageSizes: [] }))).toThrow('pageSizes must be');
+    render(h('div', null, h(PageSize, { table, pageSizes: [2, 10], labels: labelsTr }), h(PageInfo, { table, labels: labelsTr })));
     const select = host.querySelector('select')!;
     act(() => {
       select.value = '10';
       select.dispatchEvent(new Event('change', { bubbles: true }));
     });
     expect(table.getState()).toMatchObject({ page: 1, pageSize: 10 });
+    expect(host.querySelector('.adt-info')!.textContent).toBe('Toplam: 3 kaydın 1 ile 3 arasını gösteriyor');
   });
 
   it('debounces search and follows external changes', () => {

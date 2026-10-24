@@ -37,9 +37,10 @@ describe('XSS fixture (SPEC M3)', () => {
     expect(host.querySelector('caption')!.textContent).toBe(XSS[1]);
     expect(host.querySelector('th button')!.firstChild!.textContent).toBe(XSS[0]);
     expect(host.querySelector('tbody tr')!.getAttribute('data-row-id')).toBe('1<b>');
+    expect(controls.querySelector('.adt-previous')!.getAttribute('aria-label')).toBe(XSS[0]);
 
     for (const root of [host, controls]) {
-      expect(root.querySelectorAll('img, script, svg, b')).toHaveLength(0);
+      expect(root.querySelectorAll('img, script, svg:not(.adt-icon), b')).toHaveLength(0); // only the built-in icons
     }
     expect((window as unknown as { __xss?: number }).__xss).toBeUndefined();
   });

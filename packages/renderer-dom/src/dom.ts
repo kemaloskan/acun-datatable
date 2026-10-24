@@ -47,3 +47,33 @@ export function checkTarget(container: unknown, table: unknown): void {
 export interface RenderedComponent {
   destroy(): void;
 }
+
+/** SVG path data of the built-in stroke icons (24×24 view box), for the Vue and React packages. */
+export const ICONS = Object.freeze({
+  first: 'M11 17l-5-5 5-5M18 17l-5-5 5-5',
+  previous: 'M15 18l-6-6 6-6',
+  next: 'M9 18l6-6-6-6',
+  last: 'M13 17l5-5-5-5M6 17l5-5-5-5',
+  search: 'M21 21l-4.35-4.35M11 18a7 7 0 1 0 0-14 7 7 0 0 0 0 14z',
+  columns: 'M9 4v16M15 4v16M4 4h16v16H4z',
+} as const);
+
+/** A decorative stroke icon (hidden from screen readers; the control carries the name). */
+export function icon(doc: Document, name: keyof typeof ICONS): SVGSVGElement {
+  const ns = 'http://www.w3.org/2000/svg';
+  const svg = doc.createElementNS(ns, 'svg');
+  for (const [key, value] of Object.entries({
+    class: 'adt-icon', viewBox: '0 0 24 24', width: '16', height: '16', fill: 'none', stroke: 'currentColor',
+    'stroke-width': '2', 'stroke-linecap': 'round', 'stroke-linejoin': 'round', 'aria-hidden': 'true', focusable: 'false',
+  })) svg.setAttribute(key, value);
+  const path = doc.createElementNS(ns, 'path');
+  path.setAttribute('d', ICONS[name]);
+  svg.append(path);
+  return svg;
+}
+
+/** Set or clear `aria-disabled`; unlike `disabled`, a focused control keeps focus. */
+export function ariaDisabled(node: HTMLElement, value: boolean): void {
+  if (value) node.setAttribute('aria-disabled', 'true');
+  else node.removeAttribute('aria-disabled');
+}

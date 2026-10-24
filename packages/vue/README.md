@@ -13,7 +13,8 @@ npm install vue @acunsoft/datatable-core @acunsoft/datatable-vue
 <script setup lang="ts">
 import { ref } from 'vue';
 import {
-  AcunBulkActions, AcunColumnToggle, AcunDataTable, AcunPagination, AcunSearch, labelsTr, useDataTable,
+  AcunBulkActions, AcunColumnToggle, AcunDataTable, AcunPageInfo, AcunPageSize, AcunPagination, AcunSearch,
+  labelsTr, useDataTable,
 } from '@acunsoft/datatable-vue';
 import '@acunsoft/datatable-dom/styles.css'; // optional neutral styles
 
@@ -32,15 +33,28 @@ const bulk = [{ id: 'archive', label: 'Arşivle', onSelect: ({ ids }) => archive
 </script>
 
 <template>
-  <AcunSearch :table="table" :labels="labelsTr" />
-  <AcunColumnToggle :table="table" :labels="labelsTr" />
-  <AcunBulkActions :table="table" :actions="bulk" :labels="labelsTr" />
-  <AcunDataTable :table="table" caption="Siparişler" locale="tr" selectable :labels="labelsTr" :row-actions="rowActions">
-    <template #cell-status="{ value }">
-      <span :class="`badge badge--${value}`">{{ value }}</span>
-    </template>
-  </AcunDataTable>
-  <AcunPagination :table="table" :labels="labelsTr" :page-sizes="[10, 25, 50]" />
+  <!-- The same layout as renderDataTable: a bar above and a bar below the table. -->
+  <div class="adt">
+    <div class="adt-bar adt-top">
+      <div class="adt-bar-start">
+        <AcunPageSize :table="table" :labels="labelsTr" :page-sizes="[10, 25, 50]" />
+        <div class="adt-feature--search"><AcunSearch :table="table" :labels="labelsTr" /></div>
+      </div>
+      <div class="adt-bar-end">
+        <AcunColumnToggle :table="table" :labels="labelsTr" />
+      </div>
+    </div>
+    <AcunBulkActions :table="table" :actions="bulk" :labels="labelsTr" />
+    <AcunDataTable :table="table" caption="Siparişler" locale="tr" selectable :labels="labelsTr" :row-actions="rowActions">
+      <template #cell-status="{ value }">
+        <span :class="`badge badge--${value}`">{{ value }}</span>
+      </template>
+    </AcunDataTable>
+    <div class="adt-bar adt-bottom">
+      <div class="adt-bar-start"><AcunPageInfo :table="table" :labels="labelsTr" /></div>
+      <div class="adt-bar-end"><AcunPagination :table="table" :labels="labelsTr" locale="tr" /></div>
+    </div>
+  </div>
 </template>
 ```
 
@@ -59,7 +73,9 @@ const bulk = [{ id: 'archive', label: 'Arşivle', onSelect: ({ ids }) => archive
 | Component | Props |
 |---|---|
 | `AcunDataTable` | `table`, `caption`, `selectable`, `locale`, `labels`, `format`, `rowLabel`, `rowActions`, `status` |
-| `AcunPagination` | `table`, `pageSizes`, `labels` |
+| `AcunPagination` | `table`, `siblings`, `boundaries`, `firstLast`, `locale`, `labels` |
+| `AcunPageSize` | `table`, `pageSizes`, `labels` |
+| `AcunPageInfo` | `table`, `labels` |
 | `AcunSearch` | `table`, `placeholder`, `debounceMs`, `labels` |
 | `AcunColumnToggle` | `table`, `labels` |
 | `AcunBulkActions` | `table`, `actions`, `labels` |

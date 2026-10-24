@@ -15,14 +15,15 @@ describe('built-in labels', () => {
   });
 
   it('use singular and plural forms and the locale digit grouping', () => {
-    expect(labelsEn.pageStatus(1, 1, 1)).toBe('Page 1 of 1 · 1 row');
-    expect(labelsEn.pageStatus(2, 640, 16_000)).toBe('Page 2 of 640 · 16,000 rows');
-    expect(labelsTr.pageStatus(1, 1, 1600)).toBe('Sayfa 1 / 1 · 1.600 kayıt');
-    expect(labelsDe.pageStatus(1, 1, 1)).toBe('Seite 1 von 1 · 1 Eintrag');
-    expect(labelsDe.pageStatus(1, 2, 1600)).toBe('Seite 1 von 2 · 1.600 Einträge');
-    expect(labelsFr.pageStatus(1, 1, 0)).toBe('Page 1 sur 1 · 0 ligne'); // French: 0 is singular
-    expect(labelsFr.pageStatus(1, 1, 1600)).toBe('Page 1 sur 1 · 1 600 lignes');
-    expect(labelsEs.pageStatus(1, 1, 1)).toBe('Página 1 de 1 · 1 fila');
+    expect(labelsEn.pageInfo(1, 1, 1)).toBe('Showing 1 to 1 of 1 row');
+    expect(labelsEn.pageInfo(26, 50, 16_000)).toBe('Showing 26 to 50 of 16,000 rows');
+    expect(labelsTr.pageInfo(1, 25, 1600)).toBe('Toplam: 1.600 kaydın 1 ile 25 arasını gösteriyor');
+    expect(labelsDe.pageInfo(1, 1, 1)).toBe('1 bis 1 von 1 Eintrag');
+    expect(labelsDe.pageInfo(1, 25, 1600)).toBe('1 bis 25 von 1.600 Einträgen');
+    expect(labelsFr.pageInfo(1, 1, 0)).toBe('Affichage de 1 à 1 sur 0 ligne'); // French: 0 is singular
+    expect(labelsFr.pageInfo(1, 25, 1600)).toBe('Affichage de 1 à 25 sur 1\u202f600 lignes');
+    expect(labelsEs.pageInfo(1, 1, 1)).toBe('Mostrando 1 a 1 de 1 fila');
+    expect(labelsTr.page(1200)).toBe('Sayfa 1.200');
     expect(labelsFr.selectedCount(1)).toBe('1 sélectionnée');
     expect(labelsEs.selectedCount(3)).toBe('3 seleccionadas');
   });

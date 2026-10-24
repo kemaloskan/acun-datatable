@@ -1,6 +1,6 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
 
-type TableHandle = { getState(): { page: number; sorting: unknown[]; selectedIds: string[]; globalSearch: string } };
+type TableHandle = { getState(): { page: number; sorting: unknown[]; selectedIds: string[]; globalSearch: string }; setPageSize(size: number): void; setPage(page: number): void };
 type TestWindow = Window & { __table: TableHandle; __xss?: number; __payloads: string[] };
 
 /**
@@ -75,21 +75,23 @@ test.describe('keyboard only (SPEC M3)', () => {
 
   test('page through results and keep focus at the last page', async ({ page }) => {
     const next = page.getByRole('button', { name: 'Next' });
-    const status = page.locator('.adt-status');
+    const status = page.locator('.adt-info');
     await tabTo(page, next);
     await page.keyboard.press('Enter');
-    await expect(status).toHaveText('Page 2 of 3 · 12 rows');
+    await expect(status).toHaveText('Showing 6 to 10 of 12 rows');
+    await expect(page.getByRole('button', { name: 'Page 2' })).toHaveAttribute('aria-current', 'page');
     await page.keyboard.press('Enter');
-    await expect(status).toHaveText('Page 3 of 3 · 12 rows');
+    await expect(status).toHaveText('Showing 11 to 12 of 12 rows');
     await expect(next).toHaveAttribute('aria-disabled', 'true');
     await expect(next).toBeFocused();
     await page.keyboard.press('Enter'); // ignored at the end
     expect((await state(page)).page).toBe(3);
     const previous = page.getByRole('button', { name: 'Previous' });
-    await page.keyboard.press(`Shift+${await tabKey(page)}`);
-    await expect(previous).toBeFocused();
+    await tabTo(page, previous, 'backward');
     await page.keyboard.press('Enter');
     expect((await state(page)).page).toBe(2);
+    await page.getByRole('button', { name: 'Page 1' }).click();
+    await expect(status).toHaveText('Showing 1 to 5 of 12 rows');
   });
 });
 
@@ -102,7 +104,7 @@ test.describe('accessibility semantics', () => {
     // The sort mark is aria-hidden, so the accessible name stays "Customer".
     await expect(page.getByRole('button', { name: 'Customer', exact: true })).toBeVisible();
     await expect(page.getByRole('navigation', { name: 'Pagination' })).toBeVisible();
-    await expect(page.locator('.adt-status')).toHaveAttribute('aria-live', 'polite');
+    await expect(page.locator('.adt-info')).toHaveAttribute('aria-live', 'polite');
     await expect(page.getByRole('combobox', { name: 'Rows per page' })).toHaveValue('5');
   });
 });
@@ -119,7 +121,7 @@ test.describe('XSS fixture in a real browser (SPEC M3)', () => {
     const payloads = await page.evaluate(() => (window as unknown as TestWindow).__payloads);
     expect(await firstCells(page)).toEqual(payloads);
     await expect(page.locator('#orders caption')).toHaveText(payloads[3]!);
-    await expect(page.locator('img, script:not([type]), svg, iframe, a')).toHaveCount(0);
+    await expect(page.locator('img, script:not([type]), svg:not(.adt-icon), iframe, a')).toHaveCount(0); // only the built-in icons
     await page.waitForTimeout(250); // give any onerror/onload a chance to fire
     expect(await page.evaluate(() => (window as unknown as TestWindow).__xss)).toBeUndefined();
     expect(dialogs).toEqual([]);
@@ -145,6 +147,26 @@ test.describe('optional styles.css (second review: narrow screens)', () => {
     expect(await cell.evaluate(td => getComputedStyle(td, '::before').content)).toBe('"Customer"');
     expect(await cell.evaluate(td => getComputedStyle(td).display)).toBe('grid');
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
+    // Compact pager: the arrows, the ends and the current page stay; the numbers around it hide.
+    await page.evaluate(() => {
+      (window as unknown as TestWindow).__table.setPageSize(1);
+      (window as unknown as TestWindow).__table.setPage(5);
+    });
+    await expect(page.getByRole('button', { name: 'Page 5' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Page 4' })).toBeHidden();
+    await expect(page.getByRole('button', { name: 'Page 12' })).toBeVisible();
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
+  });
+
+  test('puts page size and search above the table, info and pages below it', async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 800 });
+    const box = (selector: string) => page.locator(selector).boundingBox();
+    const [length, search, table, info, paging] = await Promise.all(
+      ['.adt-length', '.adt-search', '#orders table', '.adt-info', '.adt-paging'].map(box));
+    expect(length!.y + length!.height).toBeLessThanOrEqual(table!.y);
+    expect(search!.x).toBeGreaterThan(length!.x);
+    expect(info!.y).toBeGreaterThanOrEqual(table!.y + table!.height);
+    expect(paging!.x).toBeGreaterThan(info!.x + info!.width); // pages on the right
   });
 
   test('keeps a normal table on a wide screen', async ({ page }) => {
@@ -159,7 +181,7 @@ test('styles stay light on a light page even when the system is dark', async ({ 
   await page.emulateMedia({ colorScheme: 'dark' });
   await page.reload();
   await expect(page.locator('body[data-ready=true]')).toBeAttached();
-  const label = page.locator('.adt-search span');
+  const label = page.locator('#orders tbody td').nth(1);
   expect(await label.evaluate(el => getComputedStyle(el).color)).toBe('rgb(31, 36, 48)'); // --adt-fg (light)
   await page.evaluate(() => document.documentElement.setAttribute('data-theme', 'dark'));
   expect(await label.evaluate(el => getComputedStyle(el).color)).toBe('rgb(230, 232, 236)'); // dark on request

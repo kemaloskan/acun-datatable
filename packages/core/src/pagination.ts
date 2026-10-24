@@ -47,3 +47,45 @@ export function paginateRows<TData>(
     pageCount,
   });
 }
+
+/** One entry of a numbered pager: a page number or a gap (`…`). */
+export type PageItem = number | 'gap';
+
+export interface PageItemsOptions {
+  /** Pages shown on each side of the current page. Default 1. */
+  readonly siblings?: number;
+  /** Pages always shown at the start and the end. Default 1. */
+  readonly boundaries?: number;
+}
+
+/**
+ * The numbers of a pager such as `1 … 4 5 6 … 20`. While there are more pages
+ * than fit, the list always has the same length (`2·boundaries + 2·siblings + 3`),
+ * so the pager does not change width as the user moves through it. A gap
+ * replaces at least two pages; a single hidden page is shown as its number.
+ */
+export function getPageItems(page: number, pageCount: number, options: PageItemsOptions = {}): readonly PageItem[] {
+  const siblings = options.siblings ?? 1;
+  const boundaries = options.boundaries ?? 1;
+  for (const [name, value] of [['page', page], ['pageCount', pageCount]] as const) {
+    if (!Number.isSafeInteger(value) || value < 1) throw new RangeError(`${name} must be a positive integer`);
+  }
+  for (const [name, value] of [['siblings', siblings], ['boundaries', boundaries]] as const) {
+    if (!Number.isSafeInteger(value) || value < 0 || value > 10) throw new RangeError(`${name} must be an integer from 0 to 10`);
+  }
+  const current = Math.min(page, pageCount);
+  const range = (from: number, to: number): number[] => Array.from({ length: Math.max(0, to - from + 1) }, (_, i) => from + i);
+  const slots = 2 * boundaries + 2 * siblings + 3;
+  if (pageCount <= slots) return Object.freeze(range(1, pageCount));
+
+  // The window around the current page slides between the two gaps without changing size.
+  const start = Math.max(Math.min(current - siblings, pageCount - boundaries - 2 * siblings - 1), boundaries + 2);
+  const end = Math.min(Math.max(current + siblings, boundaries + 2 * siblings + 2), pageCount - boundaries - 1);
+  return Object.freeze([
+    ...range(1, boundaries),
+    start > boundaries + 2 ? 'gap' as const : boundaries + 1,
+    ...range(start, end),
+    end < pageCount - boundaries - 1 ? 'gap' as const : pageCount - boundaries,
+    ...range(pageCount - boundaries + 1, pageCount),
+  ]);
+}

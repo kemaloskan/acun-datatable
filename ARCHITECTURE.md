@@ -36,7 +36,7 @@ Consumer (HTML / Laravel / Livewire / React / Vue / Next.js)
 - Renders semantic `<table>` by default; keyboard and screen reader support.
 - Does not own business state. Subscribes to core and invokes core actions.
 - HTML/DOM text must be escaped or assigned via `textContent` by default; never directly inject untrusted cell HTML.
-- Published as `@acunsoft/datatable-dom`: `renderTable`, `renderPagination`, `renderSearch`. It uses no HTML-parsing DOM API at all (enforced by a test); formatters must return strings. Unit tests run in jsdom (dev dependency); Playwright tests run the renderer in Chromium, Firefox and WebKit.
+- Published as `@acunsoft/datatable-dom`: `renderDataTable` (table plus a top and a bottom control bar, arranged with `layout`), and its parts `renderTable`, `renderPagination` (numbered, from the core's `getPageItems`), `renderPageSize`, `renderPageInfo`, `renderSearch`, `renderColumnToggle`, `renderBulkActions`. It uses no HTML-parsing DOM API at all (enforced by a test); formatters must return strings. Unit tests run in jsdom (dev dependency); Playwright tests run the renderer in Chromium, Firefox and WebKit.
 
 ### DataSource implementations (`packages/datasource-http`, M2 done)
 - `local`: in-memory records suitable for small/medium datasets (`createDataTable`).
