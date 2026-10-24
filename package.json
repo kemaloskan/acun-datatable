@@ -21,8 +21,8 @@
     "check": "npm run check --workspaces --if-present && tsc -p e2e/tsconfig.json",
     "test": "npm run test --workspaces --if-present",
     "build": "npm run build --workspaces --if-present",
-    "e2e": "npm run build && node scripts/demo-assets.mjs && playwright test",
-    "e2e:chromium": "npm run build && playwright test --project=chromium",
+    "e2e": "npm run build && node scripts/demo-assets.mjs && node scripts/e2e-assets.mjs && playwright test",
+    "e2e:chromium": "npm run build && node scripts/e2e-assets.mjs && playwright test --project=chromium",
     "changeset": "changeset",
     "version-packages": "changeset version && npm install --package-lock-only",
     "release": "npm run check && npm run test && npm run build && changeset publish",
@@ -36,6 +36,7 @@
   "devDependencies": {
     "@axe-core/playwright": "4.13.0",
     "@changesets/cli": "^3.0.3",
-    "@playwright/test": "^1.64.1"
+    "@playwright/test": "^1.64.1",
+    "esbuild": "0.27.7"
   }
 }

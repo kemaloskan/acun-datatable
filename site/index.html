@@ -592,7 +592,9 @@ const table = createDataTable({ mode: 'server', locale: 'tr', columns: [
   { id: 'total', header: 'Tutar', accessorKey: 'total', type: 'decimal', enableSorting: true },
 ] });
 const runner = createQueryRunner(createHttpDataSource({ url: '/api/orders' }));
-onMounted(() => connectTable(table, runner));
+let disconnect = () => {};
+onMounted(() => { disconnect = connectTable(table, runner); });
+onBeforeUnmount(() => disconnect());
 <\/script>
 
 <template>
@@ -742,7 +744,7 @@ export async function GET(request: Request) {
 }` },
       { title:{tr:"Sayfa (istemci bileşeni)", en:"The page (a client component)"}, desc:{tr:"Tablo tarayıcıda, veriler route handler'dan; React paketi \"use client\" ile işaretli.", en:"The table runs in the browser, the rows come from the route handler; the React package is marked \"use client\"."}, lang:"typescript", code:
 `'use client';
-import { useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
 import { createDataTable } from '@acunsoft/datatable-core';
 import { connectTable, createHttpDataSource, createQueryRunner } from '@acunsoft/datatable-http';
 import { DataTableLayout, labelsTr } from '@acunsoft/datatable-react';
@@ -755,9 +757,9 @@ export default function OrdersPage() {
       { id: 'total', header: 'Tutar', accessorKey: 'total', type: 'decimal', enableSorting: true, enableFiltering: true, filter: true },
     ] });
     const runner = createQueryRunner(createHttpDataSource({ url: '/api/orders' }));
-    connectTable(table, runner);
     return { table, runner };
   }, []);
+  useEffect(() => connectTable(table, runner), [table, runner]); // returns the disconnect
   return <DataTableLayout table={table} status={runner} locale="tr" labels={labelsTr} responsive="auto" />;
 }` },
       { title:{tr:"Express veya Fastify", en:"Express or Fastify"}, desc:{tr:"Aynı üç çağrı; Express'te query parser 'extended' olmalı ya da URLSearchParams verin.", en:"The same three calls; in Express use the 'extended' query parser, or pass URLSearchParams."}, lang:"typescript", code:

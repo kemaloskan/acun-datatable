@@ -26,6 +26,9 @@ packages/*/composer.lock
 .phpunit.cache/
 .phpunit.result.cache
 
+# Bundled browser-test fixtures (scripts/e2e-assets.mjs)
+e2e/fixtures/build/
+
 # Built files copied for the online demo (npm run demo)
 site/demo/acun-datatable.min.js
 site/demo/styles.css

@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>E2E · Node back end</title>
+<!-- The <script> build against the real Node back end (e2e/orders-api.mjs). ?protocol=datatables, ?cursor. -->
+<link rel="stylesheet" href="/packages/datatable/dist/styles.css">
+<script src="/packages/datatable/dist/acun-datatable.min.js"></script>
+</head>
+<body>
+<table id="orders"></table>
+<script>
+const params = new URLSearchParams(location.search);
+window.dt = new AcunDataTable('#orders', {
+  serverSide: true,
+  ajax: { url: '/e2e/api/orders', ...(params.has('protocol') ? { protocol: 'datatables' } : {}), ...(params.has('post') ? { method: 'POST' } : {}) },
+  columns: [
+    { data: 'customer', title: 'Customer' },
+    { data: 'city', title: 'City' },
+    { data: 'total', title: 'Total', type: 'decimal' },
+  ],
+  pagination: { pageSize: 10, ...(params.has('cursor') ? { cursor: true } : {}) },
+  buttons: ['csv'],
+});
+dt.ready.then(() => { document.body.dataset.ready = 'true'; }, () => { document.body.dataset.ready = 'true'; });
+</script>
+</body>
+</html>

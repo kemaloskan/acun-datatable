@@ -1,11 +1,13 @@
 // Minimal static server for the Playwright fixtures (no dependency).
 // Serves the repository root on 127.0.0.1 only, GET/HEAD only, and refuses
 // any path outside the repository. One fake JSON API, POST /e2e/api/products,
-// answers server-side queries in the datatable-http wire format.
+// answers server-side queries in the datatable-http wire format; /e2e/api/orders
+// is a real back end with @acunsoft/datatable-server (orders-api.mjs).
 import { createReadStream, statSync } from 'node:fs';
 import { createServer } from 'node:http';
 import { extname, join, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { ordersApi } from './orders-api.mjs';
 
 const root = resolve(fileURLToPath(new URL('..', import.meta.url)));
 const port = Number(process.env.PORT ?? 4173);
@@ -51,6 +53,17 @@ function productsApi(request, response) {
 createServer((request, response) => {
   if (request.method === 'POST' && request.url === '/e2e/api/products') {
     productsApi(request, response);
+    return;
+  }
+  if (request.url === '/e2e/api/orders' || request.url?.startsWith('/e2e/api/orders?')) {
+    const answer = ({ status, body }) => response.writeHead(status, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' }).end(JSON.stringify(body));
+    if (request.method === 'GET') {
+      answer(ordersApi(new URL(request.url, 'http://localhost').searchParams));
+      return;
+    }
+    let body = '';
+    request.on('data', chunk => { body += chunk; });
+    request.on('end', () => answer(ordersApi(new URLSearchParams(body))));
     return;
   }
   if (request.method !== 'GET' && request.method !== 'HEAD') {
