@@ -27,8 +27,8 @@ const table = new AcunDataTable('#myTable', {
 Or with a `<script>` tag, without a build step (`window.AcunDataTable`):
 
 ```html
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@acunsoft/datatable@0.3.0/dist/styles.css">
-<script src="https://cdn.jsdelivr.net/npm/@acunsoft/datatable@0.3.0/dist/acun-datatable.min.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@acunsoft/datatable@0.4.0/dist/styles.css">
+<script src="https://cdn.jsdelivr.net/npm/@acunsoft/datatable@0.4.0/dist/acun-datatable.min.js"></script>
 <script>
   new AcunDataTable('#myTable', { serverSide: true, ajax: '/api/products' });
 </script>
@@ -129,7 +129,7 @@ Route::match(['get', 'post'], '/api/products', fn () => TableResponse::for(Produ
 | `serverSide` | `false` | `serverSide` |
 | `processing` | `true` | `processing` |
 | `skeleton` | `true`: shimmering placeholder rows until the first rows arrive | |
-| `pagination` | `{ enabled: true, pageSize: 25, pageSizes: [10, 25, 50, 100] }`, also `firstLast`, `siblings`, and `cursor: true` for keyset pages with `serverSide` (same speed at any depth) | `paging`, `pageLength`, `lengthMenu` |
+| `pagination` | `{ enabled: true, pageSize: 25, pageSizes: [10, 25, 50, 100] }`, also `firstLast`, `siblings`, and `cursor: true` for keyset pages with `serverSide` (no `OFFSET`: deep pages do not read the rows before them) | `paging`, `pageLength`, `lengthMenu` |
 | `sorting` | `{ enabled: true, multiSort: true, initial: [] }` | `ordering`, `order` |
 | `searching` | `{ enabled: true, debounce: 250, placeholder, initial }` | `searching`, `searchDelay` |
 | `language` | `'en'`; also `'tr'`, `'de'`, `'fr'`, `'es'` | `language` |

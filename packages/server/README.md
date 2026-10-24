@@ -75,8 +75,11 @@ or `createHttpDataSource({ url: '/api/orders' })` with the React or Vue package.
   patterns are escaped with `!`, which means the same in every SQL mode.
 - **Cursor paging** (`paging=cursor`): the page continues after the last row
   of the page before, written so a `(column, id)` index serves it on every
-  database (the first sort column is bounded before the exact comparison), so
-  page 100,000 costs what page 2 does. `tableResponse` reads one extra row to
+  database (the first sort column is bounded before the exact comparison)
+  instead of skipping `OFFSET` rows. Measured on 5,000,000 PostgreSQL rows:
+  a page at row 2,500,000 in 0.3 ms, against 2.5 s by `OFFSET`
+  ([bench/](../../bench/README.md)); other tables and databases depend on
+  their indexes. `tableResponse` reads one extra row to
   know there is a next page and returns `nextCursor` (`cursorOf`). Cursors
   are tied to their sort. Mark sort columns that may hold `NULL` with
   `nullable: true`, so later pages also reach the `NULL` rows (in the

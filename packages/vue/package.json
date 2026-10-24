@@ -1,6 +1,6 @@
 {
   "name": "@acunsoft/datatable-vue",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "Vue 3 components and composables for @acunsoft/datatable-core: an accessible table, pagination, search, column menu and bulk actions with slots for custom cells.",
   "keywords": ["datatable", "data-table", "table", "vue", "vue3", "accessible", "a11y"],
   "homepage": "https://kemaloskan.github.io/acun-datatable/",
@@ -20,7 +20,7 @@
     "test": "vitest run",
     "build": "tsup src/index.ts --format esm --dts --clean --external vue --external @acunsoft/datatable-core --external @acunsoft/datatable-dom"
   },
-  "dependencies": { "@acunsoft/datatable-core": "0.3.0", "@acunsoft/datatable-dom": "0.3.0" },
+  "dependencies": { "@acunsoft/datatable-core": "0.4.0", "@acunsoft/datatable-dom": "0.4.0" },
   "peerDependencies": { "vue": "^3.4.0" },
   "devDependencies": { "jsdom": "^30.1.3", "tsup": "^8.0.0", "typescript": "^5.0.0", "vitest": "^5.0.5", "vue": "^3.5.0" },
   "engines": { "node": ">=22" },

@@ -175,6 +175,7 @@ browser (client side) and with a server (server side).
 | Counting | the back end gives the total, as in DataTables; the count with a time limit stays and is optional; exact count, limited count and paging without a total are possible; listing is never slowed by needless `COUNT(*)` |
 | Big data | server-side work stays in the adapters and uses the database's indexes; Redis, caches, queues, OpenSearch are optional |
 | Kept features | the count time limit, Scout search (`searchEngine()`), queued exports and bulk actions |
+| After the first stable release | infinite scroll (light, optional, on the existing paging); turning the Laravel count off entirely. The limited count (up to 10,001 matches) is not assumed to be always fast: it reads up to that many matching rows, which on a large table with a filter no index serves can still take long — it is measured (`bench/`), not promised |
 | Priorities | 1. fix the remaining bugs and gaps; 2. verify the Laravel, Livewire, React, Vue and Node integrations; 3. security, performance and database-compatibility tests; 4. demo, docs, upgrade guide; 5. a first stable release ready to publish (push, tags and publishing only after the owner's approval) |
 
 No speed is promised without a measurement. Performance tests are prepared

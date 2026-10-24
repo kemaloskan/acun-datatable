@@ -5,7 +5,42 @@ All notable changes to this repository. Each npm package also has its own
 
 ## Unreleased
 
-### Fixed (`acunsoft/datatable-laravel`, review before 0.5.0)
+Nothing yet.
+
+## npm 0.4.0 and `acunsoft/datatable-laravel` 0.5.0 (2026-10-25)
+
+The first stable release candidate: the npm packages skip 0.3.0, which was
+prepared but never published. Read [UPGRADING.md](UPGRADING.md) first; each
+npm package's `CHANGELOG.md` has its own notes.
+
+### npm packages (0.4.0)
+
+- **New packages:** `@acunsoft/datatable` (one call, DataTables-style
+  options, the `<acun-datatable>` element and a `<script>` build) and
+  `@acunsoft/datatable-server` (Node back end: allowlist, bound SQL for
+  PostgreSQL, MySQL, MariaDB, SQLite and SQL Server, Prisma, the DataTables
+  protocol; no database driver is a dependency).
+- **Tables:** numbered pages with separate page-size and row-range controls,
+  filters and chips, a tools menu (Excel, CSV, copy, print), custom cells,
+  footer totals, child rows, skeleton loading, fixed, resizable and movable
+  columns, editing in place, `responsive: 'auto'`, virtual scrolling, cursor
+  paging, `persistState` for the column layout.
+- **Fixes from review:** NULL-aware cursor paging, cursor exports, editor
+  clicks, modal focus, large selections, column widths on phones, Vue table
+  props, SSR ids, and more (see each package's changelog).
+
+### `acunsoft/datatable-laravel` 0.5.0
+
+- **New:** filters, footer totals, child rows (`detailView()`), lazy
+  placeholders, fixed, resizable and movable columns, editing in place
+  (`Column::editable()`), `responsive()` `auto`, cursor paging
+  (`Column::nullable()` for NULL sort values), `searchEngine()` (Scout),
+  queued exports and bulk actions, the DataTables protocol on
+  `TableResponse`.
+- **Changed:** the user's sort comes before an `orderBy()` in `query()`;
+  MariaDB gets its count time limit; see UPGRADING.md.
+
+#### Fixed (review before release)
 
 - **Queued tasks:** the worker no longer keeps the user of a job for the jobs
   after it; a guest's task belongs to the guest's session (a leaked link is
@@ -19,7 +54,9 @@ All notable changes to this repository. Each npm package also has its own
 - **DataTables protocol:** `data: null` columns are ignored; `saveCell()`
   refuses columns of another table.
 
-### Changed (large tables, `acunsoft/datatable-laravel` 0.3.0)
+## `acunsoft/datatable-laravel` 0.3.0
+
+### Changed (large tables)
 
 Measured on 5,000,000 rows in PostgreSQL 17; see the Laravel README's
 "Large tables" guide.

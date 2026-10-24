@@ -1,5 +1,59 @@
 # @acunsoft/datatable-core
 
+## 0.4.0
+
+### Minor Changes
+
+- b758334: Resizing and moving columns. Core: `columnOrder` and `columnWidths` state
+  with `moveColumn`, `setColumnOrder`, `setColumnWidth`, `setColumnWidths`
+  (`COLUMN_WIDTH_LIMITS`), kept by `persistState`. Renderers:
+  `resizableColumns` (drag handles, ←/→, Delete to reset) and
+  `reorderableColumns` (drag headers; up/down buttons and "Reset columns" in the
+  column menu), shared through `columnTools()`. `AcunDataTable`: `columnResize`,
+  `columnReorder`. `connectTable` no longer re-queries the server when only the
+  column layout changes (visibility, order, widths). Menus stay open when a
+  control inside them re-renders.
+- 5753f1f: Cursor (keyset) paging for server tables: `createDataTable({ mode: 'server',
+  paging: 'cursor' })` keeps the cursor of every page seen and sends the
+  previous page's `nextCursor` (`TableQuery.cursor`); the pager offers those
+  pages and the next one. `createHttpDataSource({ paging: 'cursor' })` sends
+  `paging=cursor&cursor=…`. `AcunDataTable`: `pagination: { cursor: true }`.
+- 4eeae3d: Filter panel: `ColumnDef.filter` (`true` or `{ options }`) puts a column in a
+  "Filters" menu with a control for its type (text, min–max, from–to, yes/no,
+  ticks) and shows the active filters as removable chips (`renderFilters`,
+  `renderFilterChips`, Vue `AcunFilters` / `AcunFilterChips`, React `Filters` /
+  `FilterChips`; built into `renderDataTable` and `AcunDataTable`). New filter
+  operators `gte` and `lte` ("at least", "at most"; whole days for dates).
+- 71e021a: Footer totals: a column's `aggregate` (`sum`, `avg`, `min`, `max`, `count`)
+  adds a `<tfoot>` row over every matching row, with exact decimal sums
+  (`getAggregates()`, `aggregateRows()`); server results may carry `totals`.
+  `AcunDataTable` reads `columns[].aggregate` / `data-aggregate` and the
+  answer's `totals`. Also the `gte` and `lte` filter operators.
+- b55e381: Editing in place: `ColumnDef.editable` (or `{ options }`) and the renderers'
+  `onEdit`. An edit button or a double click opens an editor chosen by the
+  column type (text, number, decimal with a decimal comma, date, date-time,
+  yes/no, a list); Enter or leaving saves, Escape cancels, errors keep it open.
+  The editor (`cellEditor`) is shared by the DOM, Vue and React tables.
+  `AcunDataTable`: `columns[].editable` and `onEdit`, updating the row (or
+  reloading a server page) once saved.
+- f3b749f: Vue `AcunDataTableLayout` and React `DataTableLayout`: the whole table with
+  its bars in one component, like `renderDataTable`. `persistState(table, {
+  key })` in the core and `stateSave` in `AcunDataTable` remember page, page
+  size, sorting, filters, search and hidden columns across reloads.
+
+### Patch Changes
+
+- ade0663: Fixes from review. A click that closes an editor reaches the control it was
+  pressed on; a virtual table keeps an edit while its row is only scrolled out
+  of view; focus stays in the modal dialog when the table draws again.
+  `virtual` tables default to `responsive: 'scroll'`, and cards with `scrollY`
+  scroll in their box on phones. Delete or a double-click on a resize handle
+  goes back to the width the content takes; columns hidden by the responsive
+  layout no longer get a frozen 48px width, and saved widths no longer widen
+  the phone cards. Clearing a large selection is fast, footer totals are
+  computed once per set of matching rows, and `persistState` no longer keeps
+  the page of a cursor-paged table.
+
 ## 0.3.0
 
 ### Minor Changes

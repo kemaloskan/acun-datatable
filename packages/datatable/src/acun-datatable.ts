@@ -122,9 +122,9 @@ export interface AcunDataTableOptions {
     /** Also show « and ». */
     readonly firstLast?: boolean;
     /**
-     * `serverSide`: keyset pages (`paging=cursor`): every page costs the same
-     * at any depth, with no result window; pages are reached one after
-     * another. The Laravel `TableResponse` answers it with `nextCursor`.
+     * `serverSide`: keyset pages (`paging=cursor`): the server continues
+     * through an index instead of skipping `OFFSET` rows, with no result
+     * window; pages are reached one after another. The Laravel `TableResponse` answers it with `nextCursor`.
      */
     readonly cursor?: boolean;
   };

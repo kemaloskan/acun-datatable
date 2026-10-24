@@ -1,6 +1,6 @@
 {
   "name": "@acunsoft/datatable-dom",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "Accessible DOM renderer for @acunsoft/datatable-core: semantic table, pagination and search without a framework.",
   "keywords": [
     "datatable",
@@ -45,7 +45,7 @@
     "build": "tsup src/index.ts --format esm --dts --clean --external @acunsoft/datatable-core && node -e \"require('node:fs').copyFileSync('src/styles.css','dist/styles.css')\""
   },
   "dependencies": {
-    "@acunsoft/datatable-core": "0.3.0"
+    "@acunsoft/datatable-core": "0.4.0"
   },
   "devDependencies": {
     "jsdom": "^30.1.3",

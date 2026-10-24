@@ -88,7 +88,9 @@ back end (yajra/laravel-datatables, the PHP SSP class): `draw`, `start`,
 'cursor' })` and `createHttpDataSource({ paging: 'cursor' })` every request
 carries `paging=cursor`, and pages after the first `cursor=` (the previous
 answer's `nextCursor`). The server continues after that row instead of
-skipping `OFFSET` rows, so every page costs the same at any depth; it answers
+skipping `OFFSET` rows, so a deep page does not read the rows before it
+(measured on 5,000,000 PostgreSQL rows: 0.3 ms against 2.5 s by `OFFSET`;
+see bench/ in the repository); it answers
 `nextCursor` while there is a next page. The pager then offers the pages seen
 so far and the next one.
 
@@ -254,7 +256,8 @@ text; every user value is a bound parameter.
   add timeouts and rate limiting for expensive queries.
 - **Index** the columns you sort and filter on, and always add a unique
   tie-breaker (e.g. `id`) to `ORDER BY` so pages are stable. Very deep `OFFSET`
-  pages get slow; cursor pagination is planned for that case.
+  pages get slower with the depth; use cursor paging (`paging: 'cursor'`) or a
+  result window for them.
 - **Return only intended fields** (API resources / explicit `SELECT`).
 - **Treat row values as untrusted** in the browser: render them as text.
 

@@ -57,15 +57,21 @@ const results = [];
 const measure = async (name, params, { count = true } = {}) => {
   const query = readTableQuery(new URLSearchParams(params), columns, { maxPageSize: 100 });
   const sql = sqlQuery(query, columns, { dialect, table: 'adt_perf' });
+  // The limited count of the Laravel adapter: matches are counted only up to 10,001.
+  const probe = { text: sql.count.text.replace(/^SELECT COUNT\(\*\) AS \S+ FROM /, 'SELECT COUNT(*) AS n FROM (SELECT 1 AS m FROM ') + ' LIMIT 10001) AS probe', values: sql.count.values };
   const page = [];
   const counts = [];
+  const probes = [];
   for (let run = 0; run < RUNS; run++) {
     page.push(await timed(sql.page));
-    if (count) counts.push(await timed(sql.count));
+    if (count) {
+      counts.push(await timed(sql.count));
+      probes.push(await timed(probe));
+    }
   }
-  const row = { name, params, page: stats(page), ...(count ? { count: stats(counts) } : {}), plan: await plan(sql.page) };
+  const row = { name, params, page: stats(page), ...(count ? { count: stats(counts), limited: stats(probes) } : {}), plan: await plan(sql.page) };
   results.push(row);
-  console.error(`${name}: page ${show(row.page)}${count ? `, count ${show(row.count)}` : ''}`);
+  console.error(`${name}: page ${show(row.page)}${count ? `, count ${show(row.count)}, limited count ${show(row.limited)}` : ''}`);
   return sql;
 };
 
@@ -80,6 +86,7 @@ await measure('filter status, sort by total', `pageSize=${pageSize}&sort=total:d
 await measure('one month, newest first', `pageSize=${pageSize}&sort=ordered:desc&filters[0][field]=ordered&filters[0][op]=between&filters[0][value][0]=2023-03-01&filters[0][value][1]=2023-03-31`);
 await measure('search "ayse" (folded column)', `pageSize=${pageSize}&sort=ordered:desc&search=ayse`);
 await measure('search a rare word (3 columns, 1 indexed)', `pageSize=${pageSize}&search=zzqx`);
+await measure('two filters no index serves, many matches', `pageSize=${pageSize}&filters[0][field]=city&filters[0][op]=eq&filters[0][value]=Konya&filters[1][field]=status&filters[1][op]=eq&filters[1][value]=cancelled`);
 await measure('a rare word in the indexed column', `pageSize=${pageSize}&filters[0][field]=customer&filters[0][op]=contains&filters[0][value]=zzqx`);
 
 await db.close();
@@ -114,9 +121,9 @@ function report() {
   const lines = [
     `${dialect} ${db.version}, ${ROWS.toLocaleString('en')} rows, ${RUNS} runs each, p50 / p95`,
     '',
-    '| Request | Page | Count | Plan |',
-    '|---|---|---|---|',
-    ...results.map(row => `| ${row.name} | ${show(row.page)} | ${row.count ? show(row.count) : '–'} | ${row.plan} |`),
+    '| Request | Page | Count | Count up to 10,001 | Plan |',
+    '|---|---|---|---|---|',
+    ...results.map(row => `| ${row.name} | ${show(row.page)} | ${row.count ? show(row.count) : '–'} | ${row.limited ? show(row.limited) : '–'} | ${row.plan} |`),
   ];
   return lines.join('\n');
 }

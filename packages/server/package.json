@@ -1,6 +1,6 @@
 {
   "name": "@acunsoft/datatable-server",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "Node back end for Acun DataTable (Next.js, Express, Fastify): reads and checks the table query against a column allowlist, builds parameterized SQL (PostgreSQL, MySQL, MariaDB, SQLite, SQL Server) or Prisma arguments, and answers in the table or DataTables format.",
   "keywords": [
     "datatable",
@@ -44,7 +44,7 @@
     "build": "tsup src/index.ts --format esm --dts --clean --external @acunsoft/datatable-core"
   },
   "dependencies": {
-    "@acunsoft/datatable-core": "0.3.0"
+    "@acunsoft/datatable-core": "0.4.0"
   },
   "devDependencies": {
     "mssql": "12.7.2",

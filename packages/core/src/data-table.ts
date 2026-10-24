@@ -41,8 +41,8 @@ interface DataTableBaseOptions<TData> {
   readonly mode?: DataTableMode;
   /**
    * Server mode: `'pages'` (default) asks for a page number (`OFFSET`);
-   * `'cursor'` sends the `nextCursor` of the page before (keyset), which
-   * stays fast at any depth. Pages are then reached one after another: every
+   * `'cursor'` sends the `nextCursor` of the page before (keyset): the server
+   * continues through an index instead of skipping `OFFSET` rows. Pages are then reached one after another: every
    * page up to the furthest one seen, plus the next while there is one.
    */
   readonly paging?: 'pages' | 'cursor';

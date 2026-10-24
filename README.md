@@ -22,7 +22,7 @@ dependencies.
 | [`@acunsoft/datatable-http`](packages/datasource-http) | Server mode over `fetch`: latest request wins, abort, retry. |
 | [`@acunsoft/datatable-server`](packages/server) | Node back end (Next.js, Express, Fastify): checks the query against a column allowlist, builds bound-parameter SQL (PostgreSQL, MySQL, SQLite) or Prisma arguments, answers in the table or DataTables format. |
 | [`@acunsoft/datatable-export`](packages/export) | Excel (.xlsx) and CSV export and import, written from scratch. |
-| [`acunsoft/datatable-laravel`](packages/adapter-laravel) | Livewire table and JSON endpoint; allowlisted columns, fast on millions of rows. |
+| [`acunsoft/datatable-laravel`](packages/adapter-laravel) | Livewire table and JSON endpoint; allowlisted columns, measured on 5 million rows. |
 
 **What you get**
 

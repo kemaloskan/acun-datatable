@@ -1,5 +1,39 @@
 # @acunsoft/datatable-http
 
+## 0.4.0
+
+### Minor Changes
+
+- 5753f1f: Cursor (keyset) paging for server tables: `createDataTable({ mode: 'server',
+  paging: 'cursor' })` keeps the cursor of every page seen and sends the
+  previous page's `nextCursor` (`TableQuery.cursor`); the pager offers those
+  pages and the next one. `createHttpDataSource({ paging: 'cursor' })` sends
+  `paging=cursor&cursor=…`. `AcunDataTable`: `pagination: { cursor: true }`.
+- 830b3cc: DataTables' server-side protocol: `serializeDataTablesQuery()` and
+  `fromDataTablesResponse()` talk to existing DataTables back ends (draw,
+  start, length, order, columns, search[value]); `AcunDataTable` sends it with
+  `ajax: { url, protocol: 'datatables' }`.
+
+### Patch Changes
+
+- b758334: Resizing and moving columns. Core: `columnOrder` and `columnWidths` state
+  with `moveColumn`, `setColumnOrder`, `setColumnWidth`, `setColumnWidths`
+  (`COLUMN_WIDTH_LIMITS`), kept by `persistState`. Renderers:
+  `resizableColumns` (drag handles, ←/→, Delete to reset) and
+  `reorderableColumns` (drag headers; up/down buttons and "Reset columns" in the
+  column menu), shared through `columnTools()`. `AcunDataTable`: `columnResize`,
+  `columnReorder`. `connectTable` no longer re-queries the server when only the
+  column layout changes (visibility, order, widths). Menus stay open when a
+  control inside them re-renders.
+- Updated dependencies [b758334]
+- Updated dependencies [5753f1f]
+- Updated dependencies [4eeae3d]
+- Updated dependencies [71e021a]
+- Updated dependencies [b55e381]
+- Updated dependencies [f3b749f]
+- Updated dependencies [ade0663]
+  - @acunsoft/datatable-core@0.4.0
+
 ## 0.3.0
 
 ### Minor Changes

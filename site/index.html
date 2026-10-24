@@ -233,7 +233,7 @@ const ICON = {
 const FEATURES = {
   tr:[["DataTables tarzı düzen","Üstte sayfa başı ve arama, altta \"Toplam: 5.000 kaydın 1 ile 25 arasını gösteriyor\" ve numaralı sayfalar; her parça taşınabilir, kaldırılabilir ya da kendi kontrolünüzle değiştirilebilir."],
       ["Mobil uyum, dört seçenek","Kart, yana kaydırma, açılır satır (⊕ ile gizlenen kolonlar satırın altında) veya modal; hangi kolonun telefonda kalacağını öncelik belirler."],
-      ["Büyük veri","5 milyon kayıtta ilk sayfa ~1 ms; tam sayı süre bütçesiyle (57 ms), yalnızca yavaşsa \"10.000+\"; derin sayfa koruması, indeks dostu tarih ve Türkçe arama."],
+      ["Büyük veri","5 milyon satırda ölçüldü (PostgreSQL 17): ilk sayfa ~1 ms, tam sayım 65 ms; sayım süre bütçesiyle, yalnızca yavaşsa \"10.000+\"; derin sayfa koruması, indeks dostu tarih ve Türkçe arama."],
       ["Yönetim paneli için hazır","Satır ve toplu işlemler, eşleşen tümünü seçme, kolon menüsü, Excel/CSV dışa aktarma, yazdırma ve satır numaralı hatalarla içe aktarma."],
       ["Özelleştirilebilir görünüm","sm / md / lg boyutlar, açık ve koyu tema, --adt-* CSS değişkenleri; Livewire'da hücreleri kendi Blade görünümünüzle çizin (rozet, avatar)."],
       ["Beş dil, bağımlılık yok","Türkçe, İngilizce, Almanca, Fransızca, İspanyolca metinler tekil/çoğul ve basamak ayırıcıyla yerleşik; dışarıdan hiçbir çalışma zamanı bağımlılığı yok."],
@@ -241,7 +241,7 @@ const FEATURES = {
       ["Güvenli ve erişilebilir","Değerler hep metin olarak yazılır, sunucu yalnızca tanımlı kolonları kabul eder; her kontrol klavyeyle çalışır ve ekran okuyucu adı taşır."]],
   en:[["DataTables-style layout","Page size and search above, \"Showing 1 to 25 of 5,000 rows\" and numbered pages below; every part can be moved, removed or replaced with your own control."],
       ["Four ways to fit a phone","Cards, sideways scrolling, collapsible rows (⊕ opens the hidden columns below the row) or a dialog; a priority per column decides what stays."],
-      ["Large tables","First page in ~1 ms on 5 million rows; exact counts within a time budget (57 ms), \"10,000+\" only when slow; deep-page guard, index-friendly dates and Turkish search."],
+      ["Large tables","Measured on 5 million rows (PostgreSQL 17): first page ~1 ms, exact count 65 ms; counts within a time budget, \"10,000+\" only when slow; deep-page guard, index-friendly dates and Turkish search."],
       ["Ready for back offices","Row and bulk actions, select all matching, a column menu, Excel/CSV export, print and import with line-numbered errors."],
       ["Make it yours","Sizes sm / md / lg, light and dark themes, --adt-* custom properties; in Livewire render cells with your own Blade view (badges, avatars)."],
       ["Five languages, no dependencies","English, Turkish, German, French and Spanish texts with plural forms and digit grouping built in; no third-party runtime dependency."],
@@ -396,7 +396,7 @@ state.destroy();`;
 const FW = {
   laravel:{ name:"Laravel", pkg:"acunsoft/datatable-laravel", status:"ready",
     install:"composer require acunsoft/datatable-laravel",
-    unpub:{tr:"Packagist'te yayında (0.4.0, MIT):", en:"Published on Packagist (0.4.0, MIT):"},
+    unpub:{tr:"Packagist'te yayında (0.5.0, MIT):", en:"Published on Packagist (0.5.0, MIT):"},
     api:'acunsoft/datatable-laravel',
     lead:{tr:"Laravel ve Livewire için tek Composer paketi. Ortak sorgu katmanı (izin verilen kolonlar, Eloquent operatörleri, Türkçe duyarlı akıllı arama, sayfa boyutu sınırı) hem Livewire tablolarına hem de tarayıcıdaki HTTP paketine JSON veren uç noktaya hizmet eder. Livewire tablosu DataTables tarzı düzen, numaralı sayfalama, Araçlar menüsü (dışa aktarma, yazdırma, içe aktarma), dört mobil görünüm ve sm/md/lg boyutlarla gelir; milyonlarca satırda tam sayım süre bütçesiyle yapılır. Livewire yalnızca Livewire tablosu için gerekir; npm veya bir UI kiti gerekmez.",
           en:"One Composer package for Laravel and Livewire. A shared query layer (allowlisted columns, Eloquent operators, Turkish-aware smart search, page-size limit) serves Livewire tables and the JSON endpoint used by the browser HTTP package. The Livewire table comes with a DataTables-style layout, numbered pages, a tools menu (export, print, import), four narrow-screen modes and sm/md/lg sizes; on millions of rows exact counts run within a time budget. Livewire is only needed for the Livewire table; no npm or UI kit required."},
@@ -833,7 +833,7 @@ const GUIDES = {
      [
       "\u003cscript>",
       "xml",
-      "\u003clink rel=\"stylesheet\" href=\"https://cdn.jsdelivr.net/npm/@acunsoft/datatable@0.3.0/dist/styles.css\">\n\u003cscript src=\"https://cdn.jsdelivr.net/npm/@acunsoft/datatable@0.3.0/dist/acun-datatable.min.js\">\u003c/script>\n\n\u003ctable id=\"myTable\">\u003c/table>\n\u003cscript>\n  new AcunDataTable('#myTable', {\n    fixedHeader: true,\n    serverSide: true,\n    ajax: { url: '/api/products', method: 'POST' },\n  });\n\u003c/script>"
+      "\u003clink rel=\"stylesheet\" href=\"https://cdn.jsdelivr.net/npm/@acunsoft/datatable@0.4.0/dist/styles.css\">\n\u003cscript src=\"https://cdn.jsdelivr.net/npm/@acunsoft/datatable@0.4.0/dist/acun-datatable.min.js\">\u003c/script>\n\n\u003ctable id=\"myTable\">\u003c/table>\n\u003cscript>\n  new AcunDataTable('#myTable', {\n    fixedHeader: true,\n    serverSide: true,\n    ajax: { url: '/api/products', method: 'POST' },\n  });\n\u003c/script>"
      ]
     ]
    },
@@ -1583,8 +1583,8 @@ const GUIDES = {
    "en": "Large tables"
   },
   "lead": {
-   "tr": "5 milyon satırda ölçüldü (PostgreSQL 17): ilk sayfa ~1 ms, tam sayım 57 ms. Paketin yaptıkları ve sizin yapmanız gerekenler.",
-   "en": "Measured on 5 million rows (PostgreSQL 17): first page ~1 ms, exact count 57 ms. What the package does and what you do."
+   "tr": "5 milyon satırda ölçüldü (PostgreSQL 17): ilk sayfa ~1 ms, tam sayım 65 ms. Paketin yaptıkları ve sizin yapmanız gerekenler.",
+   "en": "Measured on 5 million rows (PostgreSQL 17): first page ~1 ms, exact count 65 ms. What the package does and what you do."
   },
   "sections": [
    {
@@ -1594,8 +1594,8 @@ const GUIDES = {
      "en": "Exact counts and limits"
     },
     "desc": {
-     "tr": "10.000'e kadar sayım her zaman tam; ötesinde 250 ms bütçe, aşarsa \"10.000+\".",
-     "en": "Counts are always exact up to 10,000; beyond that 250 ms, else \"10,000+\"."
+     "tr": "10.000'e kadar sayım tam; ötesinde 250 ms bütçe, aşarsa \"10.000+\". Sınırlı sayımın süresi sorguya, indekslere ve veritabanına bağlıdır: az eşleşen ve indeks kullanamayan bir filtrede tüm tablo okunabilir.",
+     "en": "Counts are exact up to 10,000; beyond that 250 ms, else \"10,000+\". How long the limited count takes depends on the query, the indexes and the database: a filter with few matches that no index serves can read the whole table."
     },
     "tabs": [
      [
@@ -1632,8 +1632,8 @@ const GUIDES = {
      "en": "Cursor paging"
     },
     "desc": {
-     "tr": "Derin sayfalar OFFSET yerine son satırdan devam eder: 5 milyon satırda 100.001. sayfa 3.898 ms yerine 55,5 ms (sayım dahil, 2. sayfa ile aynı). Sayfalara sırayla gidilir; sıralama kolonları NULL içermemeli.",
-     "en": "Deep pages continue after the last row instead of an OFFSET: on 5 million rows page 100,001 takes 55.5 ms instead of 3,898 ms (count included, the same as page 2). Pages are reached one after another; sort columns should not hold NULLs."
+     "tr": "Derin sayfalar OFFSET yerine son satırdan devam eder: 5 milyon satırda 100.001. sayfa 3.898 ms yerine 55,5 ms (sayım dahil, 2. sayfa ile aynı; bu ölçüm o tabloya ait). Sayfalara sırayla gidilir; NULL içerebilen sıralama kolonları nullable() ile işaretlenir.",
+     "en": "Deep pages continue after the last row instead of an OFFSET: on 5 million rows page 100,001 takes 55.5 ms instead of 3,898 ms (count included, the same as page 2; measured on that table). Pages are reached one after another; mark sort columns that may hold NULL with nullable()."
     },
     "tabs": [
      [
@@ -1665,8 +1665,8 @@ const GUIDES = {
      "en": "Search engine (Scout)"
     },
     "desc": {
-     "tr": "Birkaç milyonun üzerindeki satırda metin araması Meilisearch, Typesense veya OpenSearch’e gider; filtre, sıralama, sayfalama ve sayım veritabanında kalır. Paket Scout’a bağımlı değil: anahtar döndüren her fonksiyon çalışır.",
-     "en": "Past a few million rows the text search goes to Meilisearch, Typesense or OpenSearch; filters, sorting, paging and the count stay in the database. The package does not depend on Scout: any function returning keys works."
+     "tr": "Metin araması veritabanında yeterince hızlı değilse (ölçerek karar verin) Meilisearch, Typesense veya OpenSearch’e verilebilir; filtre, sıralama, sayfalama ve sayım veritabanında kalır. Paket Scout’a bağımlı değil: anahtar döndüren her fonksiyon çalışır.",
+     "en": "When the text search is not fast enough in the database (measure it), it can go to Meilisearch, Typesense or OpenSearch; filters, sorting, paging and the count stay in the database. The package does not depend on Scout: any function returning keys works."
     },
     "tabs": [
      [
@@ -2031,7 +2031,7 @@ const T = {
        ex1:"Sıralama ve sayfalama", ex1d:"Çok kolonlu stable sıralama, ardından 1-tabanlı sayfa.",
        ex2:"Durumu dinlemek", ex2d:"State değişikliklerinde donmuş snapshot alırsın.",
        prevNote:"Bu paket henüz yazılmadı; aşağıdaki kod taslak bir API'dir ve değişebilir. Kurulum komutu yoktur. Örneklerdeki çekirdek fonksiyonlar bugün kullanılabilir.",
-       unpub:"npm'de yayında (0.3.0, MIT):", planned_install:"Bu paket henüz yok; kurulum komutu yayınla birlikte eklenecek.",
+       unpub:"npm'de yayında (0.4.0, MIT):", planned_install:"Bu paket henüz yok; kurulum komutu yayınla birlikte eklenecek.",
        feat_for:n=>`${n} adapter'ı aynı headless çekirdeği kullanır; aşağıdaki yetenekler her ortamda aynıdır.`,
        copy:"kopyala", copied:"kopyalandı",
        h_title:"Tablonun ortak çekirdeği.",
@@ -2041,10 +2041,10 @@ const T = {
        h_s1:"Nereden başlamalı?", h_s1d:"Framework'ünü seç; adımlar o sayfada.",
        h_s2:"Neler var?", h_s2d:"Her ortamda aynı çekirdek yetenekler.",
        h_s3:"Kod örneği", h_s3d:"Çekirdek bugün kullanılabilir.",
-       h_core_install:"npm'de yayında (0.3.0). Yalnızca çekirdek için:", go:"İncele →",
+       h_core_install:"npm'de yayında (0.4.0). Yalnızca çekirdek için:", go:"İncele →",
        demo:"Canlı demoyu aç", demo_d:"Kurulum olmadan tarayıcıda: sunucu tarafı sayfalama, filtreler, alt toplam, hücrede düzenleme, 100.000 satırlık sanal kaydırma.",
        fw_desc:{vue:"Hazır: composable\'lar ve bileşenler.",react:"Hazır: hook\'lar ve bileşenler.",html:"Hazır: framework olmadan DOM renderer.",laravel:"Hazır: Livewire tablosu ve JSON uç nokta, tek Composer paketi.",nextjs:"Route handler için Node sunucu paketi ve React ön yüz.",nuxt:"Nitro API rotası ve Vue bileşenleri.",inertia:"Laravel JSON uç noktası, Inertia sayfasında tablo.",webcomponent:"<acun-datatable>: Angular, Svelte, Astro, Alpine, düz HTML."},
-       api_title:"API referansı", api_lead:"Paketlerin genel API'si: tek çağrılık AcunDataTable, çekirdek, HTTP, Node sunucusu, DOM, dışa/içe aktarma, Vue, React (npm'de 0.3.0) ve Laravel (Packagist'te 0.4.0).",
+       api_title:"API referansı", api_lead:"Paketlerin genel API'si: tek çağrılık AcunDataTable, çekirdek, HTTP, Node sunucusu, DOM, dışa/içe aktarma, Vue, React (npm'de 0.4.0) ve Laravel (Packagist'te 0.5.0).",
        a_s1:"Fonksiyonlar", a_s1d:"İmza ve kısa açıklama.", a_s2:"Örnek", a_s2d:"Fonksiyonların birlikte kullanımı." },
   en:{ nav_start:"Getting started", nav_fw:"Frameworks", nav_guides:"Guides", nav_api:"API", cta:"Get started",
        g_start:"Getting started", g_fw:"Frameworks", g_guides:"Guides", g_core:"Core",
@@ -2056,7 +2056,7 @@ const T = {
        ex1:"Sorting and pagination", ex1d:"Multi-column stable sorting, then a 1-based page.",
        ex2:"Listening to state", ex2d:"Every state change gives you a frozen snapshot.",
        prevNote:"This package is not written yet; the code below is a draft API and may change. There is no install command. The core functions in the examples are available today.",
-       unpub:"Published on npm (0.3.0, MIT):", planned_install:"This package does not exist yet; an install command will come with the release.",
+       unpub:"Published on npm (0.4.0, MIT):", planned_install:"This package does not exist yet; an install command will come with the release.",
        feat_for:n=>`The ${n} adapter uses the same headless core; these capabilities are identical everywhere.`,
        copy:"copy", copied:"copied",
        h_title:"The common core for tables.",
@@ -2066,10 +2066,10 @@ const T = {
        h_s1:"Where to start?", h_s1d:"Pick your framework; the steps are on its page.",
        h_s2:"What's inside?", h_s2d:"The same core capabilities everywhere.",
        h_s3:"Code example", h_s3d:"The core is available today.",
-       h_core_install:"Published on npm (0.3.0). Core only:", go:"Open →",
+       h_core_install:"Published on npm (0.4.0). Core only:", go:"Open →",
        demo:"Open the live demo", demo_d:"In the browser, no install: server-side paging, filters, footer totals, editing in place, virtual scrolling over 100,000 rows.",
        fw_desc:{vue:"Ready: composables and components.",react:"Ready: hooks and components.",html:"Ready: DOM renderer, no framework.",laravel:"Ready: a Livewire table and a JSON endpoint, one Composer package.",nextjs:"A Node server package for route handlers, and the React front end.",nuxt:"A Nitro API route and the Vue components.",inertia:"A Laravel JSON endpoint, the table on an Inertia page.",webcomponent:"<acun-datatable>: Angular, Svelte, Astro, Alpine, plain HTML."},
-       api_title:"API reference", api_lead:"Public API of the packages: the one-call AcunDataTable, core, HTTP, Node server, DOM, export/import, Vue, React (on npm, 0.3.0) and Laravel (on Packagist, 0.4.0).",
+       api_title:"API reference", api_lead:"Public API of the packages: the one-call AcunDataTable, core, HTTP, Node server, DOM, export/import, Vue, React (on npm, 0.4.0) and Laravel (on Packagist, 0.5.0).",
        a_s1:"Functions", a_s1d:"Signature and short description.", a_s2:"Example", a_s2d:"Using the functions together." }
 };
 
