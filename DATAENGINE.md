@@ -6,9 +6,10 @@ against the contracts below. MIT licensed and free, like the rest.
 
 ## 0. Founding decisions
 
-**Principle: Acun DataTable manages data, not the database.** It describes
-what the user asks for (page, sort, filters, search) and shows the answer.
-The backend and its database adapter run the queries.
+**Principle: Acun DataTable manages data, not the database.** It manages
+the table only: it describes what the user asks for (page, sort, filters,
+search) and shows the answer. How the data is queried is the backend's
+decision; the backend and its database adapter run the queries.
 
 | Area | Decision |
 |---|---|

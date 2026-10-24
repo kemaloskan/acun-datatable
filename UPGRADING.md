@@ -37,6 +37,10 @@ it is new; the changes below are the ones that can need a change in your code.
 
 ### Behaviour that changed
 
+- **`@acunsoft/datatable-dom`:** `virtual` tables default to
+  `responsive: 'scroll'`; Delete or a double-click on a resize handle sets
+  the column to the width its content takes instead of clearing it.
+
 - **`DataTableState`** has `columnOrder` and `columnWidths`. Code that compares
   a whole state object (`toEqual` in tests) needs the new fields.
 - **`getVisibleColumns()`** follows `columnOrder` (the definition order until
@@ -78,6 +82,11 @@ and `@acunsoft/datatable-server` for Node back ends.
   (`max_statement_time`); before, it silently had none.
 - **`TableExport`**: `saveCsv()` / `saveXlsx()` write files; `csv()` / `xlsx()`
   are unchanged.
+- **DataTables protocol:** columns without data (`data: null`, e.g. actions)
+  are ignored instead of refused, as is ordering by them.
+- **`saveCell()`** refuses a column of another table (`customers.name` on an
+  `Order` row) instead of writing the order's own attribute; override it to
+  save such edits.
 
 New, nothing to change: filters, footer totals, child rows
 (`detailView()`), lazy placeholders, fixed, resizable and movable columns,

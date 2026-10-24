@@ -5,6 +5,20 @@ All notable changes to this repository. Each npm package also has its own
 
 ## Unreleased
 
+### Fixed (`acunsoft/datatable-laravel`, review before 0.5.0)
+
+- **Queued tasks:** the worker no longer keeps the user of a job for the jobs
+  after it; a guest's task belongs to the guest's session (a leaked link is
+  not enough); one task at a time per table and `queuedTaskLimit()` per
+  visitor; `taskGuard()` for tables behind another guard.
+- **Selection:** a huge `selected` list set from the browser is trimmed once
+  (20,000 keys took 7 s per request before).
+- **Cursor paging:** NULL sort values no longer fail (`Column::nullable()`
+  reaches the NULL rows); a query builder gets the key as tie-breaker; a sort
+  set directly (`wire:model`) starts again from page 1.
+- **DataTables protocol:** `data: null` columns are ignored; `saveCell()`
+  refuses columns of another table.
+
 ### Changed (large tables, `acunsoft/datatable-laravel` 0.3.0)
 
 Measured on 5,000,000 rows in PostgreSQL 17; see the Laravel README's
