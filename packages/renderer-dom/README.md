@@ -213,7 +213,8 @@ A column with `aggregate: 'sum' | 'avg' | 'min' | 'max' | 'count'` gets a
 just the page. Decimal sums are exact (`0.10 + 0.20` is `0.30`, no float
 rounding). With a server data source the answer's `totals` (per column ID)
 gives them; `table.getAggregates()` returns the same values for your own
-footer.
+footer. A column's `format` also formats its total (called without a row),
+so `1.250,50 ₺` in the cells gives `5.350,40 ₺` below them.
 
 ## `renderFilters(container, table, options?)` · `renderFilterChips(…)`
 

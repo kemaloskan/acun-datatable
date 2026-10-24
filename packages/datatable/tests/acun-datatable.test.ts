@@ -203,6 +203,14 @@ describe('footer totals', () => {
     });
     await remote.ready;
     expect(foot(remote.element)).toEqual(['Toplam', '4.650,00']);
+    remote.destroy();
+
+    const priced = new AcunDataTable('#orders', {
+      data: orders, language: 'tr',
+      columns: [{ data: 'customer' }, { data: 'total', type: 'number', aggregate: 'sum', render: value => `${String(value)} ₺` }],
+    });
+    await priced.ready;
+    expect(foot(priced.element)).toEqual(['Toplam', '4650 ₺']);
   });
 
   it('reads data-aggregate from an existing table', async () => {

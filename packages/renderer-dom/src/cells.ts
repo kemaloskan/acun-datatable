@@ -74,10 +74,23 @@ export function createCellText<TData>(
     return valueText(column, raw);
   };
   return Object.assign(text, {
-    /** The text of a column's footer total: counts as plain numbers, the rest in the column's type. */
+    /**
+     * The text of a column's footer total: counts as plain numbers; the rest
+     * through the column's formatter (called without a row, so `1250.5 ₺`
+     * matches the cells), else in the column's type. A formatter that needs
+     * the row falls back to the default text.
+     */
     total: (column: ColumnDef<TData>, result: AggregateResult | undefined): string => {
       if (!result || result.value === undefined) return '';
-      return result.aggregate === 'count' ? numbers.format(result.value as number) : valueText(column, result.value);
+      if (result.aggregate === 'count') return numbers.format(result.value as number);
+      const formatter = options.format?.[column.id];
+      if (formatter) {
+        try {
+          const output = formatter(isDecimal(result.value) ? result.value.text : result.value, undefined as never);
+          if (typeof output === 'string') return output;
+        } catch { /* needs the row: the default text below */ }
+      }
+      return valueText(column, result.value);
     },
   });
 }

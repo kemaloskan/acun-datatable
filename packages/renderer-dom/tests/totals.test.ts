@@ -32,6 +32,15 @@ describe('footer totals', () => {
     expect(cells()).toEqual(['', 'Toplam', '99,90', '3']);
   });
 
+  it('formats totals with the column formatter, without a row', () => {
+    const table = createDataTable<R>({ data, columns, locale: 'tr' });
+    renderTable(host, table, { locale: 'tr', labels: labelsTr, format: {
+      total: value => `${String(value)} ₺`,
+      qty: (value, row) => `${String(value)} × ${row.original.customer}`, // needs the row: default text
+    } });
+    expect([...host.querySelectorAll('tfoot tr > *')].map(cell => cell.textContent)).toEqual(['Toplam', '1350.50 ₺', '3']);
+  });
+
   it('leaves out the footer without aggregate columns', () => {
     renderTable(host, createDataTable<R>({ data, columns: [columns[0]!] }));
     expect(host.querySelector('tfoot')).toBeNull();

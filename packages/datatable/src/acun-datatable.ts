@@ -28,8 +28,11 @@ export interface ColumnOptions {
   readonly hideable?: boolean;
   /** Narrow screens with `responsive` `collapse` / `modal`: 1 always, 2 below 640px, 3 below 960px. */
   readonly priority?: 1 | 2 | 3;
-  /** Cell text from the value (always shown as text, never as HTML). */
-  readonly render?: (value: unknown, row: Data) => string;
+  /**
+   * Cell text from the value (always shown as text, never as HTML). Also
+   * formats the column's footer total, with `row` `undefined`.
+   */
+  readonly render?: (value: unknown, row: Data | undefined) => string;
   /**
    * Put the column in the filter panel: `true` picks the control from `type`
    * (text, min–max, from–to, yes/no), a list of `{ value, label }` gives
@@ -332,7 +335,8 @@ export class AcunDataTable {
     for (const column of options.columns ?? []) {
       if ('data' in column && column.render) {
         const render = column.render;
-        format[column.data] = (value, row: Row<Data>) => render(value, row.original);
+        // A footer total has no row: render gets `undefined` (see ColumnOptions.render).
+        format[column.data] = (value, row: Row<Data> | undefined) => render(value, row?.original);
       }
       if ('data' in column && column.cell) {
         const cell = column.cell;
