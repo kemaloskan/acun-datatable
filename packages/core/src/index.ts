@@ -9,6 +9,7 @@ export {
   type FilterCache, type FilterOperator, type FilterOptions, type FilterQuery, type FilterRule,
 } from './filtering';
 export { createLocalRowModel, type LocalRowModel, type LocalRowModelOptions, type SortComparator, type NullPlacement } from './local-row-model';
+export { AGGREGATES, aggregateRows, type Aggregate, type AggregateResult } from './aggregates';
 export { persistState, type PersistedPart, type PersistStateOptions, type StateStorage } from './persist';
 export { getPageItems, paginateRows, type PageItem, type PageItemsOptions, type PageView } from './pagination';
 export {

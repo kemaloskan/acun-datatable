@@ -18,6 +18,8 @@ export interface PageResult<TData> {
   readonly totalRows?: number;
   /** Reserved for cursor pagination (future). */
   readonly nextCursor?: string;
+  /** Footer totals per column ID, over every matching row (columns with `aggregate`). */
+  readonly totals?: Readonly<Record<string, string | number | null>>;
 }
 
 /**
@@ -95,7 +97,7 @@ export function validatePageResult(value: unknown, options: PageResultValidation
   if (!value || typeof value !== 'object' || Array.isArray(value)) {
     throw new TypeError('page result must be an object');
   }
-  const { rows, totalRows, nextCursor } = value as { rows?: unknown; totalRows?: unknown; nextCursor?: unknown };
+  const { rows, totalRows, nextCursor, totals } = value as { rows?: unknown; totalRows?: unknown; nextCursor?: unknown; totals?: unknown };
   if (!Array.isArray(rows)) throw new TypeError('page result rows must be an array');
   rows.forEach((row, index) => {
     if (!row || typeof row !== 'object' || Array.isArray(row)) {
@@ -114,9 +116,14 @@ export function validatePageResult(value: unknown, options: PageResultValidation
   if (nextCursor !== undefined && (typeof nextCursor !== 'string' || nextCursor.length === 0)) {
     throw new TypeError('page result nextCursor must be a non-empty string');
   }
+  if (totals !== undefined && (totals === null || typeof totals !== 'object' || Array.isArray(totals) ||
+      !Object.values(totals).every(item => item === null || typeof item === 'string' || (typeof item === 'number' && Number.isFinite(item))))) {
+    throw new TypeError('page result totals must be an object of numbers, strings or null');
+  }
   return Object.freeze({
     rows: Object.freeze([...rows]) as readonly Record<string, unknown>[],
     ...(totalRows !== undefined ? { totalRows } : {}),
     ...(nextCursor !== undefined ? { nextCursor } : {}),
+    ...(totals !== undefined ? { totals: Object.freeze({ ...(totals as Record<string, string | number | null>) }) } : {}),
   });
 }

@@ -149,6 +149,8 @@
 .adt-table .adt-select { width: 3rem; padding-right: 0; }
 .adt-table input[type="checkbox"] { width: 1.05rem; height: 1.05rem; margin: 0; accent-color: var(--adt-accent); cursor: pointer; vertical-align: middle; }
 .adt-table :is(th, td).adt-num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.adt-table tfoot :is(th, td) { font-weight: 600; border-top: 2px solid var(--adt-line); border-bottom: 0; background: var(--adt-head-bg); text-align: left; }
+.adt-table tfoot .adt-num { text-align: right; }
 .adt-empty td { text-align: center; color: var(--adt-muted); padding: 3rem 1rem; }
 
 /* Sortable headers: a faint up/down mark, the active direction in the accent colour */
@@ -435,6 +437,11 @@
   .adt-responsive--cards .adt-row, .adt-responsive--cards .adt-empty { border: 1px solid var(--adt-line); border-radius: var(--adt-radius); margin-bottom: 0.75rem; background: var(--adt-surface); overflow: hidden; }
   .adt-responsive--cards .adt-table td { display: grid; grid-template-columns: minmax(7rem, 40%) 1fr; gap: 0.75rem; padding: 0.625rem 0.875rem; border-bottom: 1px solid var(--adt-line); overflow-wrap: anywhere; }
   .adt-responsive--cards .adt-table td.adt-num { text-align: left; }
+  .adt-responsive--cards .adt-table tfoot, .adt-responsive--cards .adt-table tfoot tr, .adt-responsive--cards .adt-table tfoot :is(th, td) { display: block; width: 100%; }
+  .adt-responsive--cards .adt-table tfoot tr { border: 1px solid var(--adt-line); border-radius: var(--adt-radius); background: var(--adt-surface); overflow: hidden; }
+  .adt-responsive--cards .adt-table tfoot td { display: grid; grid-template-columns: minmax(7rem, 40%) 1fr; gap: 0.75rem; padding: 0.625rem 0.875rem; }
+  .adt-responsive--cards .adt-table tfoot td::before { content: attr(data-label); color: var(--adt-muted); font-size: 0.875em; }
+  .adt-responsive--cards .adt-table tfoot :is(td.adt-select, td.adt-actions, td.adt-expand-cell, td:empty) { display: none; }
   .adt-responsive--cards .adt-table td::before { content: attr(data-label); font-weight: 600; font-size: 0.875em; color: var(--adt-muted); }
   .adt-responsive--cards .adt-table td.adt-select, .adt-responsive--cards .adt-empty td { display: block; width: 100%; }
   .adt-responsive--cards .adt-table caption { padding: 0 0 0.5rem; }

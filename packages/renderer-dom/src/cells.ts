@@ -1,4 +1,4 @@
-import { isDecimal, normalizeValue, type ColumnDef, type Row, type SortRule } from '@acunsoft/datatable-core';
+import { isDecimal, normalizeValue, type AggregateResult, type ColumnDef, type Row, type SortRule } from '@acunsoft/datatable-core';
 import { labelsEn, type DataTableLabels } from './labels';
 
 /** Turns a cell value into plain text. It must return a string; HTML is never interpreted. */
@@ -29,7 +29,9 @@ export function cellValue<TData>(column: ColumnDef<TData>, row: Row<TData>): unk
  */
 export function createCellText<TData>(
   columns: readonly ColumnDef<TData>[], options: CellTextOptions<TData> = {},
-): (column: ColumnDef<TData>, row: Row<TData>) => string {
+): ((column: ColumnDef<TData>, row: Row<TData>) => string) & {
+  readonly total: (column: ColumnDef<TData>, result: AggregateResult | undefined) => string;
+} {
   const labels: DataTableLabels = { ...labelsEn, ...options.labels };
   const locale = options.locale ?? 'en';
   const ids = new Set(columns.map(column => column.id));
@@ -49,14 +51,7 @@ export function createCellText<TData>(
     }
     return format;
   };
-  return (column, row) => {
-    const raw = cellValue(column, row);
-    const formatter = options.format?.[column.id];
-    if (formatter) {
-      const output = formatter(raw, row);
-      if (typeof output !== 'string') throw new TypeError(`format for column "${column.id}" must return a string`);
-      return output;
-    }
+  const valueText = (column: ColumnDef<TData>, raw: unknown): string => {
     const value = column.type === undefined ? raw : normalizeValue(raw, column.type) ?? raw;
     if (value == null) return '';
     if (typeof value === 'number') return Number.isNaN(value) ? '' : numbers.format(value);
@@ -68,6 +63,23 @@ export function createCellText<TData>(
     if (typeof value === 'boolean') return value ? labels.yes : labels.no;
     return String(value);
   };
+  const text = (column: ColumnDef<TData>, row: Row<TData>): string => {
+    const raw = cellValue(column, row);
+    const formatter = options.format?.[column.id];
+    if (formatter) {
+      const output = formatter(raw, row);
+      if (typeof output !== 'string') throw new TypeError(`format for column "${column.id}" must return a string`);
+      return output;
+    }
+    return valueText(column, raw);
+  };
+  return Object.assign(text, {
+    /** The text of a column's footer total: counts as plain numbers, the rest in the column's type. */
+    total: (column: ColumnDef<TData>, result: AggregateResult | undefined): string => {
+      if (!result || result.value === undefined) return '';
+      return result.aggregate === 'count' ? numbers.format(result.value as number) : valueText(column, result.value);
+    },
+  });
 }
 
 /**

@@ -37,6 +37,9 @@ export interface DataTableLabels {
   readonly selectedCount: (count: number) => string;
   readonly clearSelection: string;
   readonly selectAllMatching: (total: number) => string;
+  /** Footer totals: the row's label and each total's name (tooltip). */
+  readonly totals: string;
+  readonly aggregate: (kind: 'sum' | 'avg' | 'min' | 'max' | 'count') => string;
   readonly allMatchingSelected: (total: number) => string;
   /** Column visibility menu. */
   readonly columns: string;
@@ -127,6 +130,8 @@ export const labelsEn: DataTableLabels = Object.freeze({
   moreActions: (name: string) => `More actions: ${name}`,
   selectAllMatching: (total: number) => `Select all ${en.number(total)} matching rows`,
   allMatchingSelected: (total: number) => `All ${en.number(total)} matching rows selected`,
+  totals: 'Total',
+  aggregate: (kind: 'sum' | 'avg' | 'min' | 'max' | 'count') => ({ sum: 'Sum', avg: 'Average', min: 'Lowest', max: 'Highest', count: 'Count' })[kind] ?? 'Σ',
 });
 
 export const labelsTr: DataTableLabels = Object.freeze({
@@ -179,6 +184,8 @@ export const labelsTr: DataTableLabels = Object.freeze({
   moreActions: (name: string) => `Diğer işlemler: ${name}`,
   selectAllMatching: (total: number) => `Eşleşen ${tr.number(total)} kaydın tümünü seç`,
   allMatchingSelected: (total: number) => `Eşleşen ${tr.number(total)} kaydın tümü seçili`,
+  totals: 'Toplam',
+  aggregate: (kind: 'sum' | 'avg' | 'min' | 'max' | 'count') => ({ sum: 'Toplam', avg: 'Ortalama', min: 'En düşük', max: 'En yüksek', count: 'Adet' })[kind] ?? 'Σ',
 });
 
 export const labelsDe: DataTableLabels = Object.freeze({
@@ -231,6 +238,8 @@ export const labelsDe: DataTableLabels = Object.freeze({
   moreActions: (name: string) => `Weitere Aktionen: ${name}`,
   selectAllMatching: (total: number) => `Alle ${de.number(total)} passenden Einträge auswählen`,
   allMatchingSelected: (total: number) => `Alle ${de.number(total)} passenden Einträge ausgewählt`,
+  totals: 'Summe',
+  aggregate: (kind: 'sum' | 'avg' | 'min' | 'max' | 'count') => ({ sum: 'Summe', avg: 'Durchschnitt', min: 'Minimum', max: 'Maximum', count: 'Anzahl' })[kind] ?? 'Σ',
 });
 
 export const labelsFr: DataTableLabels = Object.freeze({
@@ -283,6 +292,8 @@ export const labelsFr: DataTableLabels = Object.freeze({
   moreActions: (name: string) => `Autres actions : ${name}`,
   selectAllMatching: (total: number) => `Sélectionner les ${fr.number(total)} lignes correspondantes`,
   allMatchingSelected: (total: number) => `Les ${fr.number(total)} lignes correspondantes sont sélectionnées`,
+  totals: 'Total',
+  aggregate: (kind: 'sum' | 'avg' | 'min' | 'max' | 'count') => ({ sum: 'Somme', avg: 'Moyenne', min: 'Minimum', max: 'Maximum', count: 'Nombre' })[kind] ?? 'Σ',
 });
 
 export const labelsEs: DataTableLabels = Object.freeze({
@@ -335,6 +346,8 @@ export const labelsEs: DataTableLabels = Object.freeze({
   moreActions: (name: string) => `Más acciones: ${name}`,
   selectAllMatching: (total: number) => `Seleccionar las ${es.number(total)} filas coincidentes`,
   allMatchingSelected: (total: number) => `Las ${es.number(total)} filas coincidentes están seleccionadas`,
+  totals: 'Total',
+  aggregate: (kind: 'sum' | 'avg' | 'min' | 'max' | 'count') => ({ sum: 'Suma', avg: 'Promedio', min: 'Mínimo', max: 'Máximo', count: 'Cantidad' })[kind] ?? 'Σ',
 });
 
 /** The bundled label sets by language. */

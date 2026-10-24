@@ -185,6 +185,35 @@ describe('buttons and custom cells', () => {
   });
 });
 
+describe('footer totals', () => {
+  it('sums every matching row in the browser and reads server totals', async () => {
+    const local = new AcunDataTable('#orders', {
+      data: orders, language: 'tr', pagination: { pageSize: 10 },
+      columns: [{ data: 'customer' }, { data: 'total', type: 'number', aggregate: 'sum' }],
+    });
+    await local.ready;
+    const foot = (root: ParentNode) => [...root.querySelectorAll('tfoot tr > *')].map(cell => cell.textContent);
+    expect(foot(local.element)).toEqual(['Toplam', '4.650']); // all 30 rows, not the page of 10
+    local.destroy();
+
+    vi.stubGlobal('fetch', json({ data: orders.slice(0, 10), total: 30, totals: { total: '4650.00' } }));
+    const remote = new AcunDataTable('#orders', {
+      serverSide: true, ajax: '/api/orders', language: 'tr',
+      columns: [{ data: 'customer' }, { data: 'total', type: 'decimal', aggregate: 'sum' }],
+    });
+    await remote.ready;
+    expect(foot(remote.element)).toEqual(['Toplam', '4.650,00']);
+  });
+
+  it('reads data-aggregate from an existing table', async () => {
+    document.body.innerHTML = `<table id="t"><thead><tr><th>Ad</th><th data-type="number" data-aggregate="max">Puan</th></tr></thead>
+      <tbody><tr><td>Ayşe</td><td>7</td></tr><tr><td>Ali</td><td>12</td></tr></tbody></table>`;
+    const dt = new AcunDataTable('#t');
+    await dt.ready;
+    expect([...dt.element.querySelectorAll('tfoot tr > *')].map(cell => cell.textContent)).toEqual(['Total', '12']);
+  });
+});
+
 describe('stateSave', () => {
   it('restores page, sorting and search after a reload', async () => {
     localStorage.clear();

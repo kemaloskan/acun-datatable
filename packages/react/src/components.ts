@@ -319,7 +319,23 @@ export function DataTable<TData>(props: DataTableProps<TData>): ReactElement {
     h('div', { className: 'adt-scroll' }, h('table', { className: tableClass },
       props.caption !== undefined ? h('caption', null, props.caption) : null,
       h('thead', null, h('tr', null, head)),
-      h('tbody', null, body))),
+      h('tbody', null, body),
+      // Footer totals of the columns with `aggregate` (every matching row).
+      columns.some(column => column.aggregate !== undefined) ? h('tfoot', null, h('tr', { className: 'adt-total' }, ...(() => {
+        const totals = table.getAggregates();
+        const cells: ReactNode[] = [];
+        if (collapsible) cells.push(h('td', { className: 'adt-expand-cell', key: '__expand' }));
+        if (selectable) cells.push(h('td', { className: 'adt-select', key: '__select' }));
+        columns.forEach((column, index) => {
+          const result = totals[column.id];
+          const cellClass = [collapsible ? `adt-col--p${priorityOf(column, index)}` : '', result ? 'adt-num' : ''].filter(Boolean).join(' ') || undefined;
+          cells.push(index === 0 && !result
+            ? h('th', { scope: 'row', className: cellClass, 'data-label': column.header, key: column.id }, labels.totals)
+            : h('td', { className: cellClass, key: column.id, 'data-label': result ? `${column.header} · ${labels.aggregate(result.aggregate)}` : column.header, title: result ? labels.aggregate(result.aggregate) : undefined }, text.total(column, result)));
+        });
+        if (rowActions.length > 0) cells.push(h('td', { className: collapsible ? 'adt-actions adt-col--p2' : 'adt-actions', key: '__actions' }));
+        return cells;
+      })())) : null)),
     responsive === 'modal'
       ? h('dialog', {
         ref: dialog, className: 'adt-dialog', 'aria-labelledby': `${uid}-dialog-title`, onClose: onDialogClose,

@@ -712,6 +712,10 @@ const GUIDES = {
      [
       "columns.render (HTML)",
       "columns.cell (DOM node)"
+     ],
+     [
+      "footerCallback (sum)",
+      "columns: [{ data: 'total', aggregate: 'sum' }]"
      ]
     ]
    },
@@ -1431,6 +1435,34 @@ const GUIDES = {
       "HTML (parçalar)",
       "typescript",
       "import { el, renderDataTable } from '@acunsoft/datatable-dom';\n\nrenderDataTable(el_, table, {\n  cells: { status: ({ value, text }) => el('span', { class: 'badge badge--' + value }, text) },\n});"
+     ]
+    ]
+   },
+   {
+    "id": "totals",
+    "title": {
+     "tr": "Alt toplamlar",
+     "en": "Footer totals"
+    },
+    "desc": {
+     "tr": "Yalnızca sayfanın değil, arama ve filtrelere uyan tüm satırların toplamı; ondalıklar kuruşu kuruşuna (0,10 + 0,20 = 0,30).",
+     "en": "The total of every row matching the search and filters, not just the page; decimals to the cent (0.10 + 0.20 = 0.30)."
+    },
+    "tabs": [
+     [
+      "AcunDataTable",
+      "typescript",
+      "new AcunDataTable('#orders', {\n  serverSide: true,\n  ajax: '/api/orders',             // the answer's \"totals\" fill the footer\n  columns: [\n    { data: 'customer', title: 'Müşteri' },\n    { data: 'total', title: 'Tutar', type: 'decimal', aggregate: 'sum' },\n    { data: 'qty', title: 'Adet', type: 'number', aggregate: 'avg' },   // min, max, count\n  ],\n});\n// \u003cth data-aggregate=\"sum\"> on an existing table"
+     ],
+     [
+      "Livewire",
+      "php",
+      "Column::make('total')->header('Tutar')->type('decimal')->sum(),\nColumn::make('qty')->header('Adet')->type('number')->aggregate('avg'),\n\n// One SQL query (SUM, AVG, …) over the filtered rows; left out while the count is \"10.000+\".\n// The JSON endpoint (TableResponse) sends the same values as \"totals\"."
+     ],
+     [
+      "Vue / React",
+      "typescript",
+      "// columns: { id: 'total', …, type: 'decimal', aggregate: 'sum' }\n// \u003cAcunDataTable :table=\"table\" />  ·  \u003cDataTable table={table} />  draw the \u003ctfoot> themselves\ntable.getAggregates(); // { total: { aggregate: 'sum', value: … } } for your own footer"
      ]
     ]
    }

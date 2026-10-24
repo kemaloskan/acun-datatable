@@ -28,6 +28,11 @@ interface ColumnBase {
    * list of values to tick instead.
    */
   readonly filter?: boolean | ColumnFilter;
+  /**
+   * A footer total over every row matching the filters and search: `sum`,
+   * `avg`, `min`, `max` or `count` (server mode: from the server's `totals`).
+   */
+  readonly aggregate?: 'sum' | 'avg' | 'min' | 'max' | 'count';
 }
 
 /** A filter-panel control with fixed choices, e.g. a status. */
@@ -61,7 +66,7 @@ export function createColumns<TData>(
     if (!definition || typeof definition !== 'object') {
       throw new TypeError(`column[${index}] must be an object`);
     }
-    const { id, header, accessorKey, accessorFn, enableSorting, enableFiltering, enableHiding, type, priority, filter } = definition;
+    const { id, header, accessorKey, accessorFn, enableSorting, enableFiltering, enableHiding, type, priority, filter, aggregate } = definition;
     if (typeof id !== 'string' || id.trim().length === 0) {
       throw new TypeError(`column[${index}].id must be a non-empty string`);
     }
@@ -99,12 +104,16 @@ export function createColumns<TData>(
         throw new TypeError(`column "${id}".filter.options must be a non-empty list of { value, label }`);
       }
     }
+    if (aggregate !== undefined && !['sum', 'avg', 'min', 'max', 'count'].includes(aggregate)) {
+      throw new TypeError(`column "${id}".aggregate must be sum, avg, min, max or count`);
+    }
     ids.add(id);
     const base = {
       id, header, enableSorting: enableSorting ?? false, enableFiltering: enableFiltering ?? false,
       ...(enableHiding !== undefined ? { enableHiding } : {}),
       ...(type !== undefined ? { type } : {}),
       ...(priority !== undefined ? { priority } : {}),
+      ...(aggregate !== undefined ? { aggregate } : {}),
       ...(filter !== undefined && filter !== false ? { filter: filter === true ? true : Object.freeze({ ...filter, ...(filter.options ? { options: Object.freeze([...filter.options]) } : {}) }) } : {}),
     };
     // Validation above establishes the exclusive accessor branch at runtime.

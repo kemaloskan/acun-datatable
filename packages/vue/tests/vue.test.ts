@@ -320,3 +320,14 @@ describe('row action menu', () => {
     expect(remove).toHaveBeenCalledOnce();
   });
 });
+
+describe('footer totals', () => {
+  it('shows the sum of every matching row', async () => {
+    const table = createDataTable<Order>({ data: orders, locale: 'tr', initialState: { pageSize: 1 }, columns: [
+      { id: 'customer', header: 'Müşteri', accessorKey: 'customer' },
+      { id: 'total', header: 'Tutar', accessorKey: 'total', type: 'decimal', aggregate: 'sum' },
+    ] });
+    await mount(() => h(AcunDataTable, { table, locale: 'tr', labels: labelsTr }));
+    expect([...host.querySelectorAll('tfoot tr > *')].map(cell => cell.textContent)).toEqual(['Toplam', '1.740,50']);
+  });
+});

@@ -402,6 +402,28 @@ export function renderTable<TData>(
     }
     if (dialogRow !== undefined && !pageIds.includes(dialogRow)) closeDialog(); // its row left the page
     tableEl.append(head, body);
+    // Footer totals of the columns with `aggregate` (every matching row, not just the page).
+    if (columns.some(column => column.aggregate !== undefined)) {
+      const totals = table.getAggregates();
+      const tr = element(doc, 'tr', { class: 'adt-total' });
+      if (collapsible) tr.append(element(doc, 'td', { class: 'adt-expand-cell' }));
+      if (selectable) tr.append(element(doc, 'td', { class: 'adt-select' }));
+      columns.forEach((column, index) => {
+        const result = totals[column.id];
+        const cellClass = [collapsible ? `adt-col--p${priorityOf(column, index)}` : '', result ? 'adt-num' : ''].filter(Boolean).join(' ');
+        const td = element(doc, index === 0 && !result ? 'th' : 'td', {
+          ...(cellClass ? { class: cellClass } : {}),
+          ...(index === 0 && !result ? { scope: 'row' } : {}),
+          'data-label': result ? `${column.header} · ${labels.aggregate(result.aggregate)}` : column.header,
+          ...(result ? { title: labels.aggregate(result.aggregate) } : {}),
+        }, index === 0 && !result ? labels.totals : text.total(column, result));
+        tr.append(td);
+      });
+      if (rowActions.length > 0) tr.append(element(doc, 'td', { class: `adt-actions${collapsible ? ' adt-col--p2' : ''}` }));
+      const foot = element(doc, 'tfoot');
+      foot.append(tr);
+      tableEl.append(foot);
+    }
     scroller.replaceChildren(tableEl);
     patchSelection();
   });

@@ -6,6 +6,8 @@ import { createTableState, type SortRule } from './state';
 import {
   createLocalRowModel, type LocalRowModelOptions, type NullPlacement, type SortComparator,
 } from './local-row-model';
+import { aggregateRows, type AggregateResult } from './aggregates';
+import { normalizeValue } from './values';
 import { paginateRows, type PageView } from './pagination';
 import { createTableQuery, validatePageResult, type PageResult, type TableQuery } from './remote';
 import { createRows, type GetRowId, type Row, type RowId, type RowIdValue } from './rows';
@@ -90,6 +92,12 @@ export interface DataTable<TData> {
   getQuery(): TableQuery;
   /** Matching rows: local count, or the server's `totalRows` (undefined when unknown). */
   getTotalRows(): number | undefined;
+  /**
+   * Footer totals of the columns with `aggregate`: computed over every row
+   * matching the filters and search (local mode) or taken from the server's
+   * `totals` (server mode; empty until a result carries them).
+   */
+  getAggregates(): Readonly<Record<string, AggregateResult>>;
   getColumns(): readonly ColumnDef<TData>[];
   /**
    * The columns to show, in definition order. Hidden columns still sort,
@@ -186,6 +194,7 @@ export function createDataTable<TData>(options: DataTableOptions<TData>): DataTa
   };
   let coreRows = toRows(options.data ?? []);
   let serverTotal: number | undefined;
+  let serverTotals: Readonly<Record<string, string | number | null>> | undefined;
   let rowIds = new Set(coreRows.map(row => row.id));
   const model = createLocalRowModel(coreRows, columns, modelOptions);
 
@@ -316,6 +325,19 @@ export function createDataTable<TData>(options: DataTableOptions<TData>): DataTa
     getSelectionMode: () => selection.getState().mode,
     getQuery: () => createTableQuery(state),
     getTotalRows: () => (server ? serverTotal : getFilteredRows().length),
+    getAggregates: () => {
+      if (!server) return aggregateRows(getFilteredRows(), columns);
+      const out: Record<string, AggregateResult> = {};
+      for (const column of columns) {
+        if (column.aggregate === undefined || serverTotals === undefined || !(column.id in serverTotals)) continue;
+        const raw = serverTotals[column.id];
+        const value = raw === null ? undefined
+          : column.aggregate === 'count' ? Number(raw)
+            : column.type === undefined ? raw : normalizeValue(raw, column.type);
+        out[column.id] = Object.freeze({ aggregate: column.aggregate, value });
+      }
+      return Object.freeze(out);
+    },
     getPage: () => {
       if (!server) return paginateRows(getFilteredRows(), { page: state.page, pageSize: state.pageSize });
       const { page, pageSize } = state;
@@ -335,6 +357,7 @@ export function createDataTable<TData>(options: DataTableOptions<TData>): DataTa
       coreRows = rows;
       rowIds = new Set(rows.map(row => row.id));
       serverTotal = checked.totalRows;
+      serverTotals = checked.totals;
       // Make the state consistent first (page within the new total), then tell
       // listeners: every event they receive already has the corrected page.
       const before = inner.getState().page;

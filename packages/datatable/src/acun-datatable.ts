@@ -1,5 +1,5 @@
 import {
-  createDataTable, persistState, type ColumnDef, type ColumnType, type DataTable, type DataTableListener, type FilterOption, type Row, type SortRule,
+  createDataTable, persistState, type Aggregate, type ColumnDef, type ColumnType, type DataTable, type DataTableListener, type FilterOption, type Row, type SortRule,
 } from '@acunsoft/datatable-core';
 import {
   DEFAULT_LAYOUT, downloadFile, printTable, renderDataTable, resolveLabels,
@@ -42,6 +42,12 @@ export interface ColumnOptions {
    * exports keep the value.
    */
   readonly cell?: (value: unknown, row: Data, text: string) => Node | string;
+  /**
+   * A footer total over every matching row (not just the page): `'sum'`,
+   * `'avg'`, `'min'`, `'max'` or `'count'`. Server side the answer's `totals`
+   * gives it (the Laravel adapter's `Column::aggregate()` sends them).
+   */
+  readonly aggregate?: Aggregate;
 }
 
 /** Built-in buttons of the tools menu (DataTables `buttons`). */
@@ -518,6 +524,7 @@ function toColumnDef(column: ColumnOptions | ColumnDef<Data>, options: AcunDataT
     ...(column.hideable === false ? { enableHiding: false } : {}),
     ...(column.type ? { type: column.type } : {}),
     ...(column.priority ? { priority: column.priority } : {}),
+    ...(column.aggregate ? { aggregate: column.aggregate } : {}),
   } as ColumnDef<Data>;
 }
 
@@ -546,6 +553,7 @@ function readTable(table: HTMLTableElement, options: AcunDataTableOptions): { co
     ...(cell.dataset['sortable'] === 'false' ? { sortable: false } : {}),
     ...(cell.dataset['priority'] ? { priority: Number(cell.dataset['priority']) as 1 | 2 | 3 } : {}),
     ...(cell.dataset['filter'] !== undefined ? { filter: true } : {}),
+    ...(cell.dataset['aggregate'] ? { aggregate: cell.dataset['aggregate'] as Aggregate } : {}),
   }, options));
   const rows = [...table.tBodies].flatMap(body => [...body.rows]).map(tr => {
     const row: Data = {};
@@ -570,10 +578,10 @@ function serverRows(body: unknown, dataSrc: AjaxOptions['dataSrc']): unknown {
   return { rows: json['data'], ...total(json) };
 }
 
-function total(json: Data): { totalRows?: unknown } {
+function total(json: Data): { totalRows?: unknown; totals?: unknown } {
   const meta = json['meta'] as Data | undefined;
   const count = json['totalRows'] ?? json['recordsFiltered'] ?? json['total'] ?? meta?.['total'];
-  return count === undefined ? {} : { totalRows: count };
+  return { ...(count === undefined ? {} : { totalRows: count }), ...(json['totals'] === undefined ? {} : { totals: json['totals'] }) };
 }
 
 /** Headers of a request; POST adds Laravel's CSRF token from `<meta name="csrf-token">`. */

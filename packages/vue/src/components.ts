@@ -342,6 +342,22 @@ export const AcunDataTable = defineComponent({
           props.caption !== undefined ? h('caption', props.caption) : null,
           h('thead', [h('tr', head)]),
           h('tbody', body),
+          // Footer totals of the columns with `aggregate` (every matching row).
+          columns.some(column => column.aggregate !== undefined) ? h('tfoot', [h('tr', { class: 'adt-total' }, (() => {
+            const totals = table.getAggregates();
+            const cells: VNode[] = [];
+            if (collapsible) cells.push(h('td', { class: 'adt-expand-cell' }));
+            if (props.selectable) cells.push(h('td', { class: 'adt-select' }));
+            columns.forEach((column, index) => {
+              const result = totals[column.id];
+              const cellClass = [collapsible ? `adt-col--p${priorityOf(column, index)}` : '', result ? 'adt-num' : ''].filter(Boolean).join(' ') || undefined;
+              cells.push(index === 0 && !result
+                ? h('th', { scope: 'row', class: cellClass, 'data-label': column.header, key: column.id }, label.totals)
+                : h('td', { class: cellClass, key: column.id, 'data-label': result ? `${column.header} · ${label.aggregate(result.aggregate)}` : column.header, title: result ? label.aggregate(result.aggregate) : undefined }, text.value.total(column, result)));
+            });
+            if (actions.length > 0) cells.push(h('td', { class: collapsible ? 'adt-actions adt-col--p2' : 'adt-actions' }));
+            return cells;
+          })())]) : null,
         ])]),
         responsive === 'modal'
           ? h('dialog', {

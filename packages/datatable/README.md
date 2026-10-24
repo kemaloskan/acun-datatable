@@ -65,6 +65,9 @@ tools menu; exports take the selected rows, else every matching row (server
 side: fetched page by page up to `exportLimit`, default 10,000).
 `filter: true` (or a list of `{ value, label }`) puts a column in the
 "Filters" menu; active filters show as removable chips.
+`aggregate: 'sum'` (`'avg'`, `'min'`, `'max'`, `'count'`; `data-aggregate`
+on a `<th>`) adds a footer total over every matching row; server side it is
+read from the answer's `totals`.
 
 ## Server side
 

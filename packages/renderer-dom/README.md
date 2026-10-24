@@ -190,6 +190,15 @@ table without the controls.
 draws cells yourself: return a DOM node (`el()` builds one without parsing
 HTML) or a string (shown as text). Sorting, search and exports keep the value.
 
+## Footer totals
+
+A column with `aggregate: 'sum' | 'avg' | 'min' | 'max' | 'count'` gets a
+`<tfoot>` row of totals over every row matching the search and filters, not
+just the page. Decimal sums are exact (`0.10 + 0.20` is `0.30`, no float
+rounding). With a server data source the answer's `totals` (per column ID)
+gives them; `table.getAggregates()` returns the same values for your own
+footer.
+
 ## `renderFilters(container, table, options?)` · `renderFilterChips(…)`
 
 A "Filters" menu with one control per column that has `filter`, chosen from
