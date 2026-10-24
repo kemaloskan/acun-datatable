@@ -1,6 +1,6 @@
 {
   "name": "@acunsoft/datatable-core",
-  "version": "0.2.1",
+  "version": "0.3.0",
   "description": "Headless, framework-independent data table engine: typed columns, sorting, Turkish-aware search and filters, pagination, selection.",
   "keywords": [
     "datatable",

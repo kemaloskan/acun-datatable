@@ -1,5 +1,12 @@
 # @acunsoft/datatable-export
 
+## 0.3.0
+
+### Patch Changes
+
+- Updated dependencies [f00047a]
+  - @acunsoft/datatable-core@0.3.0
+
 ## 0.2.1
 
 ### Patch Changes
