@@ -30,7 +30,7 @@ describe('<acun-datatable>', () => {
   });
 
   it('loads a server table from src and takes the rest as properties', async () => {
-    const fetch = vi.fn(async () => new Response(JSON.stringify({ rows: [{ id: 1, name: 'Kalem' }], totalRows: 1 })));
+    const fetch = vi.fn(async (_url: string) => new Response(JSON.stringify({ rows: [{ id: 1, name: 'Kalem' }], totalRows: 1 })));
     vi.stubGlobal('fetch', fetch);
     const element = document.createElement('acun-datatable') as AcunDataTableElement;
     element.setAttribute('src', '/api/products');
