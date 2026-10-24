@@ -222,7 +222,9 @@ export function renderTable<TData>(
     }
     const primary = state.sorting[0];
     for (const column of columns) {
-      const th = element(doc, 'th', { scope: 'col', class: `adt-th${collapsible ? ` adt-col--p${priorityOf(column, columns.indexOf(column))}` : ''}` });
+      const th = element(doc, 'th', {
+        scope: 'col', class: `adt-th${collapsible ? ` adt-col--p${priorityOf(column, columns.indexOf(column))}` : ''}${numeric(column) ? ' adt-num' : ''}`,
+      });
       if (column.enableSorting) {
         const index = state.sorting.findIndex(rule => rule.field === column.id);
         const rule = state.sorting[index];
@@ -292,9 +294,10 @@ export function renderTable<TData>(
         td.append(box);
         tr.append(td);
       }
-      columns.forEach((column, index) => tr.append(element(doc, 'td', {
-        'data-label': column.header, ...(collapsible ? { class: `adt-col--p${priorityOf(column, index)}` } : {}),
-      }, cells[index])));
+      columns.forEach((column, index) => {
+        const cellClass = [collapsible ? `adt-col--p${priorityOf(column, index)}` : '', numeric(column) ? 'adt-num' : ''].filter(Boolean).join(' ');
+        tr.append(element(doc, 'td', { 'data-label': column.header, ...(cellClass ? { class: cellClass } : {}) }, cells[index]));
+      });
       if (rowActions.length > 0) {
         const cell = actionCell(doc, rowActions, row, nameOf(row, cells), labels);
         if (collapsible) cell.classList.add('adt-col--p2');
@@ -361,4 +364,9 @@ export function renderTable<TData>(
 /** The responsive priority of a visible column: its own, else 1 for the first column and 2 for the rest. */
 export function priorityOf(column: { readonly priority?: 1 | 2 | 3 }, index: number): 1 | 2 | 3 {
   return column.priority ?? (index === 0 ? 1 : 2);
+}
+
+/** Numbers and decimals are right-aligned (`adt-num`). */
+export function numeric(column: { readonly type?: string }): boolean {
+  return column.type === 'number' || column.type === 'decimal';
 }

@@ -6,7 +6,7 @@ type Order = { id: number; customer: string; city: string; total: number; note: 
 const columns: readonly ColumnDef<Order>[] = [
   { id: 'customer', header: 'Customer', accessorKey: 'customer', enableSorting: true, enableFiltering: true },
   { id: 'city', header: 'City', accessorKey: 'city' },
-  { id: 'total', header: 'Total', accessorKey: 'total', priority: 1 },
+  { id: 'total', header: 'Total', accessorKey: 'total', type: 'number', priority: 1 },
   { id: 'note', header: 'Note', accessorKey: 'note', priority: 3 },
 ];
 const data: Order[] = [
@@ -26,7 +26,8 @@ describe('responsive modes', () => {
   it('marks the mode and keeps plain markup for cards and scroll', () => {
     renderTable(host, make());
     expect(host.querySelector('.adt-table-wrap')!.classList.contains('adt-responsive--cards')).toBe(true);
-    expect(host.querySelector('.adt-control, .adt-expand')).toBeNull();
+    expect(host.querySelector('.adt-expand-cell, .adt-expand')).toBeNull();
+    expect(host.querySelector('tbody td:nth-child(3)')!.className).toBe('adt-num'); // numbers align right
     renderTable(host, make(), { responsive: 'scroll' });
     expect(host.querySelector('.adt-table-wrap')!.classList.contains('adt-responsive--scroll')).toBe(true);
     expect(() => renderTable(host, make(), { responsive: 'stack' as never })).toThrow('responsive must be one of');
@@ -39,7 +40,7 @@ describe('responsive modes', () => {
     expect(table.classList.contains('adt-has-p2')).toBe(true);
     expect(table.classList.contains('adt-has-p3')).toBe(true);
     expect([...host.querySelectorAll('thead th')].map(th => th.className)).toEqual([
-      'adt-select', 'adt-th adt-col--p1', 'adt-th adt-col--p2', 'adt-th adt-col--p1', 'adt-th adt-col--p3', 'adt-th adt-actions adt-col--p2',
+      'adt-select', 'adt-th adt-col--p1', 'adt-th adt-col--p2', 'adt-th adt-col--p1 adt-num', 'adt-th adt-col--p3', 'adt-th adt-actions adt-col--p2',
     ]);
     const button = expand('Ayşe');
     expect(button.getAttribute('aria-expanded')).toBe('false');

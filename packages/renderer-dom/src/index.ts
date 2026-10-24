@@ -3,7 +3,7 @@ export {
   LABELS, labelsDe, labelsEn, labelsEs, labelsFr, labelsTr, resolveLabels, type DataTableLabels,
 } from './labels';
 export {
-  checkResponsive, checkSize, priorityOf, renderTable, type CellFormatter, type RenderTableOptions, type ResponsiveMode, type StatusSource, type TableSize,
+  checkResponsive, checkSize, numeric, priorityOf, renderTable, type CellFormatter, type RenderTableOptions, type ResponsiveMode, type StatusSource, type TableSize,
 } from './table';
 export {
   checkPageSizes, pageInfoText, pageSizeChoices, renderPageInfo, renderPageSize, renderPagination, renderSearch,

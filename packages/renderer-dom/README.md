@@ -92,6 +92,8 @@ renderTable(el, table, { status: runner, labels: labelsTr });
   ],
   renderDataTable(el, table, { responsive: 'collapse' });
   ```
+- **Numbers** (`type: 'number'` or `'decimal'`) are right-aligned with
+  tabular digits (`adt-num`), like every serious table.
 - **Sizes:** `size: 'sm' | 'md' | 'lg'` (default `md`) sets row height, text
   and control size together (class `adt-size--sm` / `adt-size--lg`).
 

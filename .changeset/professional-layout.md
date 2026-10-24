@@ -39,4 +39,4 @@ Professional, DataTables-like layout.
 - Sizes: `size: 'sm' | 'md' | 'lg'` (classes `adt-size--sm` / `adt-size--lg`).
 - `--adt-*` defaults are declared only on the outermost element, so values set
   on `.adt` now reach every part.
-
+- Number and decimal columns are right-aligned with tabular digits (`adt-num`).

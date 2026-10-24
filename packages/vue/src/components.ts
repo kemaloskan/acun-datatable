@@ -5,7 +5,7 @@ import {
 import { getPageItems, type ColumnDef, type DataTable, type Row } from '@acunsoft/datatable-core';
 import {
   cellValue, checkPageSizes, checkResponsive, checkSize, createCellText, ICONS, labelsEn, nextSorting, pageInfoText,
-  pageSizeChoices, priorityOf, rowName, type ResponsiveMode, type TableSize,
+  numeric, pageSizeChoices, priorityOf, rowName, type ResponsiveMode, type TableSize,
   type BulkAction, type BulkSelection, type CellFormatter, type DataTableLabels, type RowAction, type StatusSource,
 } from '@acunsoft/datatable-dom';
 import { useTable } from './composables';
@@ -156,7 +156,7 @@ export const AcunDataTable = defineComponent({
         const index = state.sorting.findIndex(rule => rule.field === column.id);
         const rule = state.sorting[index];
         head.push(h('th', {
-          scope: 'col', class: `adt-th${level(column)}`, key: column.id,
+          scope: 'col', class: `adt-th${level(column)}${numeric(column) ? ' adt-num' : ''}`, key: column.id,
           'aria-sort': primary?.field === column.id ? (primary.direction === 'asc' ? 'ascending' : 'descending') : undefined,
         }, column.enableSorting
           ? [h('button', {
@@ -238,7 +238,8 @@ export const AcunDataTable = defineComponent({
         }
         columns.forEach((column, index) => {
           cells.push(h('td', {
-            'data-label': column.header, key: column.id, class: collapsible ? `adt-col--p${priorityOf(column, index)}` : undefined,
+            'data-label': column.header, key: column.id,
+            class: [collapsible ? `adt-col--p${priorityOf(column, index)}` : '', numeric(column) ? 'adt-num' : ''].filter(Boolean).join(' ') || undefined,
           }, contentOf(column, row, texts[index]!) as never));
         });
         if (actions.length > 0) {

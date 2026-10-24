@@ -148,6 +148,7 @@
 .adt-row--selected, .adt-row--selected:hover { background: var(--adt-selected); }
 .adt-table .adt-select { width: 3rem; padding-right: 0; }
 .adt-table input[type="checkbox"] { width: 1.05rem; height: 1.05rem; margin: 0; accent-color: var(--adt-accent); cursor: pointer; vertical-align: middle; }
+.adt-table :is(th, td).adt-num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .adt-empty td { text-align: center; color: var(--adt-muted); padding: 3rem 1rem; }
 
 /* Sortable headers: a faint up/down mark, the active direction in the accent colour */
@@ -364,6 +365,7 @@
   .adt-responsive--cards .adt-table thead th { display: inline-block; padding: 0.25rem 0; border: 0; background: transparent; }
   .adt-responsive--cards .adt-row, .adt-responsive--cards .adt-empty { border: 1px solid var(--adt-line); border-radius: var(--adt-radius); margin-bottom: 0.75rem; background: var(--adt-surface); overflow: hidden; }
   .adt-responsive--cards .adt-table td { display: grid; grid-template-columns: minmax(7rem, 40%) 1fr; gap: 0.75rem; padding: 0.625rem 0.875rem; border-bottom: 1px solid var(--adt-line); overflow-wrap: anywhere; }
+  .adt-responsive--cards .adt-table td.adt-num { text-align: left; }
   .adt-responsive--cards .adt-table td::before { content: attr(data-label); font-weight: 600; font-size: 0.875em; color: var(--adt-muted); }
   .adt-responsive--cards .adt-table td.adt-select, .adt-responsive--cards .adt-empty td { display: block; width: 100%; }
   .adt-responsive--cards .adt-table caption { padding: 0 0 0.5rem; }
