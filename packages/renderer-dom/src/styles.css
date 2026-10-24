@@ -406,6 +406,10 @@
 .adt-detail-status--error { color: var(--adt-danger, #b42318); }
 .adt-dialog .adt-detail-content { padding: 0.75rem 1.25rem 1.25rem; border-top: 1px solid var(--adt-line); }
 
+/* Virtual scrolling: spacer rows stand in for the rows out of view */
+.adt-table .adt-spacer > td { padding: 0; border: 0; }
+.adt-virtual .adt-table tbody .adt-row > td { white-space: nowrap; }
+
 /* A queued task (Livewire: large export, queued bulk action) */
 .adt-task {
   display: flex; flex-wrap: wrap; align-items: center; gap: 0.625rem; margin-bottom: 0.75rem; padding: 0.625rem 0.875rem;

@@ -150,6 +150,13 @@ export interface AcunDataTableOptions {
   readonly fixedColumns?: FixedColumns;
   /** A fixed height to scroll inside, header in place (DataTables `scrollY`): `'60vh'`, `480`. */
   readonly scrollY?: string | number;
+  /**
+   * Scroll through every row instead of pages (DataTables Scroller), for
+   * long lists loaded in the browser (`data`, a `<table>` or `ajax` without
+   * `serverSide`): only the rows in view are drawn. `true` or
+   * `{ rowHeight, overscan }`; the height is `scrollY` (default 480px).
+   */
+  readonly virtual?: boolean | { readonly rowHeight?: number; readonly overscan?: number };
   /** Narrow screens: `cards` (default), `scroll`, `collapse` or `modal`. */
   readonly responsive?: ResponsiveMode;
   readonly size?: TableSize;
@@ -472,6 +479,7 @@ export class AcunDataTable {
       ...(options.size ? { size: options.size } : {}),
       ...(options.fixedHeader ? { stickyHeader: true } : {}),
       ...(options.fixedColumns ? { fixedColumns: options.fixedColumns } : {}),
+      ...(options.virtual ? { virtual: options.virtual } : {}),
       ...(options.columnResize ? { resizableColumns: true } : {}),
       ...(options.columnReorder ? { reorderableColumns: true } : {}),
       ...(options.scrollY !== undefined ? { scrollY: options.scrollY } : {}),

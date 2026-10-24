@@ -238,6 +238,21 @@ are table state (`columnOrder`, `columnWidths`, `moveColumn`,
 server query. `columnTools(container, table, { resize, reorder })` adds the
 same behaviour to markup rendered elsewhere.
 
+## Virtual scrolling
+
+```ts
+renderDataTable(el, table, { virtual: true, scrollY: '70vh' }); // 100,000 rows scroll like 30
+```
+
+`virtual` (DataTables Scroller) shows every matching row of a local table in
+one scrolling list instead of pages, drawing only the rows in view plus
+`overscan` (default 8) between two spacer rows; the pager and page size go
+away and "Select all" selects every matching row. Rows should be of one
+height: give `rowHeight` or it is measured from the first row. The table
+announces the full row count (`aria-rowcount`, `aria-rowindex`). For server
+tables use cursor paging instead. `virtualWindow()` is exported for your own
+lists.
+
 ## Fixed columns
 
 `fixedColumns: { start: 1, end: 1 }` keeps the first data column (with the

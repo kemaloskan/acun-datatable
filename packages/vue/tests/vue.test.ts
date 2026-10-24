@@ -443,3 +443,23 @@ describe('editing in place', () => {
     expect(document.activeElement).toBe(host.querySelector('.adt-edit[aria-label="Edit Müşteri: Ayşe Yılmaz"]'));
   });
 });
+
+describe('virtual scrolling', () => {
+  it('draws only the rows in view and follows the scroll', async () => {
+    const many = Array.from({ length: 5000 }, (_, i) => ({ id: i + 1, customer: `C${i + 1}`, total: '1.00' }));
+    const table = createDataTable<Order>({ data: many, columns });
+    await mount(() => h(AcunDataTableLayout, { table, virtual: { rowHeight: 40, overscan: 2 }, selectable: true }));
+    expect(host.querySelectorAll('tbody .adt-row').length).toBeLessThan(20);
+    expect(host.querySelector('table')!.getAttribute('aria-rowcount')).toBe('5001');
+    expect(host.querySelector('.adt-paging, .adt-length')).toBeNull();
+    expect(host.querySelector('.adt-info')!.textContent).toBe('Showing 1 to 5,000 of 5,000 rows');
+    const scroller = host.querySelector<HTMLElement>('.adt-scroll')!;
+    scroller.scrollTop = 40_000;
+    scroller.dispatchEvent(new Event('scroll'));
+    await new Promise(resolve => setTimeout(resolve, 40));
+    await nextTick();
+    expect(host.querySelector('tbody .adt-row td:nth-child(2)')!.textContent).toBe('C999');
+    host.querySelector<HTMLInputElement>('thead .adt-select input')!.click();
+    expect(table.getState().selectedIds).toHaveLength(5000);
+  });
+});

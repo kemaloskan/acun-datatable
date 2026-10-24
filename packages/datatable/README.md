@@ -112,6 +112,7 @@ Route::match(['get', 'post'], '/api/products', fn () => TableResponse::for(Produ
 | `fixedHeader` | `false` | `fixedHeader` |
 | `fixedColumns` | `{ start: 0, end: 0 }`: columns that stay while the table scrolls sideways | `fixedColumns` |
 | `scrollY` | | `scrollY` |
+| `virtual` | `false`; `true` or `{ rowHeight, overscan }`: every row in one scrolling list, only those in view drawn | `scroller` |
 | `responsive` | `'cards'`; also `'scroll'`, `'collapse'`, `'modal'`, `'auto'` (measured, like DataTables Responsive) | `responsive` |
 | `size` | `'md'`; also `'sm'`, `'lg'` | |
 | `selectable`, `rowActions`, `bulkActions` | | `select`, buttons |

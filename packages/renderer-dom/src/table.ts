@@ -6,6 +6,7 @@ import { labelsEn, type DataTableLabels } from './labels';
 import { checkFixedColumns, pinColumns, type FixedColumns } from './pin';
 import { columnTools } from './column-tools';
 import { autoResponsive } from './auto-responsive';
+import { checkVirtual, virtualWindow } from './virtual';
 import { cellEditor, isEditable, type CellEditor, type EditHandler } from './edit';
 
 export type { CellFormatter } from './cells';
@@ -119,6 +120,15 @@ export interface RenderTableOptions<TData> {
    * data: update it once saved (local mode `setData`, server mode reload).
    */
   readonly onEdit?: EditHandler<TData>;
+  /**
+   * Scroll through every matching row instead of pages (DataTables
+   * Scroller), for long local lists: only the rows in view (and `overscan`
+   * around them) are in the page, so 100,000 rows scroll like 30. Rows should
+   * be of one height (`rowHeight`, measured when left out). Needs a local
+   * table; the height is `scrollY` (default 480px). "Select all" selects
+   * every matching row.
+   */
+  readonly virtual?: boolean | { readonly rowHeight?: number; readonly overscan?: number };
 }
 
 /** Placeholder rows while the first rows load: as many as a page, at most this many. */
@@ -222,10 +232,12 @@ export function renderTable<TData>(
 
   const fixed = checkFixedColumns(options.fixedColumns);
   const size = checkSize(options.size);
-  const height = scrollHeight(options.scrollY);
+  const virtual = checkVirtual(options.virtual);
+  if (virtual && table.getMode() === 'server') throw new TypeError('virtual scrolling needs a local table; use cursor paging for server tables');
+  const height = scrollHeight(options.scrollY) ?? (virtual ? '480px' : undefined);
   const root = element(doc, 'div', {
     class: ['adt-table-wrap', `adt-responsive--${responsive}`, size === 'md' ? '' : `adt-size--${size}`,
-      options.stickyHeader === true ? 'adt-sticky-header' : '', height ? 'adt-scroll-y' : ''].filter(Boolean).join(' '),
+      options.stickyHeader === true ? 'adt-sticky-header' : '', height ? 'adt-scroll-y' : '', virtual ? 'adt-virtual' : ''].filter(Boolean).join(' '),
   });
   if (height) root.style.setProperty('--adt-scroll-y', height);
   const scroller = element(doc, 'div', { class: 'adt-scroll' });
@@ -386,19 +398,33 @@ export function renderTable<TData>(
   const wantsSkeleton = (): boolean => options.skeleton !== false && status !== undefined
     && status.getState().status === 'loading' && table.getPage().rows.length === 0;
 
+  // Virtual scrolling: the rows in view, re-drawn when the scroll position moves past them.
+  let rowHeight = virtual?.rowHeight ?? 0;
+  let drawn: { start: number; end: number } | undefined;
+  const windowOf = (total: number) => virtualWindow(total, rowHeight, scroller.scrollTop, scroller.clientHeight, virtual!.overscan);
+
   const render = (): void => keepFocus(root, () => {
     const state = table.getState();
-    const page = table.getPage();
+    const page = virtual
+      ? (() => {
+        const rows = table.getFilteredRows();
+        const view = windowOf(rows.length);
+        drawn = { start: view.start, end: view.end };
+        return { rows: rows.slice(view.start, view.end), all: rows, view };
+      })()
+      : { ...table.getPage(), all: undefined, view: undefined };
     skeletonShown = wantsSkeleton();
     root.classList.toggle('adt-skeleton-on', skeletonShown);
     const selectable = options.selectable === true;
     const columns = table.getVisibleColumns();
-    pageIds = page.rows.map(row => row.id);
+    // With virtual scrolling "all" is every matching row, not only those drawn.
+    pageIds = (page.all ?? page.rows).map(row => row.id);
     selectAll = undefined;
     rowParts = [];
 
     const widths = state.columnWidths;
     const tableEl = element(doc, 'table', { class: Object.keys(widths).length > 0 ? 'adt-table adt-fixed-layout' : 'adt-table' });
+    if (page.all) tableEl.setAttribute('aria-rowcount', String(page.all.length + 1));
     if (options.caption !== undefined) tableEl.append(element(doc, 'caption', {}, options.caption));
 
     const headRow = element(doc, 'tr');
@@ -493,9 +519,18 @@ export function renderTable<TData>(
       tr.append(element(doc, 'td', { colspan: String(span) }, labels.empty));
       body.append(tr);
     }
-    for (const row of page.rows) {
+    const spacer = (pixels: number): HTMLTableRowElement => {
+      const tr = element(doc, 'tr', { class: 'adt-spacer', 'aria-hidden': 'true' });
+      const td = element(doc, 'td', { colspan: String(span) });
+      td.style.height = `${pixels}px`;
+      tr.append(td);
+      return tr;
+    };
+    if (page.view && page.view.before > 0) body.append(spacer(page.view.before));
+    page.rows.forEach((row, offset) => {
       const cells = columns.map(column => text(column, row));
       const tr = element(doc, 'tr', { class: 'adt-row', 'data-row-id': row.id });
+      if (page.view) tr.setAttribute('aria-rowindex', String(page.view.start + offset + 2)); // 1 is the header
       const open = responsive !== 'modal' && expanded.has(row.id);
       const detailId = `${uid}-detail-${rowParts.length}`;
       if (expandable) {
@@ -582,7 +617,8 @@ export function renderTable<TData>(
         body.append(detail);
       }
       if (dialogRow === row.id) openDialog(row, cells, columns); // keep an open dialog current
-    }
+    });
+    if (page.view && page.view.after > 0) body.append(spacer(page.view.after));
     if (dialogRow !== undefined && !pageIds.includes(dialogRow)) closeDialog(); // its row left the page
     for (const id of details.keys()) if (!expanded.has(id) && dialogRow !== id) details.delete(id); // closed rows load again
     if (editing && !placed) { editing.editor.destroy(); editing = undefined; } // its row left the page
@@ -638,6 +674,25 @@ export function renderTable<TData>(
 
   render();
   showStatus();
+  // Virtual scrolling: measure the row height once, then re-draw when the rows in view change.
+  let frame = 0;
+  const onScroll = (): void => {
+    if (frame) return;
+    frame = (doc.defaultView?.requestAnimationFrame ?? ((callback: FrameRequestCallback) => setTimeout(callback, 16) as unknown as number))(() => {
+      frame = 0;
+      const rows = table.getFilteredRows().length;
+      const view = windowOf(rows);
+      if (!drawn || view.start !== drawn.start || view.end !== drawn.end) render();
+    });
+  };
+  if (virtual) {
+    if (!rowHeight) {
+      const measured = root.querySelector<HTMLElement>('tbody .adt-row')?.getBoundingClientRect().height ?? 0;
+      rowHeight = measured > 0 ? measured : 40;
+      render();
+    }
+    scroller.addEventListener('scroll', onScroll, { passive: true });
+  }
   const unpin = pinColumns(root, fixed);
   const stopAuto = responsive === 'auto' ? autoResponsive(root) : () => undefined;
   const stopTools = options.resizableColumns || options.reorderableColumns
@@ -659,6 +714,7 @@ export function renderTable<TData>(
       unsubscribeStatus();
       closeDialog();
       editing?.editor.destroy();
+      scroller.removeEventListener('scroll', onScroll);
       unpin();
       stopAuto();
       stopTools();

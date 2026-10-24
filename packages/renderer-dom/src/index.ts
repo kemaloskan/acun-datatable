@@ -2,6 +2,7 @@ export { el, ICONS, type RenderedComponent } from './dom';
 export { checkFixedColumns, pinColumns, type FixedColumns } from './pin';
 export { columnTools, type ColumnToolsOptions } from './column-tools';
 export { autoResponsive } from './auto-responsive';
+export { checkVirtual, virtualWindow, type VirtualWindow } from './virtual';
 export {
   cellEditor, editorKind, editText, isEditable, parseEdit,
   type CellEdit, type CellEditor, type CellEditorOptions, type EditHandler, type EditorKind,

@@ -80,6 +80,7 @@ export function renderDataTable<TData>(
   const root = element(doc, 'div', { class: size === 'md' ? 'adt' : `adt adt-size--${size}` });
   const parts: RenderedComponent[] = [];
   const mount = (target: HTMLElement, feature: LayoutFeature): void => {
+    if (options.virtual && (feature === 'pageSize' || feature === 'paging')) return; // one scrolling list, no pages
     const node = element(doc, 'div', { class: typeof feature === 'function' ? 'adt-feature' : `adt-feature adt-feature--${feature}` });
     target.append(node);
     let part: RenderedComponent | void;
@@ -100,7 +101,7 @@ export function renderDataTable<TData>(
         part = renderMenu(node, { items: options.tools ?? [], labels });
         break;
       case 'info':
-        part = renderPageInfo(node, table, { labels });
+        part = renderPageInfo(node, table, { labels, all: Boolean(options.virtual) });
         break;
       case 'paging':
         part = renderPagination(node, table, { labels, locale, ...options.paging });

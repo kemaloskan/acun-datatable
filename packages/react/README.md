@@ -68,7 +68,7 @@ on every table event through `useSyncExternalStore`.
 |---|---|
 | `DataTableLayout` | every `DataTable` prop plus `pageSizes`, `search`, `searchPlaceholder`, `debounceMs`, `filters`, `columnToggle`, `tools`, `bulkActions`, `paging`, `topStart`, `topEnd`, `bottomStart`, `bottomEnd` |
 | `Filters` · `FilterChips` · `Tools` | `table`, `labels`, `locale` · `items` |
-| `DataTable` | `table`, `caption`, `selectable`, `locale`, `labels`, `format`, `cells`, `detail`, `empty`, `rowLabel`, `rowActions`, `maxInlineActions`, `status`, `skeleton`, `onEdit`, `fixedColumns`, `resizableColumns`, `reorderableColumns`, `responsive`, `size`, `stickyHeader`, `scrollY`, `multiSort` |
+| `DataTable` | `table`, `caption`, `selectable`, `locale`, `labels`, `format`, `cells`, `detail`, `empty`, `rowLabel`, `rowActions`, `maxInlineActions`, `status`, `skeleton`, `onEdit`, `virtual`, `fixedColumns`, `resizableColumns`, `reorderableColumns`, `responsive`, `size`, `stickyHeader`, `scrollY`, `multiSort` |
 | `Pagination` | `table`, `siblings`, `boundaries`, `firstLast`, `locale`, `labels` |
 | `PageSize` | `table`, `pageSizes`, `labels` |
 | `PageInfo` | `table`, `labels` |

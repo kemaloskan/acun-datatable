@@ -318,6 +318,23 @@ test('responsive auto hides only the columns that do not fit, at any width', asy
   await expect(page.locator('.adt-detail')).toBeHidden();
 });
 
+test('virtual scrolling keeps 50,000 rows to a handful in the page', async ({ page }) => {
+  await page.setViewportSize({ width: 1000, height: 800 });
+  await page.goto('/e2e/fixtures/table.html?virtual&responsive=scroll');
+  await expect(page.locator('body[data-ready=true]')).toBeAttached();
+  await expect(page.locator('.adt-info')).toHaveText('Showing 1 to 50,000 of 50,000 rows');
+  const drawn = () => page.locator('tbody .adt-row').count();
+  expect(await drawn()).toBeLessThan(40);
+  const scroller = page.locator('.adt-scroll');
+  await scroller.evaluate(node => { node.scrollTop = node.scrollHeight; });
+  await expect(page.getByRole('cell', { name: 'Hakan 50000', exact: true })).toBeVisible();
+  expect(await drawn()).toBeLessThan(40);
+  await scroller.evaluate(node => { node.scrollTop = node.scrollHeight / 2; });
+  const first = async () => Number((await page.locator('tbody .adt-row td:nth-child(2)').first().textContent())!.split(' ')[1]);
+  await expect.poll(first).toBeLessThan(26_000); // re-drawn for the new position
+  expect(await first()).toBeGreaterThan(24_000);
+});
+
 test.describe('child rows', () => {
   for (const width of [1280, 375]) {
     test(`load and open below the row at ${width}px`, async ({ page }) => {

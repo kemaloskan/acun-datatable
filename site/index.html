@@ -736,6 +736,10 @@ const GUIDES = {
      [
       "Editor (inline)",
       "columns: [{ data: 'city', editable: true }], onEdit"
+     ],
+     [
+      "scroller",
+      "virtual: true"
      ]
     ]
    },
@@ -1427,6 +1431,34 @@ const GUIDES = {
       "Livewire",
       "php",
       "protected function queuedExports(): bool { return true; }\nprotected function queuedExportLimit(): int { return 1_000_000; }\n\nprotected function bulkActions(): array\n{\n    return [Action::make('archive')->label('Arşivle')->queued()->handle(fn ($selected) => $selected->update(['archived' => true]))];\n}\n\n// Run a queue worker; schedule: php artisan acun-datatable:prune (daily)"
+     ]
+    ]
+   },
+   {
+    "id": "virtual",
+    "title": {
+     "tr": "Sanal kaydırma",
+     "en": "Virtual scrolling"
+    },
+    "desc": {
+     "tr": "Tarayıcıya yüklenmiş uzun listelerde sayfalar yerine tek kaydırma: yalnızca görünen satırlar çizilir, 100.000 satır 30 satır gibi kayar. Sunucu tablolarında cursor sayfalamayı kullanın.",
+     "en": "For long lists loaded in the browser, one scrolling list instead of pages: only the rows in view are drawn, so 100,000 rows scroll like 30. For server tables use cursor paging."
+    },
+    "tabs": [
+     [
+      "AcunDataTable",
+      "typescript",
+      "new AcunDataTable('#products', {\n  ajax: '/products.json',   // every row once, then in the browser\n  virtual: true,            // DataTables scroller\n  scrollY: '70vh',\n});"
+     ],
+     [
+      "Vue / React",
+      "typescript",
+      "\u003cAcunDataTableLayout :table=\"table\" :virtual=\"{ rowHeight: 44 }\" scroll-y=\"70vh\" />\n\u003cDataTableLayout table={table} virtual scrollY=\"70vh\" />"
+     ],
+     [
+      "HTML (parçalar)",
+      "typescript",
+      "renderDataTable(el, table, { virtual: true, scrollY: '70vh' });"
      ]
     ]
    }

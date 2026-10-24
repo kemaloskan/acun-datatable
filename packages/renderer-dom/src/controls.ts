@@ -138,10 +138,16 @@ export function renderPageSize<TData>(
 
 export interface RenderPageInfoOptions {
   readonly labels?: Partial<DataTableLabels>;
+  /** Count every matching row as shown (virtual scrolling): `1–N of N`. */
+  readonly all?: boolean;
 }
 
 /** The info text of a page: `1–25 of 5,000 rows`, or only the range when the total is unknown. */
-export function pageInfoText<TData>(table: DataTable<TData>, labels: DataTableLabels): string {
+export function pageInfoText<TData>(table: DataTable<TData>, labels: DataTableLabels, all = false): string {
+  if (all) {
+    const total = table.getFilteredRows().length;
+    return total === 0 ? labels.pageInfoEmpty : labels.pageInfo(1, total, total);
+  }
   const page = table.getPage();
   if (page.rows.length === 0) return labels.pageInfoEmpty;
   const from = (page.page - 1) * page.pageSize + 1;
@@ -159,7 +165,7 @@ export function renderPageInfo<TData>(
   const root = element(doc, 'div', { class: 'adt-info', 'aria-live': 'polite', 'aria-atomic': 'true' });
   container.replaceChildren(root);
   const update = (): void => {
-    root.textContent = pageInfoText(table, labels);
+    root.textContent = pageInfoText(table, labels, options.all === true);
   };
   update();
   const unsubscribe = table.subscribe(() => update());

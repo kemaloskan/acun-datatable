@@ -417,3 +417,21 @@ describe('editing in place', () => {
     expect(document.activeElement).toBe(host.querySelector('.adt-edit[aria-label="Edit Müşteri: Ayşe Yılmaz"]'));
   });
 });
+
+describe('virtual scrolling', () => {
+  it('draws only the rows in view and follows the scroll', async () => {
+    const many = Array.from({ length: 5000 }, (_, i) => ({ id: i + 1, customer: `C${i + 1}`, total: '1.00' }));
+    const table = createDataTable<Order>({ data: many, columns });
+    render(h(DataTableLayout<Order>, { table, virtual: { rowHeight: 40, overscan: 2 }, selectable: true }));
+    expect(host.querySelectorAll('tbody .adt-row').length).toBeLessThan(20);
+    expect(host.querySelector('table')!.getAttribute('aria-rowcount')).toBe('5001');
+    expect(host.querySelector('.adt-paging, .adt-length')).toBeNull();
+    const scroller = host.querySelector<HTMLElement>('.adt-scroll')!;
+    scroller.scrollTop = 40_000;
+    await act(async () => {
+      scroller.dispatchEvent(new Event('scroll', { bubbles: true }));
+      await new Promise(resolve => setTimeout(resolve, 40));
+    });
+    expect(host.querySelector('tbody .adt-row td:nth-child(2)')!.textContent).toBe('C999');
+  });
+});

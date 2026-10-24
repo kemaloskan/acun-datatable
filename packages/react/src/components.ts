@@ -5,7 +5,7 @@ import {
 import { COLUMN_WIDTH_LIMITS, getPageItems, type ColumnDef, type DataTable, type Row } from '@acunsoft/datatable-core';
 import {
   cellValue, checkPageSizes, checkResponsive, checkSize, confirmed, filterControls, splitActions, createCellText, ICONS, labelsEn, nextSorting, pageInfoText,
-  autoResponsive, cellEditor, columnsChanged, columnTools, isEditable, numeric, pageSizeChoices, pinColumns, resetColumns, priorityOf, rangeOf, renderBulkActions, renderFilterChips, renderFilters, renderMenu, rowName, scrollHeight,
+  autoResponsive, cellEditor, checkVirtual, virtualWindow, columnsChanged, columnTools, isEditable, numeric, pageSizeChoices, pinColumns, resetColumns, priorityOf, rangeOf, renderBulkActions, renderFilterChips, renderFilters, renderMenu, rowName, scrollHeight,
   checkFixedColumns, type CellEditor, type EditHandler, type FixedColumns, type MenuItem, type RenderedComponent, type ResponsiveMode, type TableSize,
   type BulkAction, type BulkSelection, type CellFormatter, type DataTableLabels, type RowAction, type StatusSource,
 } from '@acunsoft/datatable-dom';
@@ -70,6 +70,12 @@ export interface DataTableProps<TData> {
    * `@acunsoft/datatable-dom`'s `onEdit`. Update your data once saved.
    */
   readonly onEdit?: EditHandler<TData>;
+  /**
+   * Scroll through every matching row of a local table instead of pages
+   * (DataTables Scroller): only the rows in view are drawn. `true` or
+   * `{ rowHeight, overscan }`; the height is `scrollY` (default 480px).
+   */
+  readonly virtual?: boolean | { readonly rowHeight?: number; readonly overscan?: number };
   /** Drag a header's edge (or ←/→ on it) to set the column's width. */
   readonly resizableColumns?: boolean;
   /** Drag a header onto another to move the column. */
@@ -102,6 +108,20 @@ function useStatus(status: StatusSource | undefined): string {
 export function DataTable<TData>(props: DataTableProps<TData>): ReactElement {
   const { table, selectable = false, locale = 'en', rowActions = [] } = props;
   const { state, page, visibleColumns: columns } = useTable(table);
+  // Virtual scrolling: the scroll position and the measured row height decide the rows drawn.
+  const virtual = checkVirtual(props.virtual);
+  if (virtual && table.getMode() === 'server') throw new TypeError('virtual scrolling needs a local table; use cursor paging for server tables');
+  const [scroll, setScroll] = useState({ top: 0, viewport: 480 });
+  const [measuredRow, setMeasuredRow] = useState(0);
+  const frame = useRef(0);
+  const onScroll = (event: { currentTarget: HTMLElement }): void => {
+    const node = event.currentTarget;
+    if (frame.current) return;
+    frame.current = requestAnimationFrame(() => { frame.current = 0; setScroll({ top: node.scrollTop, viewport: node.clientHeight || 480 }); });
+  };
+  const all = virtual ? table.getFilteredRows() : undefined;
+  const view = all ? virtualWindow(all.length, virtual!.rowHeight || measuredRow, scroll.top, scroll.viewport, virtual!.overscan) : undefined;
+  const rows = all && view ? all.slice(view.start, view.end) : page.rows;
   const labels = withLabels(props.labels);
   const text = useMemo(
     () => createCellText(table.getColumns(), { locale, labels, ...(props.format ? { format: props.format } : {}) }),
@@ -109,7 +129,8 @@ export function DataTable<TData>(props: DataTableProps<TData>): ReactElement {
     [table, locale, props.format, labels.yes, labels.no],
   );
   const phase = useStatus(props.status);
-  const pageIds = page.rows.map(row => row.id);
+  // With virtual scrolling "all" is every matching row, not only those drawn.
+  const pageIds = (all ?? page.rows).map(row => row.id);
   const pageStatus = table.getSelectionStatus(pageIds);
   const selectAll = useRef<HTMLInputElement>(null);
   useEffect(() => {
@@ -191,6 +212,12 @@ export function DataTable<TData>(props: DataTableProps<TData>): ReactElement {
     mounted.focus();
   });
   useEffect(() => () => editor.current?.destroy(), []);
+  // Virtual scrolling without rowHeight: measure the first drawn row once.
+  useEffect(() => {
+    if (!virtual || virtual.rowHeight || measuredRow) return;
+    const height = wrap.current?.querySelector<HTMLElement>('tbody .adt-row')?.getBoundingClientRect().height ?? 0;
+    if (height > 0) setMeasuredRow(height);
+  });
   // One listener closes any open row "⋮" menu on a click outside it.
   useEffect(() => {
     const close = (event: Event): void => {
@@ -326,11 +353,13 @@ export function DataTable<TData>(props: DataTableProps<TData>): ReactElement {
         }, h('span', { className: 'adt-skeleton' }))),
         rowActions.length > 0 ? h('td', { className: collapsible ? 'adt-actions adt-col--p2' : 'adt-actions' }) : null));
     }
-  } else if (page.rows.length === 0) {
+  } else if (rows.length === 0) {
     body.push(h('tr', { className: 'adt-empty', key: '__empty' }, h('td', { colSpan: span }, props.empty ?? labels.empty)));
   }
   let dialogContent: ReactNode[] = [];
-  page.rows.forEach((row, rowIndex) => {
+  const spacer = (pixels: number, key: string): ReactElement => h('tr', { className: 'adt-spacer', 'aria-hidden': true, key }, h('td', { colSpan: span, style: { height: `${pixels}px` } }));
+  if (view && view.before > 0) body.push(spacer(view.before, '__before'));
+  rows.forEach((row, rowIndex) => {
     const texts = columns.map(column => text(column, row));
     const name = rowName(row, texts[0] ?? '', props.rowLabel);
     const selected = table.isSelected(row.id);
@@ -400,7 +429,7 @@ export function DataTable<TData>(props: DataTableProps<TData>): ReactElement {
       }, actionButtons(row, name)));
     }
     const rowClass = ['adt-row', selected ? 'adt-row--selected' : '', open ? 'adt-row--expanded' : ''].filter(Boolean).join(' ');
-    body.push(h('tr', { className: rowClass, 'data-row-id': row.id, key: row.id }, cells));
+    body.push(h('tr', { className: rowClass, 'data-row-id': row.id, key: row.id, 'aria-rowindex': view ? view.start + rowIndex + 2 : undefined }, cells));
     if (open) {
       body.push(h('tr', { className: 'adt-detail', id: detailId, key: `${row.id}__detail` },
         h('td', { colSpan: span },
@@ -408,6 +437,7 @@ export function DataTable<TData>(props: DataTableProps<TData>): ReactElement {
           detail ? h('div', { className: 'adt-detail-content' }, detail(row)) : null)));
     }
   });
+  if (view && view.after > 0) body.push(spacer(view.after, '__after'));
 
   const busy = phase === 'loading';
   const notice = phase === 'loading'
@@ -419,9 +449,9 @@ export function DataTable<TData>(props: DataTableProps<TData>): ReactElement {
           ? h('button', { type: 'button', className: 'adt-retry', onClick: () => { void props.status!.retry!(); } }, labels.retry)
           : null)
       : h('div', { className: 'adt-notice', role: 'status', 'aria-live': 'polite' });
-  const height = scrollHeight(props.scrollY);
+  const height = scrollHeight(props.scrollY) ?? (virtual ? '480px' : undefined);
   const wrapClass = ['adt-table-wrap', `adt-responsive--${responsive}`, size === 'md' ? '' : `adt-size--${size}`,
-    props.stickyHeader === true ? 'adt-sticky-header' : '', height ? 'adt-scroll-y' : '', busy ? 'adt-loading' : '', skeleton ? 'adt-skeleton-on' : ''].filter(Boolean).join(' ');
+    props.stickyHeader === true ? 'adt-sticky-header' : '', height ? 'adt-scroll-y' : '', busy ? 'adt-loading' : '', skeleton ? 'adt-skeleton-on' : '', virtual ? 'adt-virtual' : ''].filter(Boolean).join(' ');
   const tableClass = ['adt-table', collapsible && levels.has(2) ? 'adt-has-p2' : '', collapsible && levels.has(3) ? 'adt-has-p3' : '', detail ? 'adt-has-detail' : '',
     Object.keys(state.columnWidths).length > 0 ? 'adt-fixed-layout' : '']
     .filter(Boolean).join(' ');
@@ -430,7 +460,7 @@ export function DataTable<TData>(props: DataTableProps<TData>): ReactElement {
     style: height ? ({ '--adt-scroll-y': height } as CSSProperties) : undefined,
   },
     notice,
-    h('div', { className: 'adt-scroll' }, h('table', { className: tableClass },
+    h('div', { className: 'adt-scroll', onScroll: virtual ? onScroll : undefined }, h('table', { className: tableClass, 'aria-rowcount': all ? all.length + 1 : undefined },
       props.caption !== undefined ? h('caption', null, props.caption) : null,
       h('thead', null, h('tr', null, head)),
       h('tbody', skeleton ? { 'aria-hidden': true } : null, body),
@@ -530,12 +560,14 @@ export function PageSize({ table, pageSizes = [10, 25, 50, 100], labels: custom 
 export interface PageInfoProps {
   readonly table: AnyTable;
   readonly labels?: Partial<DataTableLabels>;
+  /** Count every matching row as shown (virtual scrolling). */
+  readonly all?: boolean;
 }
 
 /** The visible range and the total, `1–25 of 5,000 rows`, as a polite live region. */
-export function PageInfo({ table, labels: custom }: PageInfoProps): ReactElement {
+export function PageInfo({ table, labels: custom, all = false }: PageInfoProps): ReactElement {
   useTable(table); // re-render on every table change
-  return h('div', { className: 'adt-info', 'aria-live': 'polite', 'aria-atomic': 'true' }, pageInfoText(table, withLabels(custom)));
+  return h('div', { className: 'adt-info', 'aria-live': 'polite', 'aria-atomic': 'true' }, pageInfoText(table, withLabels(custom), all));
 }
 
 export interface SearchProps {
@@ -722,7 +754,7 @@ export function DataTableLayout<TData>(props: DataTableLayoutProps<TData>): Reac
     h('div', { className: `adt-bar adt-${position}` }, h('div', { className: 'adt-bar-start' }, ...start), h('div', { className: 'adt-bar-end' }, ...end));
   return h('div', { className: size === 'md' ? 'adt' : `adt adt-size--${size}` },
     bar('top', [
-      h(PageSize, { key: 'size', table, ...(pageSizes ? { pageSizes } : {}), ...(labels ? { labels } : {}) }),
+      props.virtual ? null : h(PageSize, { key: 'size', table, ...(pageSizes ? { pageSizes } : {}), ...(labels ? { labels } : {}) }),
       search ? h('div', { key: 'search', className: 'adt-feature adt-feature--search' },
         h(Search, { table, ...(searchPlaceholder ? { placeholder: searchPlaceholder } : {}), ...(debounceMs !== undefined ? { debounceMs } : {}), ...(labels ? { labels } : {}) })) : null,
       topStart ?? null,
@@ -735,6 +767,6 @@ export function DataTableLayout<TData>(props: DataTableLayoutProps<TData>): Reac
     hasFilters ? h(FilterChips, { table, locale, ...(labels ? { labels } : {}) }) : null,
     bulkActions.length > 0 ? h(BulkActions<TData>, { table, actions: bulkActions, ...(labels ? { labels } : {}) }) : null,
     h(DataTable<TData>, tableProps as DataTableProps<TData>),
-    bar('bottom', [h(PageInfo, { key: 'info', table, ...(labels ? { labels } : {}) }), bottomStart ?? null],
-      [bottomEnd ?? null, h(Pagination, { key: 'paging', table, locale, ...paging, ...(labels ? { labels } : {}) })]));
+    bar('bottom', [h(PageInfo, { key: 'info', table, all: Boolean(props.virtual), ...(labels ? { labels } : {}) }), bottomStart ?? null],
+      [bottomEnd ?? null, props.virtual ? null : h(Pagination, { key: 'paging', table, locale, ...paging, ...(labels ? { labels } : {}) })]));
 }

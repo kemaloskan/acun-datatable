@@ -5,7 +5,7 @@ import {
 import { COLUMN_WIDTH_LIMITS, getPageItems, type ColumnDef, type DataTable, type Row } from '@acunsoft/datatable-core';
 import {
   cellValue, checkPageSizes, checkResponsive, checkSize, confirmed, filterControls, splitActions, createCellText, ICONS, labelsEn, nextSorting, pageInfoText,
-  autoResponsive, cellEditor, columnsChanged, columnTools, isEditable, numeric, pageSizeChoices, pinColumns, resetColumns, priorityOf, rangeOf, renderBulkActions, renderFilterChips, renderFilters, renderMenu, rowName, scrollHeight,
+  autoResponsive, cellEditor, checkVirtual, virtualWindow, columnsChanged, columnTools, isEditable, numeric, pageSizeChoices, pinColumns, resetColumns, priorityOf, rangeOf, renderBulkActions, renderFilterChips, renderFilters, renderMenu, rowName, scrollHeight,
   checkFixedColumns, type CellEditor, type EditHandler, type FixedColumns, type MenuItem, type RenderedComponent, type ResponsiveMode, type TableSize,
   type BulkAction, type BulkSelection, type CellFormatter, type DataTableLabels, type RowAction, type StatusSource,
 } from '@acunsoft/datatable-dom';
@@ -91,6 +91,15 @@ export const AcunDataTable = defineComponent({
      * `@acunsoft/datatable-dom`'s `onEdit`. Update your data once saved.
      */
     onEdit: { type: Function as PropType<EditHandler<never>>, default: undefined },
+    /**
+     * Scroll through every matching row of a local table instead of pages
+     * (DataTables Scroller): only the rows in view are drawn. `true` or
+     * `{ rowHeight, overscan }`; the height is `scrollY` (default 480px).
+     */
+    virtual: {
+      type: [Boolean, Object] as PropType<boolean | { rowHeight?: number; overscan?: number }>, default: false,
+      validator: (value: unknown) => { try { checkVirtual(value); return true; } catch { return false; } },
+    },
     /** Drag a header's edge (or ←/→ on it) to set the column's width. */
     resizableColumns: { type: Boolean, default: false },
     /** Drag a header onto another to move the column. */
@@ -188,6 +197,22 @@ export const AcunDataTable = defineComponent({
       stopAuto = node && mode === 'auto' ? autoResponsive(node) : undefined;
     }, { flush: 'post' });
     onScopeDispose(() => stopAuto?.());
+    // Virtual scrolling: the scroll position and the measured row height decide the rows drawn.
+    const scrollTop = shallowRef(0);
+    const viewport = shallowRef(480);
+    const measuredRow = shallowRef(0);
+    let frame = 0;
+    const onScroll = (event: Event): void => {
+      const node = event.currentTarget as HTMLElement;
+      if (frame) return;
+      frame = requestAnimationFrame(() => { frame = 0; scrollTop.value = node.scrollTop; viewport.value = node.clientHeight || viewport.value; });
+    };
+    onUpdated(() => {
+      if (!props.virtual || measuredRow.value) return;
+      const row = wrapEl.value?.querySelector<HTMLElement>('tbody .adt-row');
+      const height = row?.getBoundingClientRect().height ?? 0;
+      if (height > 0) measuredRow.value = height;
+    });
     // Editing in place: the shared editor is mounted into the editing cell, which Vue leaves empty.
     const editing = shallowRef<{ rowId: string; columnId: string } | undefined>();
     let editor: (CellEditor & { rowId: string; columnId: string }) | undefined;
@@ -233,7 +258,13 @@ export const AcunDataTable = defineComponent({
       const state = binding.state.value;
       const page = binding.page.value;
       const columns = binding.visibleColumns.value;
-      const pageIds = page.rows.map(row => row.id);
+      const virtual = checkVirtual(props.virtual);
+      if (virtual && table.getMode() === 'server') throw new TypeError('virtual scrolling needs a local table; use cursor paging for server tables');
+      const all = virtual ? table.getFilteredRows() : undefined;
+      const view = all ? virtualWindow(all.length, virtual!.rowHeight || measuredRow.value, scrollTop.value, viewport.value, virtual!.overscan) : undefined;
+      const rows = all && view ? all.slice(view.start, view.end) : page.rows;
+      // With virtual scrolling "all" is every matching row, not only those drawn.
+      const pageIds = (all ?? page.rows).map(row => row.id);
       const actions = props.rowActions as readonly LooseAction[];
       const rowLabel = props.rowLabel as ((row: AnyRow) => string) | undefined;
       const label = labels.value;
@@ -360,11 +391,13 @@ export const AcunDataTable = defineComponent({
             actions.length > 0 ? h('td', { class: collapsible ? 'adt-actions adt-col--p2' : 'adt-actions' }) : null,
           ]));
         }
-      } else if (page.rows.length === 0) {
+      } else if (rows.length === 0) {
         body.push(h('tr', { class: 'adt-empty', key: '__empty' }, [h('td', { colspan: span }, slots.empty ? slots.empty({}) : label.empty)]));
       }
       let dialogContent: VNode[] | undefined;
-      page.rows.forEach((row, rowIndex) => {
+      const spacer = (pixels: number, key: string): VNode => h('tr', { class: 'adt-spacer', 'aria-hidden': 'true', key }, [h('td', { colspan: span, style: { height: `${pixels}px` } })]);
+      if (view && view.before > 0) body.push(spacer(view.before, '__before'));
+      rows.forEach((row, rowIndex) => {
         const texts = columns.map(column => text.value(column, row));
         const name = rowName(row, texts[0] ?? '', rowLabel);
         const selected = table.isSelected(row.id);
@@ -438,7 +471,7 @@ export const AcunDataTable = defineComponent({
           }, actionButtons(row, name)));
         }
         const rowClass = ['adt-row', selected ? 'adt-row--selected' : '', open ? 'adt-row--expanded' : ''].filter(Boolean).join(' ');
-        body.push(h('tr', { class: rowClass, 'data-row-id': row.id, key: row.id }, cells));
+        body.push(h('tr', { class: rowClass, 'data-row-id': row.id, key: row.id, 'aria-rowindex': view ? view.start + rowIndex + 2 : undefined }, cells));
         if (open) {
           body.push(h('tr', { class: 'adt-detail', id: detailId, key: `${row.id}__detail` }, [
             h('td', { colspan: span }, [
@@ -448,6 +481,7 @@ export const AcunDataTable = defineComponent({
           ]));
         }
       });
+      if (view && view.after > 0) body.push(spacer(view.after, '__after'));
 
       const busy = phase.value === 'loading';
       const notice = phase.value === 'loading'
@@ -460,15 +494,15 @@ export const AcunDataTable = defineComponent({
               : null,
           ])
           : h('div', { class: 'adt-notice', role: 'status', 'aria-live': 'polite' });
-      const height = scrollHeight(props.scrollY);
+      const height = scrollHeight(props.scrollY) ?? (virtual ? '480px' : undefined);
       const wrapClass = ['adt-table-wrap', `adt-responsive--${responsive}`, props.size === 'md' ? '' : `adt-size--${props.size}`,
-        props.stickyHeader ? 'adt-sticky-header' : '', height ? 'adt-scroll-y' : '', busy ? 'adt-loading' : '', skeleton ? 'adt-skeleton-on' : ''].filter(Boolean).join(' ');
+        props.stickyHeader ? 'adt-sticky-header' : '', height ? 'adt-scroll-y' : '', busy ? 'adt-loading' : '', skeleton ? 'adt-skeleton-on' : '', virtual ? 'adt-virtual' : ''].filter(Boolean).join(' ');
       const tableClass = ['adt-table', collapsible && levels.has(2) ? 'adt-has-p2' : '', collapsible && levels.has(3) ? 'adt-has-p3' : '', detailSlot ? 'adt-has-detail' : '',
         Object.keys(state.columnWidths).length > 0 ? 'adt-fixed-layout' : '']
         .filter(Boolean).join(' ');
       return h('div', { ref: wrapEl, class: wrapClass, style: height ? { '--adt-scroll-y': height } : undefined, 'aria-busy': props.status ? String(busy) : undefined }, [
         notice,
-        h('div', { class: 'adt-scroll' }, [h('table', { class: tableClass }, [
+        h('div', { class: 'adt-scroll', onScroll: virtual ? onScroll : undefined }, [h('table', { class: tableClass, 'aria-rowcount': all ? all.length + 1 : undefined }, [
           props.caption !== undefined ? h('caption', props.caption) : null,
           h('thead', [h('tr', head)]),
           h('tbody', skeleton ? { 'aria-hidden': 'true' } : null, body),
@@ -584,12 +618,16 @@ export const AcunPageSize = defineComponent({
 /** The visible range and the total, `1–25 of 5,000 rows`, as a polite live region. */
 export const AcunPageInfo = defineComponent({
   name: 'AcunPageInfo',
-  props: { table: tableProp, labels: labelsProp },
+  props: {
+    table: tableProp, labels: labelsProp,
+    /** Count every matching row as shown (virtual scrolling). */
+    all: { type: Boolean, default: false },
+  },
   setup(props) {
     const binding = useTable(props.table);
     return (): VNode => {
       void binding.page.value; // re-render on every table change
-      return h('div', { class: 'adt-info', 'aria-live': 'polite', 'aria-atomic': 'true' }, pageInfoText(props.table, withLabels(props.labels)));
+      return h('div', { class: 'adt-info', 'aria-live': 'polite', 'aria-atomic': 'true' }, pageInfoText(props.table, withLabels(props.labels), props.all));
     };
   },
 });
@@ -772,6 +810,8 @@ export const AcunDataTableLayout = defineComponent({
     columnToggle: { type: Boolean, default: true },
     /** Drag headers to move columns; the column menu gets up/down buttons. */
     reorderableColumns: { type: Boolean, default: false },
+    /** Scroll through every matching row instead of pages (see `AcunDataTable`). */
+    virtual: { type: [Boolean, Object] as PropType<boolean | { rowHeight?: number; overscan?: number }>, default: false },
     tools: { type: Array as PropType<readonly MenuItem[]>, default: () => [] },
     bulkActions: { type: Array as PropType<readonly BulkAction<never>[]>, default: () => [] },
     paging: { type: Object as PropType<{ siblings?: number; boundaries?: number; firstLast?: boolean }>, default: () => ({}) },
@@ -789,7 +829,7 @@ export const AcunDataTableLayout = defineComponent({
         h('div', { class: `adt-bar adt-${position}` }, [h('div', { class: 'adt-bar-start' }, start.flat()), h('div', { class: 'adt-bar-end' }, end.flat())]);
       return h('div', { class: props.size === 'md' ? 'adt' : `adt adt-size--${props.size}` }, [
         bar('top', [
-          h(AcunPageSize, { ...common, pageSizes: props.pageSizes }),
+          props.virtual ? null : h(AcunPageSize, { ...common, pageSizes: props.pageSizes }),
           props.search ? h('div', { class: 'adt-feature adt-feature--search' }, [h(AcunSearch, { ...common, debounceMs: props.debounceMs, ...(props.searchPlaceholder !== undefined ? { placeholder: props.searchPlaceholder } : {}) })]) : null,
           slots['top-start']?.(),
         ], [
@@ -800,8 +840,9 @@ export const AcunDataTableLayout = defineComponent({
         ]),
         hasFilters ? h(AcunFilterChips, { ...common, locale: props.locale }) : null,
         props.bulkActions.length > 0 ? h(AcunBulkActions, { ...common, actions: props.bulkActions }) : null,
-        h(AcunDataTable, { ...attrs, ...common, locale: props.locale, reorderableColumns: props.reorderableColumns }, tableSlots),
-        bar('bottom', [h(AcunPageInfo, common), slots['bottom-start']?.()], [slots['bottom-end']?.(), h(AcunPagination, { ...common, ...props.paging, locale: props.locale })]),
+        h(AcunDataTable, { ...attrs, ...common, locale: props.locale, reorderableColumns: props.reorderableColumns, virtual: props.virtual }, tableSlots),
+        bar('bottom', [h(AcunPageInfo, { ...common, all: Boolean(props.virtual) }), slots['bottom-start']?.()],
+          [slots['bottom-end']?.(), props.virtual ? null : h(AcunPagination, { ...common, ...props.paging, locale: props.locale })]),
       ]);
     };
   },

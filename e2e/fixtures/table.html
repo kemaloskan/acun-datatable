@@ -19,7 +19,10 @@
 import { createDataTable } from '@acunsoft/datatable-core';
 import { labelsEn, renderDataTable } from '@acunsoft/datatable-dom';
 
-const names = ['Ayşe', 'Ali', 'Can', 'Deniz', 'Ece', 'Fatma', 'Gül', 'Hakan', 'İrem', 'Kaan', 'Lale', 'Mert'];
+const virtualRows = new URLSearchParams(location.search).has('virtual');
+const base = ['Ayşe', 'Ali', 'Can', 'Deniz', 'Ece', 'Fatma', 'Gül', 'Hakan', 'İrem', 'Kaan', 'Lale', 'Mert'];
+// ?virtual: 50,000 rows, scrolled instead of paged.
+const names = virtualRows ? Array.from({ length: 50_000 }, (_, i) => `${base[i % base.length]} ${i + 1}`) : base;
 const table = createDataTable({
   data: names.map((customer, index) => ({ id: index + 1, customer, total: ((index * 37) % 100) + 10, city: ['İstanbul', 'Ankara', 'İzmir'][index % 3] })),
   columns: [
@@ -44,6 +47,7 @@ renderDataTable(document.getElementById('orders'), table, {
   ...(detail ? { detail } : {}),
   ...(params.has('fixed') ? { fixedColumns: { start: 1, end: 1 } } : {}),
   ...(params.has('columns') ? { resizableColumns: true, reorderableColumns: true } : {}),
+  ...(virtualRows ? { virtual: true, scrollY: '420px' } : {}),
   ...(params.has('edit') ? {
     onEdit: async ({ row, value }) => {
       await new Promise(resolve => setTimeout(resolve, 30));
