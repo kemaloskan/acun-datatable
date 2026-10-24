@@ -50,6 +50,8 @@ table.setFilters([{ field: 'total', operator: 'between', value: ['100', '500'] }
 - **Remember the state:** `persistState(table, { key })` keeps page, page
   size, sorting, filters, search, hidden columns, column order and widths in
   `localStorage` (or any storage) across reloads, like DataTables `stateSave`.
+- **Editable columns:** `editable: true` (or `{ options }`) marks cells a
+  renderer may edit in place; saving is yours (`onEdit`).
 - **Footer totals:** `aggregate: 'sum' | 'avg' | 'min' | 'max' | 'count'` on a
   column; `getAggregates()` gives them over every matching row (exact decimal
   sums), or from the server's `totals` in server mode. `aggregateRows(rows,

@@ -5,6 +5,7 @@ import { checkTarget, element, icon, keepFocus, type RenderedComponent } from '.
 import { labelsEn, type DataTableLabels } from './labels';
 import { checkFixedColumns, pinColumns, type FixedColumns } from './pin';
 import { columnTools } from './column-tools';
+import { cellEditor, isEditable, type CellEditor, type EditHandler } from './edit';
 
 export type { CellFormatter } from './cells';
 
@@ -108,6 +109,13 @@ export interface RenderTableOptions<TData> {
    * column menu offers the same with buttons for the keyboard.
    */
   readonly reorderableColumns?: boolean;
+  /**
+   * Save a cell edited in place. Columns with `editable` get an edit button
+   * (and a double click) that opens an editor for the column type; Enter or
+   * leaving the field saves, Escape cancels. The table does not change your
+   * data: update it once saved (local mode `setData`, server mode reload).
+   */
+  readonly onEdit?: EditHandler<TData>;
 }
 
 /** Placeholder rows while the first rows load: as many as a page, at most this many. */
@@ -326,6 +334,28 @@ export function renderTable<TData>(
     }
   };
 
+  // The cell being edited in place (the editor element moves into each re-render).
+  let editing: { rowId: string; columnId: string; editor: CellEditor } | undefined;
+  const onEdit = options.onEdit;
+  if (onEdit !== undefined && typeof onEdit !== 'function') throw new TypeError('onEdit must be a function');
+  const startEdit = (row: Row<TData>, column: ColumnDef<TData>): void => {
+    editing?.editor.destroy();
+    const focusKey = `edit:${row.id}:${column.id}`;
+    const editor = cellEditor(doc, {
+      row, column, value: cellValue(column, row), labels, onEdit: onEdit!,
+      onClose: () => {
+        if (editing?.editor !== editor) return;
+        editing = undefined;
+        editor.destroy();
+        render();
+        root.querySelector<HTMLElement>(`[data-adt-focus="${CSS.escape(focusKey)}"]`)?.focus();
+      },
+    });
+    editing = { rowId: row.id, columnId: column.id, editor };
+    render();
+    editor.focus();
+  };
+
   // The row a Shift+click range starts from.
   let anchor: string | undefined;
   // Elements that a selection change updates in place.
@@ -435,6 +465,7 @@ export function renderTable<TData>(
     head.append(headRow);
 
     const body = element(doc, 'tbody');
+    let placed = false;
     const span = columns.length + (selectable ? 1 : 0) + (rowActions.length > 0 ? 1 : 0) + (expandable ? 1 : 0);
     if (skeletonShown) {
       // Same cells as a row, so the layout does not jump when the rows arrive.
@@ -506,8 +537,28 @@ export function renderTable<TData>(
         tr.append(td);
       }
       columns.forEach((column, index) => {
-        const cellClass = [collapsible ? `adt-col--p${priorityOf(column, index)}` : '', numeric(column) ? 'adt-num' : ''].filter(Boolean).join(' ');
-        tr.append(fill(element(doc, 'td', { 'data-label': column.header, ...(cellClass ? { class: cellClass } : {}) }), column, row, cells[index]!));
+        const editable = onEdit !== undefined && isEditable(column);
+        const isEditing = editable && editing?.rowId === row.id && editing.columnId === column.id;
+        const cellClass = [collapsible ? `adt-col--p${priorityOf(column, index)}` : '', numeric(column) ? 'adt-num' : '',
+          editable ? 'adt-editable' : '', isEditing ? 'adt-editing' : ''].filter(Boolean).join(' ');
+        const td = element(doc, 'td', { 'data-label': column.header, ...(cellClass ? { class: cellClass } : {}) });
+        if (isEditing) {
+          td.append(editing!.editor.element);
+          placed = true;
+        } else {
+          fill(td, column, row, cells[index]!);
+          if (editable) {
+            const button = element(doc, 'button', {
+              type: 'button', class: 'adt-edit', 'aria-label': labels.editCell(column.header, nameOf(row, cells)),
+              'data-adt-focus': `edit:${row.id}:${column.id}`,
+            });
+            button.append(icon(doc, 'edit'));
+            button.addEventListener('click', () => startEdit(row, column));
+            td.append(button);
+            td.addEventListener('dblclick', event => { if (!(event.target as Element).closest('a, button, input, select')) startEdit(row, column); });
+          }
+        }
+        tr.append(td);
       });
       if (rowActions.length > 0) {
         const cell = actionCell(doc, rowActions, row, nameOf(row, cells), labels, options.maxInlineActions);
@@ -529,6 +580,7 @@ export function renderTable<TData>(
     }
     if (dialogRow !== undefined && !pageIds.includes(dialogRow)) closeDialog(); // its row left the page
     for (const id of details.keys()) if (!expanded.has(id) && dialogRow !== id) details.delete(id); // closed rows load again
+    if (editing && !placed) { editing.editor.destroy(); editing = undefined; } // its row left the page
     tableEl.append(head, body);
     // Footer totals of the columns with `aggregate` (every matching row, not just the page).
     if (columns.some(column => column.aggregate !== undefined)) {
@@ -600,6 +652,7 @@ export function renderTable<TData>(
       unsubscribe();
       unsubscribeStatus();
       closeDialog();
+      editing?.editor.destroy();
       unpin();
       stopTools();
       doc.removeEventListener('click', closeMenus);

@@ -5,8 +5,8 @@ import {
 import { COLUMN_WIDTH_LIMITS, getPageItems, type ColumnDef, type DataTable, type Row } from '@acunsoft/datatable-core';
 import {
   cellValue, checkPageSizes, checkResponsive, checkSize, confirmed, filterControls, splitActions, createCellText, ICONS, labelsEn, nextSorting, pageInfoText,
-  columnsChanged, columnTools, numeric, pageSizeChoices, pinColumns, resetColumns, priorityOf, rangeOf, renderBulkActions, renderFilterChips, renderFilters, renderMenu, rowName, scrollHeight,
-  checkFixedColumns, type FixedColumns, type MenuItem, type RenderedComponent, type ResponsiveMode, type TableSize,
+  cellEditor, columnsChanged, columnTools, isEditable, numeric, pageSizeChoices, pinColumns, resetColumns, priorityOf, rangeOf, renderBulkActions, renderFilterChips, renderFilters, renderMenu, rowName, scrollHeight,
+  checkFixedColumns, type CellEditor, type EditHandler, type FixedColumns, type MenuItem, type RenderedComponent, type ResponsiveMode, type TableSize,
   type BulkAction, type BulkSelection, type CellFormatter, type DataTableLabels, type RowAction, type StatusSource,
 } from '@acunsoft/datatable-dom';
 import { useTable } from './hooks.js';
@@ -65,6 +65,11 @@ export interface DataTableProps<TData> {
   readonly skeleton?: boolean;
   /** Columns that stay while the table scrolls sideways: `{ start: 1, end: 1 }` (DataTables `fixedColumns`). */
   readonly fixedColumns?: FixedColumns;
+  /**
+   * Save a cell edited in place (columns with `editable`); see
+   * `@acunsoft/datatable-dom`'s `onEdit`. Update your data once saved.
+   */
+  readonly onEdit?: EditHandler<TData>;
   /** Drag a header's edge (or ←/→ on it) to set the column's width. */
   readonly resizableColumns?: boolean;
   /** Drag a header onto another to move the column. */
@@ -147,6 +152,40 @@ export function DataTable<TData>(props: DataTableProps<TData>): ReactElement {
     if (!wrap.current || (!resizable && !reorderable)) return undefined;
     return columnTools(wrap.current, table, { resize: resizable, reorder: reorderable });
   }, [table, resizable, reorderable]);
+  // Editing in place: the shared editor is mounted into the editing cell, which React leaves empty.
+  const [editing, setEditing] = useState<{ rowId: string; columnId: string } | undefined>();
+  const editor = useRef<(CellEditor & { rowId: string; columnId: string }) | undefined>(undefined);
+  const refocus = useRef<string | undefined>(undefined);
+  useEffect(() => {
+    if (refocus.current) {
+      wrap.current?.querySelector<HTMLElement>(`.adt-edit[data-edit-key="${CSS.escape(refocus.current)}"]`)?.focus();
+      refocus.current = undefined;
+    }
+    const current = editor.current;
+    if (!editing) { current?.destroy(); editor.current = undefined; return; }
+    if (current && current.rowId === editing.rowId && current.columnId === editing.columnId) return;
+    current?.destroy();
+    editor.current = undefined;
+    const row = page.rows.find(candidate => candidate.id === editing.rowId);
+    const column = table.getColumns().find(candidate => candidate.id === editing.columnId);
+    const host = wrap.current?.querySelector('td[data-adt-edit-host]');
+    if (!row || !column || !host || !props.onEdit) { setEditing(undefined); return; }
+    const mounted = cellEditor(host.ownerDocument, {
+      row, column, value: cellValue(column, row), labels, onEdit: props.onEdit,
+      onClose: () => {
+        if (editor.current !== created) return;
+        created.destroy();
+        editor.current = undefined;
+        refocus.current = `${row.id}:${column.id}`;
+        setEditing(undefined);
+      },
+    });
+    const created = Object.assign(mounted, { rowId: row.id, columnId: column.id });
+    editor.current = created;
+    host.append(mounted.element);
+    mounted.focus();
+  });
+  useEffect(() => () => editor.current?.destroy(), []);
   // One listener closes any open row "⋮" menu on a click outside it.
   useEffect(() => {
     const close = (event: Event): void => {
@@ -334,10 +373,21 @@ export function DataTable<TData>(props: DataTableProps<TData>): ReactElement {
       })));
     }
     columns.forEach((column, index) => {
+      const editable = props.onEdit !== undefined && isEditable(column);
+      const isEditing = editable && editing?.rowId === row.id && editing.columnId === column.id;
+      const start = (): void => setEditing({ rowId: row.id, columnId: column.id });
       cells.push(h('td', {
         'data-label': column.header, key: column.id,
-        className: [collapsible ? `adt-col--p${priorityOf(column, index)}` : '', numeric(column) ? 'adt-num' : ''].filter(Boolean).join(' ') || undefined,
-      }, contentOf(column, row, texts[index]!)));
+        className: [collapsible ? `adt-col--p${priorityOf(column, index)}` : '', numeric(column) ? 'adt-num' : '',
+          editable ? 'adt-editable' : '', isEditing ? 'adt-editing' : ''].filter(Boolean).join(' ') || undefined,
+        'data-adt-edit-host': isEditing ? '' : undefined,
+        onDoubleClick: editable && !isEditing
+          ? (event: MouseEvent) => { if (!(event.target as Element).closest('a, button, input, select')) start(); }
+          : undefined,
+      }, isEditing ? null : contentOf(column, row, texts[index]!), isEditing || !editable ? null : h('button', {
+        type: 'button', className: 'adt-edit', 'aria-label': labels.editCell(column.header, name),
+        'data-edit-key': `${row.id}:${column.id}`, onClick: start,
+      }, icon('edit'))));
     });
     if (rowActions.length > 0) {
       cells.push(h('td', {

@@ -33,6 +33,16 @@ interface ColumnBase {
    * `avg`, `min`, `max` or `count` (server mode: from the server's `totals`).
    */
   readonly aggregate?: 'sum' | 'avg' | 'min' | 'max' | 'count';
+  /**
+   * Let a renderer edit the cell in place (with its `onEdit` saving it).
+   * `true` picks the control from `type`; `options` gives a list to choose from.
+   */
+  readonly editable?: boolean | ColumnEdit;
+}
+
+/** An editable column with fixed choices, e.g. a status. */
+export interface ColumnEdit {
+  readonly options?: readonly FilterOption[];
 }
 
 /** A filter-panel control with fixed choices, e.g. a status. */
@@ -66,7 +76,7 @@ export function createColumns<TData>(
     if (!definition || typeof definition !== 'object') {
       throw new TypeError(`column[${index}] must be an object`);
     }
-    const { id, header, accessorKey, accessorFn, enableSorting, enableFiltering, enableHiding, type, priority, filter, aggregate } = definition;
+    const { id, header, accessorKey, accessorFn, enableSorting, enableFiltering, enableHiding, type, priority, filter, aggregate, editable } = definition;
     if (typeof id !== 'string' || id.trim().length === 0) {
       throw new TypeError(`column[${index}].id must be a non-empty string`);
     }
@@ -104,6 +114,14 @@ export function createColumns<TData>(
         throw new TypeError(`column "${id}".filter.options must be a non-empty list of { value, label }`);
       }
     }
+    if (editable !== undefined && editable !== false) {
+      if (editable !== true && (typeof editable !== 'object' || editable === null)) throw new TypeError(`column "${id}".editable must be a boolean or { options }`);
+      const options = editable === true ? undefined : editable.options;
+      if (options !== undefined && (!Array.isArray(options) || options.length === 0
+        || !options.every(option => option && typeof option.label === 'string' && ['string', 'number', 'boolean'].includes(typeof option.value)))) {
+        throw new TypeError(`column "${id}".editable.options must be a non-empty list of { value, label }`);
+      }
+    }
     if (aggregate !== undefined && !['sum', 'avg', 'min', 'max', 'count'].includes(aggregate)) {
       throw new TypeError(`column "${id}".aggregate must be sum, avg, min, max or count`);
     }
@@ -114,6 +132,9 @@ export function createColumns<TData>(
       ...(type !== undefined ? { type } : {}),
       ...(priority !== undefined ? { priority } : {}),
       ...(aggregate !== undefined ? { aggregate } : {}),
+      ...(editable !== undefined && editable !== false
+        ? { editable: editable === true ? true : Object.freeze({ ...editable, ...(editable.options ? { options: Object.freeze([...editable.options]) } : {}) }) }
+        : {}),
       ...(filter !== undefined && filter !== false ? { filter: filter === true ? true : Object.freeze({ ...filter, ...(filter.options ? { options: Object.freeze([...filter.options]) } : {}) }) } : {}),
     };
     // Validation above establishes the exclusive accessor branch at runtime.

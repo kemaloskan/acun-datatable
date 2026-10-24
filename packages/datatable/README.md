@@ -65,6 +65,9 @@ tools menu; exports take the selected rows, else every matching row (server
 side: fetched page by page up to `exportLimit`, default 10,000).
 `filter: true` (or a list of `{ value, label }`) puts a column in the
 "Filters" menu; active filters show as removable chips.
+`editable: true` (or a list of `{ value, label }`) with the table's
+`onEdit: async ({ row, field, value }) => …` edits cells in place; once it
+resolves the row shows the new value (a `serverSide` table reloads its page).
 `detail: row => …` opens a child row under each row (DataTables child rows):
 a DOM node, text or a promise of either, e.g. order lines fetched for that
 row.
@@ -113,6 +116,7 @@ Route::match(['get', 'post'], '/api/products', fn () => TableResponse::for(Produ
 | `size` | `'md'`; also `'sm'`, `'lg'` | |
 | `selectable`, `rowActions`, `bulkActions` | | `select`, buttons |
 | `detail` | | child rows (`row().child()`) |
+| `onEdit` + `columns[].editable` | | Editor inline editing |
 | `columnToggle` | `true` | `colvis` |
 | `columnResize` | `false`: drag a header's edge, or ←/→ on it | ColResize |
 | `columnReorder` | `false`: drag headers; ↑/↓ buttons in the column menu | `colReorder` |

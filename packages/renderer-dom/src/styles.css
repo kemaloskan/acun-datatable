@@ -398,6 +398,31 @@
 .adt-detail-status--error { color: var(--adt-danger, #b42318); }
 .adt-dialog .adt-detail-content { padding: 0.75rem 1.25rem 1.25rem; border-top: 1px solid var(--adt-line); }
 
+/* Editing in place (editable columns, onEdit) */
+.adt-table td.adt-editable { position: relative; }
+.adt-edit {
+  display: inline-flex; align-items: center; justify-content: center; width: 1.6rem; height: 1.6rem; margin-left: 0.375rem; padding: 0;
+  vertical-align: middle; color: var(--adt-muted); background: none; border: 0; border-radius: var(--adt-control-radius); cursor: pointer;
+  opacity: 0; transition: opacity 0.1s;
+}
+.adt-edit .adt-icon { width: 0.9rem; height: 0.9rem; }
+.adt-row:hover .adt-edit, .adt-edit:focus-visible { opacity: 1; }
+.adt-edit:hover { color: var(--adt-accent); background: color-mix(in srgb, var(--adt-accent) 10%, transparent); }
+@media (hover: none) { .adt-edit { opacity: 1; } }
+.adt-table td.adt-editing { padding-top: 0.3rem; padding-bottom: 0.3rem; }
+.adt-editor { display: grid; gap: 0.25rem; min-width: 7rem; }
+.adt-edit-control {
+  width: 100%; min-width: 0; height: 2.1rem; padding: 0 0.5rem; font: inherit; color: var(--adt-fg); background: var(--adt-bg);
+  border: 1px solid var(--adt-accent); border-radius: var(--adt-control-radius); box-shadow: 0 0 0 3px color-mix(in srgb, var(--adt-accent) 18%, transparent);
+}
+.adt-num .adt-edit-control { text-align: right; }
+.adt-edit-control:focus { outline: none; }
+.adt-edit-control[aria-invalid="true"] { border-color: var(--adt-danger); box-shadow: 0 0 0 3px color-mix(in srgb, var(--adt-danger) 18%, transparent); }
+.adt-edit-control[aria-busy="true"] { opacity: 0.7; }
+.adt-edit-message:empty { display: none; }
+.adt-edit-message { font-size: 0.8em; color: var(--adt-muted); white-space: normal; text-align: left; }
+.adt-edit-message[role="alert"] { color: var(--adt-danger); }
+
 /* Resizable and movable columns (resizableColumns, reorderableColumns) */
 .adt-table.adt-fixed-layout { table-layout: fixed; }
 .adt-fixed-layout :is(th, td):not(.adt-actions) { overflow: hidden; text-overflow: ellipsis; overflow-wrap: anywhere; }

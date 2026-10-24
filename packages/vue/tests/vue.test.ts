@@ -417,3 +417,29 @@ describe('resizable and movable columns', () => {
     vi.restoreAllMocks();
   });
 });
+
+describe('editing in place', () => {
+  it('mounts the shared editor in the cell and saves through onEdit', async () => {
+    const table = createDataTable<Order>({ data: orders, initialState: { pageSize: 10 }, columns: [
+      { id: 'customer', header: 'Müşteri', accessorKey: 'customer', editable: true },
+      { id: 'total', header: 'Tutar', accessorKey: 'total', type: 'decimal' },
+    ] });
+    const onEdit = vi.fn(async ({ row, value }: { row: Row<Order>; value: unknown }) => {
+      table.setData(orders.map(order => (String(order.id) === row.id ? { ...order, customer: String(value) } : order)));
+    });
+    await mount(() => h(AcunDataTable, { table, onEdit }));
+    expect(host.querySelectorAll('.adt-edit')).toHaveLength(3);
+    host.querySelector<HTMLButtonElement>('.adt-edit[aria-label="Edit Müşteri: Ayşe"]')!.click();
+    await nextTick();
+    const input = host.querySelector<HTMLInputElement>('td.adt-editing .adt-edit-control')!;
+    expect(input.value).toBe('Ayşe');
+    expect(document.activeElement).toBe(input);
+    input.value = 'Ayşe Yılmaz';
+    input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+    await vi.waitFor(() => expect(host.querySelector('.adt-editor')).toBeNull());
+    expect(onEdit).toHaveBeenCalledOnce();
+    expect(host.querySelector('tbody tr:first-child td')!.textContent).toBe('Ayşe Yılmaz');
+    await nextTick();
+    expect(document.activeElement).toBe(host.querySelector('.adt-edit[aria-label="Edit Müşteri: Ayşe Yılmaz"]'));
+  });
+});

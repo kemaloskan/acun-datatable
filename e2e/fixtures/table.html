@@ -23,7 +23,7 @@ const names = ['Ayşe', 'Ali', 'Can', 'Deniz', 'Ece', 'Fatma', 'Gül', 'Hakan', 
 const table = createDataTable({
   data: names.map((customer, index) => ({ id: index + 1, customer, total: ((index * 37) % 100) + 10, city: ['İstanbul', 'Ankara', 'İzmir'][index % 3] })),
   columns: [
-    { id: 'customer', header: 'Customer', accessorKey: 'customer', enableSorting: true, enableFiltering: true },
+    { id: 'customer', header: 'Customer', accessorKey: 'customer', enableSorting: true, enableFiltering: true, ...(new URLSearchParams(location.search).has('edit') ? { editable: true } : {}) },
     { id: 'total', header: 'Total', accessorKey: 'total', type: 'number', enableSorting: true, enableFiltering: true, filter: true },
     { id: 'city', header: 'City', accessorKey: 'city', priority: 3, enableFiltering: true,
       filter: { options: [{ value: 'İstanbul', label: 'İstanbul' }, { value: 'Ankara', label: 'Ankara' }, { value: 'İzmir', label: 'İzmir' }] } },
@@ -32,7 +32,7 @@ const table = createDataTable({
   initialState: { pageSize: 5 },
 });
 // Turkish number and date formats with the English texts.
-// ?responsive=collapse|modal|scroll and ?size=sm|lg try the other modes; ?detail adds child rows, ?fixed pins columns, ?columns resizes and moves them.
+// ?responsive=collapse|modal|scroll and ?size=sm|lg try the other modes; ?detail adds child rows, ?fixed pins columns, ?columns resizes and moves them, ?edit edits customers in place.
 const params = new URLSearchParams(location.search);
 const detail = params.has('detail')
   ? row => new Promise(resolve => setTimeout(() => resolve(`Order lines of ${row.original.customer}`), 50))
@@ -44,6 +44,13 @@ renderDataTable(document.getElementById('orders'), table, {
   ...(detail ? { detail } : {}),
   ...(params.has('fixed') ? { fixedColumns: { start: 1, end: 1 } } : {}),
   ...(params.has('columns') ? { resizableColumns: true, reorderableColumns: true } : {}),
+  ...(params.has('edit') ? {
+    onEdit: async ({ row, value }) => {
+      await new Promise(resolve => setTimeout(resolve, 30));
+      if (value === 'bad') throw new Error('Rejected by the server');
+      table.setData(table.getCoreRows().map(item => (item.id === row.id ? { ...item.original, customer: value } : item.original)));
+    },
+  } : {}),
 });
 window.__table = table;
 document.body.dataset.ready = 'true';

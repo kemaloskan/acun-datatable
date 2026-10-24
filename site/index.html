@@ -732,6 +732,10 @@ const GUIDES = {
      [
       "ColResize",
       "columnResize: true"
+     ],
+     [
+      "Editor (inline)",
+      "columns: [{ data: 'city', editable: true }], onEdit"
      ]
     ]
    },
@@ -1454,8 +1458,8 @@ const GUIDES = {
  },
  "tools": {
   "title": {
-   "tr": "Araçlar, hücreler ve alt satırlar",
-   "en": "Tools, cells and child rows"
+   "tr": "Araçlar, hücreler ve düzenleme",
+   "en": "Tools, cells and editing"
   },
   "lead": {
    "tr": "Excel, CSV, kopyalama ve yazdırma tek menüde (DataTables “buttons”); hücrelere rozet, avatar veya bağlantı gibi kendi içeriğiniz — HTML metni yorumlanmadan, güvenle.",
@@ -1601,6 +1605,34 @@ const GUIDES = {
       "HTML (parçalar)",
       "typescript",
       "renderDataTable(el_, table, {\n  detail: row => el('p', {}, 'Not: ' + row.original.note),\n});"
+     ]
+    ]
+   },
+   {
+    "id": "edit",
+    "title": {
+     "tr": "Hücrede düzenleme",
+     "en": "Editing in place"
+    },
+    "desc": {
+     "tr": "Düzenlenebilir hücrede kalem düğmesi (ya da çift tıklama) türüne uygun bir alan açar: metin, sayı, ondalık (virgül kabul), tarih, evet/hayır veya liste. Enter ya da alandan çıkmak kaydeder, Esc iptal eder; hata olursa alan açık kalır ve mesaj görünür.",
+     "en": "An editable cell has an edit button (or a double click) that opens a field for its type: text, number, decimal (comma accepted), date, yes/no or a list. Enter or leaving the field saves, Escape cancels; on an error the field stays open with the message."
+    },
+    "tabs": [
+     [
+      "AcunDataTable",
+      "typescript",
+      "new AcunDataTable('#orders', {\n  serverSide: true,\n  ajax: '/api/orders',\n  columns: [\n    { data: 'city', title: 'Şehir', editable: true },\n    { data: 'status', title: 'Durum', editable: [{ value: 'new', label: 'Yeni' }, { value: 'paid', label: 'Ödendi' }] },\n  ],\n  onEdit: async ({ row, field, value }) => {\n    const response = await fetch('/api/orders/' + row.id, {\n      method: 'PATCH',\n      headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrf },\n      body: JSON.stringify({ [field]: value }),\n    });\n    if (!response.ok) throw new Error((await response.json()).message);   // shown under the field\n  },                                                                      // then the page reloads\n});"
+     ],
+     [
+      "Livewire",
+      "php",
+      "Column::make('city')->header('Şehir')->editable(['required', 'max:60']),\nColumn::make('total')->header('Tutar')->type('decimal')->editable('min:0'),\nColumn::make('status')->header('Durum')->options(['new' => 'Yeni', 'paid' => 'Ödendi'])->editable(),\n\n// The row is found inside query(), the model policy's update() is checked,\n// the value is validated, then only that attribute is saved (saveCell())."
+     ],
+     [
+      "Vue / React",
+      "typescript",
+      "// columns: { id: 'city', …, editable: true }\n\u003cAcunDataTable :table=\"table\" :on-edit=\"save\" />\n\u003cDataTable table={table} onEdit={save} />\n// save({ row, column, value }) → update your data (setData) once the server agrees"
      ]
     ]
    }

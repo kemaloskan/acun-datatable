@@ -272,6 +272,31 @@ test.describe('resizing and moving columns', () => {
   });
 });
 
+test('edit a cell in place: Enter saves, errors keep the editor, Escape cancels, a click away saves', async ({ page }) => {
+  await page.goto('/e2e/fixtures/table.html?edit');
+  await expect(page.locator('body[data-ready=true]')).toBeAttached();
+  await page.getByRole('button', { name: 'Edit Customer: Ali' }).click();
+  const field = page.getByRole('textbox', { name: 'Customer' });
+  await expect(field).toBeFocused();
+  await page.keyboard.type('Ali Kaya');
+  await page.keyboard.press('Enter');
+  await expect(page.getByRole('cell', { name: 'Ali Kaya' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Edit Customer: Ali Kaya' })).toBeFocused();
+
+  await page.getByRole('button', { name: 'Edit Customer: Can' }).click();
+  await page.keyboard.type('bad');
+  await page.keyboard.press('Enter');
+  await expect(page.getByRole('alert').filter({ hasText: 'Rejected by the server' })).toBeVisible();
+  await expect(field).toBeFocused();
+  await page.keyboard.press('Escape');
+  await expect(page.getByRole('button', { name: 'Edit Customer: Can' })).toBeFocused();
+
+  await page.getByRole('button', { name: 'Edit Customer: Deniz' }).click();
+  await page.keyboard.type('Deniz Ak');
+  await page.getByRole('heading').or(page.locator('caption')).first().click(); // leave the field
+  await expect(page.getByRole('cell', { name: 'Deniz Ak' })).toBeVisible();
+});
+
 test.describe('child rows', () => {
   for (const width of [1280, 375]) {
     test(`load and open below the row at ${width}px`, async ({ page }) => {

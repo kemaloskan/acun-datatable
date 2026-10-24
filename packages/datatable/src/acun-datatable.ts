@@ -4,7 +4,7 @@ import {
 import {
   DEFAULT_LAYOUT, downloadFile, el, printTable, renderDataTable, resolveLabels,
   type BulkAction, type CellFormatter, type CellRenderer, type DataTableLabels, type DataTableLayout, type LayoutSlot,
-  type FixedColumns, type MenuItem, type RenderedComponent, type ResponsiveMode, type RowAction, type StatusSource, type TableSize,
+  type CellEdit, type FixedColumns, type MenuItem, type RenderedComponent, type ResponsiveMode, type RowAction, type StatusSource, type TableSize,
 } from '@acunsoft/datatable-dom';
 import { tableToSheet, toCsv, toXlsx, type Sheet } from '@acunsoft/datatable-export';
 import { connectTable, createHttpDataSource, createQueryRunner, type QueryRunner } from '@acunsoft/datatable-http';
@@ -51,6 +51,21 @@ export interface ColumnOptions {
    * gives it (the Laravel adapter's `Column::aggregate()` sends them).
    */
   readonly aggregate?: Aggregate;
+  /**
+   * Edit the cell in place (with the table's `onEdit`): `true` picks the
+   * control from `type`, a list of `{ value, label }` gives choices.
+   */
+  readonly editable?: boolean | readonly FilterOption[];
+}
+
+/** What `onEdit` gets for a cell edited in place. */
+export interface EditEvent {
+  /** The row as it was (the object from your data or the server). */
+  readonly row: Data;
+  readonly field: string;
+  /** Read as the column type: number, decimal text, `YYYY-MM-DD`, ISO date-time, boolean, option value or `null`. */
+  readonly value: unknown;
+  readonly previous: unknown;
 }
 
 /** Built-in buttons of the tools menu (DataTables `buttons`). */
@@ -143,6 +158,14 @@ export interface AcunDataTableOptions {
    * `row => fetch('/orders/' + row.id + '/lines').then(…)` (shows "Loading…"
    * meanwhile). With `responsive: 'modal'` it opens in the dialog.
    */
+  /**
+   * Save a cell edited in place (columns with `editable`), e.g. with
+   * `fetch(…, { method: 'PATCH' })`. Throw (or reject) to keep the editor
+   * open with the message. Once it resolves the table shows the new value:
+   * the row is updated in place (or replaced by the object you return), and
+   * a `serverSide` table reloads its page.
+   */
+  readonly onEdit?: (edit: EditEvent) => unknown;
   readonly detail?: (row: Data) => Node | string | null | undefined | Promise<Node | string | null | undefined>;
   /** Show the column menu. Default `true`. */
   readonly columnToggle?: boolean;
@@ -436,6 +459,7 @@ export class AcunDataTable {
       ...(options.rowActions ? { rowActions: options.rowActions } : {}),
       ...(options.bulkActions ? { bulkActions: options.bulkActions } : {}),
       ...(options.detail ? { detail: (row: Row<Data>) => options.detail!(row.original) } : {}),
+      ...(options.onEdit ? { onEdit: (edit: CellEdit<Data>) => this.#saveEdit(edit) } : {}),
       ...(options.responsive ? { responsive: options.responsive } : {}),
       ...(options.size ? { size: options.size } : {}),
       ...(options.fixedHeader ? { stickyHeader: true } : {}),
@@ -508,6 +532,19 @@ export class AcunDataTable {
     } finally {
       copy.destroy();
     }
+  }
+
+  /** Save an in-place edit through `onEdit`, then show it: the row updated locally, or the server page again. */
+  async #saveEdit(edit: CellEdit<Data>): Promise<void> {
+    const field = edit.column.id;
+    const result = await this.#options.onEdit!({ row: edit.row.original, field, value: edit.value, previous: edit.previous });
+    if (!this.table || this.#destroyed) return;
+    if (this.table.getMode() === 'server') {
+      await this.reload();
+      return;
+    }
+    const updated = result && typeof result === 'object' && !Array.isArray(result) ? result as Data : { ...edit.row.original, [field]: edit.value };
+    this.#setData(this.table.getCoreRows().map(row => (row.id === edit.row.id ? updated : row.original)));
   }
 
   #setData(rows: Data[]): void {
@@ -612,6 +649,7 @@ function toColumnDef(column: ColumnOptions | ColumnDef<Data>, options: AcunDataT
     ...(column.type ? { type: column.type } : {}),
     ...(column.priority ? { priority: column.priority } : {}),
     ...(column.aggregate ? { aggregate: column.aggregate } : {}),
+    ...(column.editable ? { editable: Array.isArray(column.editable) ? { options: column.editable } : true } : {}),
   } as ColumnDef<Data>;
 }
 
@@ -641,6 +679,7 @@ function readTable(table: HTMLTableElement, options: AcunDataTableOptions): { co
     ...(cell.dataset['priority'] ? { priority: Number(cell.dataset['priority']) as 1 | 2 | 3 } : {}),
     ...(cell.dataset['filter'] !== undefined ? { filter: true } : {}),
     ...(cell.dataset['aggregate'] ? { aggregate: cell.dataset['aggregate'] as Aggregate } : {}),
+    ...(cell.dataset['editable'] !== undefined ? { editable: true } : {}),
   }, options));
   const rows = [...table.tBodies].flatMap(body => [...body.rows]).map(tr => {
     const row: Data = {};

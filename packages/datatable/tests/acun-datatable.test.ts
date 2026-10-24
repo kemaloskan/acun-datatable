@@ -266,6 +266,41 @@ describe('columnResize and columnReorder', () => {
   });
 });
 
+describe('editing in place', () => {
+  it('saves through onEdit and shows the new value', async () => {
+    const onEdit = vi.fn(async () => undefined);
+    const dt = new AcunDataTable('#orders', {
+      data: orders, language: 'tr', onEdit,
+      columns: [{ data: 'customer', title: 'Müşteri', editable: true }, { data: 'total', type: 'number' }],
+    });
+    await dt.ready;
+    dt.element.querySelector<HTMLButtonElement>('.adt-edit[aria-label="Müşteri düzenle: Ayşe 1"]')!.click();
+    const input = dt.element.querySelector<HTMLInputElement>('.adt-edit-control')!;
+    input.value = 'Ayşe Yılmaz';
+    input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+    await vi.waitFor(() => expect(dt.element.querySelector('.adt-editor')).toBeNull());
+    expect(onEdit).toHaveBeenCalledWith({ row: orders[0], field: 'customer', value: 'Ayşe Yılmaz', previous: 'Ayşe 1' });
+    expect(dt.element.querySelector('tbody tr:first-child td')!.textContent).toBe('Ayşe Yılmaz');
+    expect(orders[0]!.customer).toBe('Ayşe 1'); // your array is not changed
+  });
+
+  it('reloads the page of a server table after a save', async () => {
+    const fetch = json({ rows: orders.slice(0, 5), totalRows: 30 });
+    vi.stubGlobal('fetch', fetch);
+    const dt = new AcunDataTable('#orders', {
+      serverSide: true, ajax: '/api/orders', onEdit: async () => undefined,
+      columns: [{ data: 'customer', editable: true }],
+    });
+    await dt.ready;
+    expect(fetch).toHaveBeenCalledOnce();
+    dt.element.querySelector<HTMLButtonElement>('.adt-edit')!.click();
+    const input = dt.element.querySelector<HTMLInputElement>('.adt-edit-control')!;
+    input.value = 'x';
+    input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+    await vi.waitFor(() => expect(fetch).toHaveBeenCalledTimes(2));
+  });
+});
+
 describe('fixedColumns', () => {
   it('pins the first column while the table scrolls sideways', async () => {
     const dt = new AcunDataTable('#orders', { data: orders, fixedColumns: { start: 1 } });

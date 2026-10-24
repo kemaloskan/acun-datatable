@@ -1,6 +1,10 @@
 export { el, ICONS, type RenderedComponent } from './dom';
 export { checkFixedColumns, pinColumns, type FixedColumns } from './pin';
 export { columnTools, type ColumnToolsOptions } from './column-tools';
+export {
+  cellEditor, editorKind, editText, isEditable, parseEdit,
+  type CellEdit, type CellEditor, type CellEditorOptions, type EditHandler, type EditorKind,
+} from './edit';
 export { printTable, renderMenu, type MenuItem, type RenderMenuOptions } from './menu';
 export {
   LABELS, labelsDe, labelsEn, labelsEs, labelsFr, labelsTr, resolveLabels, type DataTableLabels,

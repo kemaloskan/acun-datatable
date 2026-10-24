@@ -194,6 +194,32 @@ table without the controls.
 draws cells yourself: return a DOM node (`el()` builds one without parsing
 HTML) or a string (shown as text). Sorting, search and exports keep the value.
 
+## Editing in place
+
+```ts
+const table = createDataTable({ data: orders, columns: [
+  { id: 'customer', header: 'Customer', accessorKey: 'customer', editable: true },
+  { id: 'total', header: 'Total', accessorKey: 'total', type: 'decimal', editable: true },
+  { id: 'status', header: 'Status', accessorKey: 'status', editable: { options: [{ value: 'paid', label: 'Paid' }] } },
+] });
+renderDataTable(el, table, {
+  onEdit: async ({ row, column, value }) => {
+    await api.patch(`/orders/${row.id}`, { [column.id]: value }); // throw to keep the editor open with the message
+    table.setData(table.getCoreRows().map(r => (r.id === row.id ? { ...r.original, [column.id]: value } : r.original)));
+  },
+});
+```
+
+Columns with `editable` get an edit button (and a double click) that opens an
+editor chosen by the column type: text, number and decimal (a decimal comma
+is accepted), date, date-time, yes/no, or a list for `editable.options`.
+Enter or leaving the field saves, Escape cancels; a value that cannot be read
+or a failed save shows its message and keeps the editor open, and while
+saving the field is `aria-busy`. `value` is typed (a decimal as text, a date
+as `YYYY-MM-DD`, a date-time as ISO). The table never changes your data:
+update it once saved. `cellEditor()`, `parseEdit()` and `editText()` are
+exported for your own cells.
+
 ## Resizing and moving columns
 
 ```ts

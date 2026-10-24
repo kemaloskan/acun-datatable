@@ -50,6 +50,11 @@ export interface DataTableLabels {
   readonly moveColumnDown: (name: string) => string;
   /** Restores the column order and widths. */
   readonly resetColumns: string;
+  /** The edit button of a cell: column header and row name. */
+  readonly editCell: (column: string, name: string) => string;
+  readonly invalidValue: string;
+  readonly saving: string;
+  readonly saveFailed: string;
   /** Responsive `collapse` / `modal`: the details button of a row and the dialog title. */
   readonly details: (name: string) => string;
   readonly close: string;
@@ -118,6 +123,10 @@ export const labelsEn: DataTableLabels = Object.freeze({
   moveColumnUp: (name: string) => `Move ${name} up`,
   moveColumnDown: (name: string) => `Move ${name} down`,
   resetColumns: 'Reset columns',
+  editCell: (column: string, name: string) => `Edit ${column}: ${name}`,
+  invalidValue: 'Enter a valid value.',
+  saving: 'Saving…',
+  saveFailed: 'Could not save.',
   details: (name: string) => `Details of ${name}`,
   close: 'Close',
   filters: 'Filters',
@@ -176,6 +185,10 @@ export const labelsTr: DataTableLabels = Object.freeze({
   moveColumnUp: (name: string) => `${name} kolonunu yukarı taşı`,
   moveColumnDown: (name: string) => `${name} kolonunu aşağı taşı`,
   resetColumns: 'Kolonları sıfırla',
+  editCell: (column: string, name: string) => `${column} düzenle: ${name}`,
+  invalidValue: 'Geçerli bir değer girin.',
+  saving: 'Kaydediliyor…',
+  saveFailed: 'Kaydedilemedi.',
   details: (name: string) => `${name} ayrıntıları`,
   close: 'Kapat',
   filters: 'Filtreler',
@@ -234,6 +247,10 @@ export const labelsDe: DataTableLabels = Object.freeze({
   moveColumnUp: (name: string) => `Spalte ${name} nach oben verschieben`,
   moveColumnDown: (name: string) => `Spalte ${name} nach unten verschieben`,
   resetColumns: 'Spalten zurücksetzen',
+  editCell: (column: string, name: string) => `${column} bearbeiten: ${name}`,
+  invalidValue: 'Geben Sie einen gültigen Wert ein.',
+  saving: 'Wird gespeichert…',
+  saveFailed: 'Speichern fehlgeschlagen.',
   details: (name: string) => `Details zu ${name}`,
   close: 'Schließen',
   filters: 'Filter',
@@ -292,6 +309,10 @@ export const labelsFr: DataTableLabels = Object.freeze({
   moveColumnUp: (name: string) => `Monter la colonne ${name}`,
   moveColumnDown: (name: string) => `Descendre la colonne ${name}`,
   resetColumns: 'Réinitialiser les colonnes',
+  editCell: (column: string, name: string) => `Modifier ${column} : ${name}`,
+  invalidValue: 'Saisissez une valeur valide.',
+  saving: 'Enregistrement…',
+  saveFailed: 'Échec de l’enregistrement.',
   details: (name: string) => `Détails de ${name}`,
   close: 'Fermer',
   filters: 'Filtres',
@@ -350,6 +371,10 @@ export const labelsEs: DataTableLabels = Object.freeze({
   moveColumnUp: (name: string) => `Subir la columna ${name}`,
   moveColumnDown: (name: string) => `Bajar la columna ${name}`,
   resetColumns: 'Restablecer columnas',
+  editCell: (column: string, name: string) => `Editar ${column}: ${name}`,
+  invalidValue: 'Introduzca un valor válido.',
+  saving: 'Guardando…',
+  saveFailed: 'No se pudo guardar.',
   details: (name: string) => `Detalles de ${name}`,
   close: 'Cerrar',
   filters: 'Filtros',

@@ -1,12 +1,12 @@
 import {
-  computed, defineComponent, h, nextTick, onMounted, onScopeDispose, shallowRef, watch,
+  computed, defineComponent, h, nextTick, onMounted, onScopeDispose, onUpdated, shallowRef, watch,
   type PropType, type SlotsType, type VNode,
 } from 'vue';
 import { COLUMN_WIDTH_LIMITS, getPageItems, type ColumnDef, type DataTable, type Row } from '@acunsoft/datatable-core';
 import {
   cellValue, checkPageSizes, checkResponsive, checkSize, confirmed, filterControls, splitActions, createCellText, ICONS, labelsEn, nextSorting, pageInfoText,
-  columnsChanged, columnTools, numeric, pageSizeChoices, pinColumns, resetColumns, priorityOf, rangeOf, renderBulkActions, renderFilterChips, renderFilters, renderMenu, rowName, scrollHeight,
-  checkFixedColumns, type FixedColumns, type MenuItem, type RenderedComponent, type ResponsiveMode, type TableSize,
+  cellEditor, columnsChanged, columnTools, isEditable, numeric, pageSizeChoices, pinColumns, resetColumns, priorityOf, rangeOf, renderBulkActions, renderFilterChips, renderFilters, renderMenu, rowName, scrollHeight,
+  checkFixedColumns, type CellEditor, type EditHandler, type FixedColumns, type MenuItem, type RenderedComponent, type ResponsiveMode, type TableSize,
   type BulkAction, type BulkSelection, type CellFormatter, type DataTableLabels, type RowAction, type StatusSource,
 } from '@acunsoft/datatable-dom';
 import { useTable } from './composables';
@@ -86,6 +86,11 @@ export const AcunDataTable = defineComponent({
     maxInlineActions: { type: Number, default: Infinity },
     /** Placeholder rows while a `status` source loads the first rows. Default `true`. */
     skeleton: { type: Boolean, default: true },
+    /**
+     * Save a cell edited in place (columns with `editable`); see
+     * `@acunsoft/datatable-dom`'s `onEdit`. Update your data once saved.
+     */
+    onEdit: { type: Function as PropType<EditHandler<never>>, default: undefined },
     /** Drag a header's edge (or ←/→ on it) to set the column's width. */
     resizableColumns: { type: Boolean, default: false },
     /** Drag a header onto another to move the column. */
@@ -176,6 +181,36 @@ export const AcunDataTable = defineComponent({
         : undefined;
     }, { flush: 'post' });
     onScopeDispose(() => stopTools?.());
+    // Editing in place: the shared editor is mounted into the editing cell, which Vue leaves empty.
+    const editing = shallowRef<{ rowId: string; columnId: string } | undefined>();
+    let editor: (CellEditor & { rowId: string; columnId: string }) | undefined;
+    const closeEditor = (): void => { editor?.destroy(); editor = undefined; };
+    const mountEditor = (): void => {
+      const target = editing.value;
+      if (!target) return closeEditor();
+      if (editor && editor.rowId === target.rowId && editor.columnId === target.columnId) return;
+      closeEditor();
+      const row = binding.page.value.rows.find(candidate => candidate.id === target.rowId);
+      const column = props.table.getColumns().find(candidate => candidate.id === target.columnId);
+      const host = wrapEl.value?.querySelector('td[data-adt-edit-host]');
+      if (!row || !column || !host || !props.onEdit) { editing.value = undefined; return; }
+      const focusKey = `${row.id}:${column.id}`;
+      const mounted = cellEditor(host.ownerDocument, {
+        row, column, value: cellValue(column, row), labels: labels.value, onEdit: props.onEdit as EditHandler<unknown>,
+        onClose: () => {
+          if (editor !== created) return;
+          closeEditor();
+          editing.value = undefined;
+          void nextTick(() => wrapEl.value?.querySelector<HTMLElement>(`.adt-edit[data-edit-key="${CSS.escape(focusKey)}"]`)?.focus());
+        },
+      });
+      const created = Object.assign(mounted, { rowId: row.id, columnId: column.id });
+      editor = created;
+      host.append(mounted.element);
+      mounted.focus();
+    };
+    onUpdated(mountEditor);
+    onScopeDispose(closeEditor);
     onScopeDispose(() => { if (typeof document !== 'undefined') document.removeEventListener('click', closeMenus); });
     // Close the dialog when its row leaves the page.
     watch(() => binding.page.value, page => {
@@ -369,10 +404,26 @@ export const AcunDataTable = defineComponent({
           })]));
         }
         columns.forEach((column, index) => {
+          const editable = props.onEdit !== undefined && isEditable(column);
+          const isEditing = editable && editing.value?.rowId === row.id && editing.value.columnId === column.id;
+          const start = (): void => { editing.value = { rowId: row.id, columnId: column.id }; };
           cells.push(h('td', {
             'data-label': column.header, key: column.id,
-            class: [collapsible ? `adt-col--p${priorityOf(column, index)}` : '', numeric(column) ? 'adt-num' : ''].filter(Boolean).join(' ') || undefined,
-          }, contentOf(column, row, texts[index]!) as never));
+            class: [collapsible ? `adt-col--p${priorityOf(column, index)}` : '', numeric(column) ? 'adt-num' : '',
+              editable ? 'adt-editable' : '', isEditing ? 'adt-editing' : ''].filter(Boolean).join(' ') || undefined,
+            'data-adt-edit-host': isEditing ? '' : undefined,
+            onDblclick: editable && !isEditing
+              ? (event: MouseEvent) => { if (!(event.target as Element).closest('a, button, input, select')) start(); }
+              : undefined,
+          }, isEditing ? undefined : [
+            contentOf(column, row, texts[index]!) as never,
+            editable
+              ? h('button', {
+                type: 'button', class: 'adt-edit', 'aria-label': label.editCell(column.header, name),
+                'data-edit-key': `${row.id}:${column.id}`, onClick: start,
+              }, [iconNode('edit')])
+              : null,
+          ]));
         });
         if (actions.length > 0) {
           cells.push(h('td', {

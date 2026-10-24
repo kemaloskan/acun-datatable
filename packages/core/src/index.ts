@@ -1,4 +1,4 @@
-export { createColumns, type ColumnDef, type ColumnFilter, type FilterOption } from './columns';
+export { createColumns, type ColumnDef, type ColumnEdit, type ColumnFilter, type FilterOption } from './columns';
 export { createEmitter, reportListenerError, type Emitter, type ListenerErrorHandler } from './emitter';
 export {
   COLUMN_WIDTH_LIMITS, createDataTable, type DataTable, type DataTableEvent, type DataTableInitialState,
