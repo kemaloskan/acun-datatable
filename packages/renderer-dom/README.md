@@ -69,7 +69,11 @@ renderTable(el, table, { status: runner, labels: labelsTr });
 - **Server mode** (`status`, any object with `getState()` / `subscribe()` such as
   the HTTP runner): while loading the wrapper has `aria-busy="true"` and a polite
   status says `labels.loading`; after an error an alert shows `labels.error` and,
-  if the source has `retry()`, a "Try again" button. The last rows stay visible.
+  if the source has `retry()`, a "Try again" button. The last rows stay visible,
+  dimmed. Before the first rows arrive, placeholder rows that shimmer (a page,
+  at most ten, hidden from screen readers) stand in for the empty text, so the
+  layout does not jump; `skeleton: false` turns them off. The shimmer stops
+  with `prefers-reduced-motion`.
 - **Narrow screens** (`responsive`, with the optional stylesheet):
 
   | Mode | Below 640px |

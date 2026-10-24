@@ -821,6 +821,34 @@ const GUIDES = {
      "tr": "Arama \"akıllı aramadır\": her kelime bir kolonda geçmeli, tırnak içindeki ifade birlikte aranır, Türkçe harfler ve büyük/küçük harf fark etmez (ayse → Ayşe). Laravel paketi bunu sizin yerinize yapar.",
      "en": "Search is \"smart search\": every word must match some column, quoted phrases stay together, Turkish letters and case do not matter (ayse → Ayşe). The Laravel package does this for you."
     }
+   },
+   {
+    "id": "loading",
+    "title": {
+     "tr": "Yükleme görünümü",
+     "en": "While loading"
+    },
+    "desc": {
+     "tr": "İlk satırlar gelene kadar yanıp sönen yer tutucu satırlar (iskelet) görünür, sayfa zıplamaz; sonraki yüklemelerde mevcut satırlar soluklaşarak kalır. Ekran okuyucular “Yükleniyor…” duyurusunu alır.",
+     "en": "Shimmering placeholder rows (a skeleton) stand in until the first rows arrive, so the page does not jump; later loads keep the rows, dimmed. Screen readers hear “Loading…”."
+    },
+    "tabs": [
+     [
+      "AcunDataTable",
+      "typescript",
+      "new AcunDataTable('#orders', {\n  serverSide: true,\n  ajax: '/api/orders',\n  columns: [/* … */],      // known columns: the skeleton has the real header\n  skeleton: true,          // default; false shows only \"Loading…\"\n});"
+     ],
+     [
+      "Livewire",
+      "php",
+      "use Livewire\\Attributes\\Lazy;\n\n#[Lazy]   // the page renders first; the table loads when it scrolls into view\nfinal class OrdersTable extends Component\n{\n    use WithDataTable;   // its placeholder(): header + shimmering rows\n}"
+     ],
+     [
+      "Vue / React",
+      "typescript",
+      "// Pass the HTTP runner as status; skeleton is on by default.\n\u003cAcunDataTable :table=\"table\" :status=\"runner\" />      // :skeleton=\"false\" to turn off\n\u003cDataTable table={table} status={runner} />             // skeleton={false}"
+     ]
+    ]
    }
   ]
  },

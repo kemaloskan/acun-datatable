@@ -82,7 +82,16 @@ export interface RenderTableOptions<TData> {
    * changes). With `responsive: 'modal'` it opens in the dialog instead.
    */
   readonly detail?: DetailRenderer<TData>;
+  /**
+   * While a `status` source loads the first rows, show placeholder rows that
+   * shimmer (with the optional `styles.css`) instead of the empty text.
+   * Later loads keep the current rows, dimmed. Default `true`.
+   */
+  readonly skeleton?: boolean;
 }
+
+/** Placeholder rows while the first rows load: as many as a page, at most this many. */
+const SKELETON_ROWS = 10;
 
 /** The content of a row's child row (`detail`). */
 export type DetailRenderer<TData> = (row: Row<TData>) => Node | string | null | undefined | Promise<Node | string | null | undefined>;
@@ -316,9 +325,16 @@ export function renderTable<TData>(
     }
   };
 
+  // Placeholder rows while the first rows of a remote table load.
+  let skeletonShown = false;
+  const wantsSkeleton = (): boolean => options.skeleton !== false && status !== undefined
+    && status.getState().status === 'loading' && table.getPage().rows.length === 0;
+
   const render = (): void => keepFocus(root, () => {
     const state = table.getState();
     const page = table.getPage();
+    skeletonShown = wantsSkeleton();
+    root.classList.toggle('adt-skeleton-on', skeletonShown);
     const selectable = options.selectable === true;
     const columns = table.getVisibleColumns();
     pageIds = page.rows.map(row => row.id);
@@ -386,7 +402,23 @@ export function renderTable<TData>(
 
     const body = element(doc, 'tbody');
     const span = columns.length + (selectable ? 1 : 0) + (rowActions.length > 0 ? 1 : 0) + (expandable ? 1 : 0);
-    if (page.rows.length === 0) {
+    if (skeletonShown) {
+      // Same cells as a row, so the layout does not jump when the rows arrive.
+      body.setAttribute('aria-hidden', 'true');
+      for (let index = 0; index < Math.min(state.pageSize, SKELETON_ROWS); index++) {
+        const tr = element(doc, 'tr', { class: 'adt-row adt-skeleton-row' });
+        if (expandable) tr.append(element(doc, 'td', { class: 'adt-expand-cell' }));
+        if (selectable) tr.append(element(doc, 'td', { class: 'adt-select' }));
+        columns.forEach((column, columnIndex) => {
+          const cellClass = [collapsible ? `adt-col--p${priorityOf(column, columnIndex)}` : '', numeric(column) ? 'adt-num' : ''].filter(Boolean).join(' ');
+          const td = element(doc, 'td', { 'data-label': column.header, ...(cellClass ? { class: cellClass } : {}) });
+          td.append(element(doc, 'span', { class: 'adt-skeleton' }));
+          tr.append(td);
+        });
+        if (rowActions.length > 0) tr.append(element(doc, 'td', { class: `adt-actions${collapsible ? ' adt-col--p2' : ''}` }));
+        body.append(tr);
+      }
+    } else if (page.rows.length === 0) {
       const tr = element(doc, 'tr', { class: 'adt-empty' });
       tr.append(element(doc, 'td', { colspan: String(span) }, labels.empty));
       body.append(tr);
@@ -519,7 +551,12 @@ export function renderTable<TData>(
     if (event.type === 'selection') patchSelection();
     else render();
   });
-  const unsubscribeStatus = status ? status.subscribe(() => showStatus()) : () => undefined;
+  const unsubscribeStatus = status
+    ? status.subscribe(() => {
+      showStatus();
+      if (wantsSkeleton() !== skeletonShown) render(); // placeholders in or out
+    })
+    : () => undefined;
   return {
     destroy: () => {
       unsubscribe();

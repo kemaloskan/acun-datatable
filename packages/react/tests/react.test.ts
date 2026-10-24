@@ -330,3 +330,26 @@ describe('detail', () => {
     expect(host.querySelectorAll('tbody .adt-expand')).toHaveLength(3);
   });
 });
+
+describe('skeleton', () => {
+  it('shows placeholder rows while the first rows load', () => {
+    let phase = 'loading';
+    const listeners = new Set<(state: { status: string }) => void>();
+    const status = {
+      getState: () => ({ status: phase as 'loading' }),
+      subscribe: (fn: (state: { status: string }) => void) => { listeners.add(fn); return () => { listeners.delete(fn); }; },
+    };
+    const table = createDataTable<Order>({ data: [], columns, initialState: { pageSize: 3 } });
+    render(h(DataTable<Order>, { table, status, selectable: true }));
+    expect(host.querySelectorAll('tbody .adt-skeleton-row')).toHaveLength(3);
+    expect(host.querySelectorAll('tbody .adt-skeleton-row:first-child td')).toHaveLength(3);
+    expect(host.querySelector('tbody')!.getAttribute('aria-hidden')).toBe('true');
+    act(() => {
+      table.setData(orders);
+      phase = 'success';
+      listeners.forEach(listener => listener({ status: 'success' }));
+    });
+    expect(host.querySelector('.adt-skeleton')).toBeNull();
+    expect(host.querySelectorAll('tbody .adt-row')).toHaveLength(3);
+  });
+});

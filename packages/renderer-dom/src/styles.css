@@ -184,6 +184,22 @@
 .adt-notice[role="alert"] { color: var(--adt-danger); border: 1px solid currentColor; border-radius: var(--adt-radius); }
 .adt-loading .adt-scroll { opacity: 0.6; transition: opacity 0.15s; }
 
+/* Skeleton rows while the first rows load (skeleton option) */
+.adt-skeleton-on .adt-scroll { opacity: 1; }
+.adt-skeleton-on .adt-notice { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+.adt-skeleton {
+  display: inline-block; width: 70%; max-width: 12rem; height: 0.75em; vertical-align: middle; border-radius: 999px;
+  background: linear-gradient(90deg, var(--adt-line) 25%, var(--adt-hover) 50%, var(--adt-line) 75%) 0 0 / 300% 100%;
+  animation: adt-shimmer 1.4s ease-in-out infinite;
+}
+.adt-skeleton-row:nth-child(3n + 2) td:nth-child(odd) .adt-skeleton { width: 50%; }
+.adt-skeleton-row:nth-child(3n) td:nth-child(even) .adt-skeleton { width: 40%; }
+.adt-skeleton-row:hover { background: transparent; }
+.adt-skeleton--control { width: 4.5rem; height: 2.25rem; border-radius: var(--adt-control-radius); }
+.adt-skeleton--search { width: 14rem; max-width: 50vw; height: 2.25rem; border-radius: var(--adt-control-radius); }
+@keyframes adt-shimmer { from { background-position: 100% 0; } to { background-position: 0 0; } }
+@media (prefers-reduced-motion: reduce) { .adt-skeleton { animation: none; } }
+
 /* Info: "1–25 of 5,000 rows" */
 .adt-info { color: var(--adt-muted); font-variant-numeric: tabular-nums; }
 

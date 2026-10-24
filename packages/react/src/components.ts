@@ -61,7 +61,12 @@ export interface DataTableProps<TData> {
    * its row is open, so a component in it can load its own data on mount.
    */
   readonly detail?: (row: Row<TData>) => ReactNode;
+  /** Placeholder rows while a `status` source loads the first rows. Default `true`. */
+  readonly skeleton?: boolean;
 }
+
+/** Placeholder rows while the first rows load: as many as a page, at most this many. */
+const SKELETON_ROWS = 10;
 
 const noStatus = (): (() => void) => () => undefined;
 
@@ -235,7 +240,20 @@ export function DataTable<TData>(props: DataTableProps<TData>): ReactElement {
   }
 
   const body: ReactNode[] = [];
-  if (page.rows.length === 0) {
+  // Placeholder rows while the first rows of a remote table load.
+  const skeleton = props.skeleton !== false && props.status !== undefined && phase === 'loading' && page.rows.length === 0;
+  if (skeleton) {
+    for (let index = 0; index < Math.min(state.pageSize, SKELETON_ROWS); index++) {
+      body.push(h('tr', { className: 'adt-row adt-skeleton-row', key: `__skeleton${index}` },
+        expandable ? h('td', { className: 'adt-expand-cell' }) : null,
+        selectable ? h('td', { className: 'adt-select' }) : null,
+        ...columns.map((column, columnIndex) => h('td', {
+          'data-label': column.header, key: column.id,
+          className: [collapsible ? `adt-col--p${priorityOf(column, columnIndex)}` : '', numeric(column) ? 'adt-num' : ''].filter(Boolean).join(' ') || undefined,
+        }, h('span', { className: 'adt-skeleton' }))),
+        rowActions.length > 0 ? h('td', { className: collapsible ? 'adt-actions adt-col--p2' : 'adt-actions' }) : null));
+    }
+  } else if (page.rows.length === 0) {
     body.push(h('tr', { className: 'adt-empty', key: '__empty' }, h('td', { colSpan: span }, props.empty ?? labels.empty)));
   }
   let dialogContent: ReactNode[] = [];
@@ -319,7 +337,7 @@ export function DataTable<TData>(props: DataTableProps<TData>): ReactElement {
       : h('div', { className: 'adt-notice', role: 'status', 'aria-live': 'polite' });
   const height = scrollHeight(props.scrollY);
   const wrapClass = ['adt-table-wrap', `adt-responsive--${responsive}`, size === 'md' ? '' : `adt-size--${size}`,
-    props.stickyHeader === true ? 'adt-sticky-header' : '', height ? 'adt-scroll-y' : '', busy ? 'adt-loading' : ''].filter(Boolean).join(' ');
+    props.stickyHeader === true ? 'adt-sticky-header' : '', height ? 'adt-scroll-y' : '', busy ? 'adt-loading' : '', skeleton ? 'adt-skeleton-on' : ''].filter(Boolean).join(' ');
   const tableClass = ['adt-table', collapsible && levels.has(2) ? 'adt-has-p2' : '', collapsible && levels.has(3) ? 'adt-has-p3' : '', detail ? 'adt-has-detail' : '']
     .filter(Boolean).join(' ');
   return h('div', {
@@ -330,7 +348,7 @@ export function DataTable<TData>(props: DataTableProps<TData>): ReactElement {
     h('div', { className: 'adt-scroll' }, h('table', { className: tableClass },
       props.caption !== undefined ? h('caption', null, props.caption) : null,
       h('thead', null, h('tr', null, head)),
-      h('tbody', null, body),
+      h('tbody', skeleton ? { 'aria-hidden': true } : null, body),
       // Footer totals of the columns with `aggregate` (every matching row).
       columns.some(column => column.aggregate !== undefined) ? h('tfoot', null, h('tr', { className: 'adt-total' }, ...(() => {
         const totals = table.getAggregates();

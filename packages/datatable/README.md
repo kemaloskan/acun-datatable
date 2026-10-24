@@ -100,6 +100,7 @@ Route::match(['get', 'post'], '/api/products', fn () => TableResponse::for(Produ
 | `ajax` | | `ajax` (`url`, `method`, `headers`, `dataSrc`) |
 | `serverSide` | `false` | `serverSide` |
 | `processing` | `true` | `processing` |
+| `skeleton` | `true`: shimmering placeholder rows until the first rows arrive | |
 | `pagination` | `{ enabled: true, pageSize: 25, pageSizes: [10, 25, 50, 100] }`, also `firstLast`, `siblings` | `paging`, `pageLength`, `lengthMenu` |
 | `sorting` | `{ enabled: true, multiSort: true, initial: [] }` | `ordering`, `order` |
 | `searching` | `{ enabled: true, debounce: 250, placeholder, initial }` | `searching`, `searchDelay` |

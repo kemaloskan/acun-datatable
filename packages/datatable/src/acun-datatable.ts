@@ -1,8 +1,8 @@
 import {
-  createDataTable, persistState, type Aggregate, type ColumnDef, type ColumnType, type DataTable, type DataTableListener, type FilterOption, type Row, type SortRule,
+  createDataTable, persistState, type Aggregate, type ColumnDef, type PageResult, type TableQuery, type ColumnType, type DataTable, type DataTableListener, type FilterOption, type Row, type SortRule,
 } from '@acunsoft/datatable-core';
 import {
-  DEFAULT_LAYOUT, downloadFile, printTable, renderDataTable, resolveLabels,
+  DEFAULT_LAYOUT, downloadFile, el, printTable, renderDataTable, resolveLabels,
   type BulkAction, type CellFormatter, type CellRenderer, type DataTableLabels, type DataTableLayout, type LayoutSlot,
   type MenuItem, type RenderedComponent, type ResponsiveMode, type RowAction, type StatusSource, type TableSize,
 } from '@acunsoft/datatable-dom';
@@ -82,6 +82,11 @@ export interface AcunDataTableOptions {
   readonly serverSide?: boolean;
   /** Show a loading state while data loads (DataTables `processing`). Default `true`. */
   readonly processing?: boolean;
+  /**
+   * Placeholder rows that shimmer while the first rows load (needs
+   * `processing` and known `columns`). Default `true`.
+   */
+  readonly skeleton?: boolean;
   /** The row's unique field. Default `'id'` when rows have one. */
   readonly rowId?: string | ((row: Data) => string | number);
   readonly pagination?: boolean | {
@@ -212,7 +217,10 @@ export class AcunDataTable {
     }
 
     this.ready = this.#start(columns, rows).catch(error => {
-      if (!this.#destroyed) this.#loader?.fail(error);
+      if (!this.#destroyed) {
+        this.#loader?.fail(error);
+        if (!this.table) this.#pending(true); // failed before the columns were known
+      }
       throw error;
     });
     this.ready.catch(() => undefined); // reported through the loading state; callers may still await it
@@ -231,15 +239,30 @@ export class AcunDataTable {
         maxPageSize: 1000,
         ...(ajax.credentials ? { credentials: ajax.credentials } : {}),
       });
+      let primed: PageResult<Data> | undefined;
+      let primedQuery = '';
       if (!columns) {
-        // No column list: ask for the first page once and use the fields of its first row.
-        const first = await source.getPage({ page: 1, pageSize: pageSizeOf(options), sorting: [], filters: [], globalSearch: '' });
-        columns = inferColumns(first.rows[0], options);
+        // No column list: the fields of the first row. The table's first request reuses this page.
+        this.#pending();
+        const query = firstQuery(options);
+        primed = await source.getPage(query);
+        primedQuery = queryKey(query);
+        columns = inferColumns(primed.rows[0], options);
       }
       if (this.#destroyed) return;
       this.#source = source;
       const table = this.#createTable('server', columns, undefined);
-      this.#runner = createQueryRunner(source);
+      this.#runner = createQueryRunner<Data>({
+        getPage: (query, request) => {
+          if (primed && queryKey(query) === primedQuery) {
+            const page = primed;
+            primed = undefined;
+            return Promise.resolve(page);
+          }
+          primed = undefined;
+          return source.getPage(query, request);
+        },
+      });
       this.#mount(table, options.processing === false ? undefined : this.#runner);
       this.#disconnect = connectTable(table, this.#runner);
       await settled(this.#runner);
@@ -250,6 +273,7 @@ export class AcunDataTable {
     if (ajax) {
       // Client side: load every row once, then sort, search and page in the browser.
       this.#loader = loadState(() => this.reload());
+      if (!columns) this.#pending();
       if (columns) this.#mount(this.#createTable('local', columns, []), options.processing === false ? undefined : this.#loader);
       const data = await this.#fetchAll(ajax);
       if (this.#destroyed) return;
@@ -325,6 +349,22 @@ export class AcunDataTable {
     return table;
   }
 
+  /**
+   * Before the columns are known (no `columns`, rows still loading): a
+   * loading notice over placeholder rows, or the error if the load failed.
+   */
+  #pending(failed = false): void {
+    const options = this.#options;
+    if (options.processing === false) return;
+    const labels = resolveLabels(options.language, options.labels);
+    const notice = el('div', { class: 'adt-notice', role: failed ? 'alert' : 'status' }, el('span', { class: 'adt-notice-text' }, failed ? labels.error : labels.loading));
+    const rows = failed || options.skeleton === false ? [] : Array.from({ length: Math.min(pageSizeOf(options), 10) }, () =>
+      el('tr', { class: 'adt-row adt-skeleton-row' }, ...Array.from({ length: 4 }, () => el('td', {}, el('span', { class: 'adt-skeleton' })))));
+    const wrap = el('div', { class: `adt-table-wrap${rows.length > 0 ? ' adt-skeleton-on' : ''}`, 'aria-busy': failed ? 'false' : 'true' },
+      notice, ...(rows.length > 0 ? [el('div', { class: 'adt-scroll' }, el('table', { class: 'adt-table' }, el('tbody', { 'aria-hidden': 'true' }, ...rows)))] : []));
+    this.element.replaceChildren(el('div', { class: 'adt' }, wrap));
+  }
+
   #mount(table: DataTable<Data>, status: StatusSource | undefined): void {
     const options = this.#options;
     const pagination = typeof options.pagination === 'object' ? options.pagination : {};
@@ -389,6 +429,7 @@ export class AcunDataTable {
       ...(options.scrollY !== undefined ? { scrollY: options.scrollY } : {}),
       ...(sorting.multiSort === false ? { multiSort: false } : {}),
       ...(status ? { status } : {}),
+      ...(options.skeleton === false ? { skeleton: false } : {}),
     });
   }
 
@@ -507,6 +548,24 @@ export class AcunDataTable {
 /** `true`, `false` or `undefined` (not set) for a boolean-or-object option. */
 function enabled(option: boolean | { readonly enabled?: boolean } | undefined): boolean | undefined {
   return typeof option === 'boolean' ? option : option?.enabled;
+}
+
+/** The first query of a server table, before stateSave or the user change anything. */
+function firstQuery(options: AcunDataTableOptions): TableQuery {
+  const sorting = typeof options.sorting === 'object' ? options.sorting : {};
+  const searching = typeof options.searching === 'object' ? options.searching : {};
+  return {
+    page: 1,
+    pageSize: pageSizeOf(options),
+    sorting: enabled(options.sorting) === false ? [] : [...(sorting.initial ?? [])],
+    filters: [],
+    ...(searching.initial ? { globalSearch: searching.initial } : {}),
+  };
+}
+
+/** The parts of a query that pick a page, as a comparable string. */
+function queryKey(query: TableQuery): string {
+  return JSON.stringify([query.page, query.pageSize, query.sorting, query.filters, query.globalSearch ?? '']);
 }
 
 function pageSizeOf(options: AcunDataTableOptions): number {

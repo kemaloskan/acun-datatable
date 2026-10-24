@@ -356,3 +356,23 @@ describe('detail slot', () => {
     expect(host.querySelectorAll('tbody .adt-expand')).toHaveLength(3);
   });
 });
+
+describe('skeleton', () => {
+  it('shows placeholder rows while the first rows load', async () => {
+    let listener: (state: { status: string }) => void = () => undefined;
+    let current = 'loading';
+    const status = { getState: () => ({ status: current as 'loading' }), subscribe: (fn: typeof listener) => { listener = fn; return () => undefined; } };
+    const table = createDataTable<Order>({ data: [], columns, initialState: { pageSize: 3 } });
+    await mount(() => h(AcunDataTable, { table, status, selectable: true }));
+    expect(host.querySelectorAll('tbody .adt-skeleton-row')).toHaveLength(3);
+    expect(host.querySelectorAll('tbody .adt-skeleton-row:first-child td')).toHaveLength(3);
+    expect(host.querySelector('tbody')!.getAttribute('aria-hidden')).toBe('true');
+    expect(host.querySelector('.adt-table-wrap')!.classList.contains('adt-skeleton-on')).toBe(true);
+    table.setData(orders);
+    current = 'success';
+    listener({ status: 'success' });
+    await nextTick();
+    expect(host.querySelector('.adt-skeleton')).toBeNull();
+    expect(host.querySelectorAll('tbody .adt-row')).toHaveLength(3);
+  });
+});

@@ -84,6 +84,8 @@ export const AcunDataTable = defineComponent({
     multiSort: { type: Boolean, default: true },
     /** Row actions shown as buttons in the row; the rest go into a "⋮" menu. Default: all. */
     maxInlineActions: { type: Number, default: Infinity },
+    /** Placeholder rows while a `status` source loads the first rows. Default `true`. */
+    skeleton: { type: Boolean, default: true },
     /** A fixed height to scroll inside, header in place (DataTables `scrollY`): `'60vh'`, `480`. */
     scrollY: {
       type: [String, Number] as PropType<string | number>, default: undefined,
@@ -265,7 +267,21 @@ export const AcunDataTable = defineComponent({
       ]);
 
       const body: VNode[] = [];
-      if (page.rows.length === 0) {
+      // Placeholder rows while the first rows of a remote table load.
+      const skeleton = props.skeleton && props.status !== undefined && phase.value === 'loading' && page.rows.length === 0;
+      if (skeleton) {
+        for (let index = 0; index < Math.min(state.pageSize, SKELETON_ROWS); index++) {
+          body.push(h('tr', { class: 'adt-row adt-skeleton-row', key: `__skeleton${index}` }, [
+            expandable ? h('td', { class: 'adt-expand-cell' }) : null,
+            props.selectable ? h('td', { class: 'adt-select' }) : null,
+            ...columns.map((column, columnIndex) => h('td', {
+              'data-label': column.header, key: column.id,
+              class: [collapsible ? `adt-col--p${priorityOf(column, columnIndex)}` : '', numeric(column) ? 'adt-num' : ''].filter(Boolean).join(' ') || undefined,
+            }, [h('span', { class: 'adt-skeleton' })])),
+            actions.length > 0 ? h('td', { class: collapsible ? 'adt-actions adt-col--p2' : 'adt-actions' }) : null,
+          ]));
+        }
+      } else if (page.rows.length === 0) {
         body.push(h('tr', { class: 'adt-empty', key: '__empty' }, [h('td', { colspan: span }, slots.empty ? slots.empty({}) : label.empty)]));
       }
       let dialogContent: VNode[] | undefined;
@@ -351,7 +367,7 @@ export const AcunDataTable = defineComponent({
           : h('div', { class: 'adt-notice', role: 'status', 'aria-live': 'polite' });
       const height = scrollHeight(props.scrollY);
       const wrapClass = ['adt-table-wrap', `adt-responsive--${responsive}`, props.size === 'md' ? '' : `adt-size--${props.size}`,
-        props.stickyHeader ? 'adt-sticky-header' : '', height ? 'adt-scroll-y' : '', busy ? 'adt-loading' : ''].filter(Boolean).join(' ');
+        props.stickyHeader ? 'adt-sticky-header' : '', height ? 'adt-scroll-y' : '', busy ? 'adt-loading' : '', skeleton ? 'adt-skeleton-on' : ''].filter(Boolean).join(' ');
       const tableClass = ['adt-table', collapsible && levels.has(2) ? 'adt-has-p2' : '', collapsible && levels.has(3) ? 'adt-has-p3' : '', detailSlot ? 'adt-has-detail' : '']
         .filter(Boolean).join(' ');
       return h('div', { ref: wrapEl, class: wrapClass, style: height ? { '--adt-scroll-y': height } : undefined, 'aria-busy': props.status ? String(busy) : undefined }, [
@@ -359,7 +375,7 @@ export const AcunDataTable = defineComponent({
         h('div', { class: 'adt-scroll' }, [h('table', { class: tableClass }, [
           props.caption !== undefined ? h('caption', props.caption) : null,
           h('thead', [h('tr', head)]),
-          h('tbody', body),
+          h('tbody', skeleton ? { 'aria-hidden': 'true' } : null, body),
           // Footer totals of the columns with `aggregate` (every matching row).
           columns.some(column => column.aggregate !== undefined) ? h('tfoot', [h('tr', { class: 'adt-total' }, (() => {
             const totals = table.getAggregates();
@@ -387,6 +403,9 @@ export const AcunDataTable = defineComponent({
     };
   },
 });
+
+/** Placeholder rows while the first rows load: as many as a page, at most this many. */
+const SKELETON_ROWS = 10;
 
 const iconNode = (name: keyof typeof ICONS | { readonly path: string }): VNode => h('svg', {
   class: 'adt-icon', viewBox: '0 0 24 24', width: 16, height: 16, fill: 'none', stroke: 'currentColor', 'stroke-width': 2,

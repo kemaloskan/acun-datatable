@@ -70,6 +70,7 @@ describe('AcunDataTable', () => {
     vi.stubGlobal('fetch', fetch);
     const dt = new AcunDataTable('#orders', { ajax: '/orders.json', columns: [{ data: 'customer' }, { data: 'total' }] });
     expect(document.querySelector('.adt-notice')!.textContent).toBe('Loading…'); // processing
+    expect(document.querySelectorAll('tbody .adt-skeleton-row')).toHaveLength(10); // placeholders, not "No rows"
     await dt.ready;
     expect(fetch).toHaveBeenCalledOnce();
     expect(info()).toBe('Showing 1 to 25 of 30 rows');
@@ -182,6 +183,32 @@ describe('buttons and custom cells', () => {
     await small.ready;
     small.element.querySelector<HTMLButtonElement>('.adt-menu-item[data-action="copy"]')!.click();
     await vi.waitFor(() => expect(small.element.querySelector('.adt-menu-status--error')!.textContent).toBe('Dışa aktarma 20 satırı aşıyor; filtreleri daraltın.'));
+  });
+});
+
+describe('loading', () => {
+  it('without columns: placeholder rows first, then one request for the first page', async () => {
+    let answer!: (response: Response) => void;
+    const fetch = vi.fn(() => new Promise<Response>(resolve => { answer = resolve; }));
+    vi.stubGlobal('fetch', fetch);
+    const dt = new AcunDataTable('#orders', { serverSide: true, ajax: '/api/orders', language: 'tr', pagination: { pageSize: 5 } });
+    expect(document.querySelectorAll('.adt-skeleton-row')).toHaveLength(5);
+    expect(document.querySelector('.adt-notice[role="status"]')!.textContent).toBe('Yükleniyor…');
+    await vi.waitFor(() => expect(fetch).toHaveBeenCalledOnce());
+    answer(new Response(JSON.stringify({ rows: orders.slice(0, 5), totalRows: 30 })));
+    await dt.ready;
+    expect(fetch).toHaveBeenCalledOnce(); // the page that named the columns is the table's first page
+    expect(headers()).toEqual(['Id', 'Customer', 'Total']);
+    expect(document.querySelectorAll('tbody .adt-row')).toHaveLength(5);
+    expect(document.querySelector('.adt-skeleton')).toBeNull();
+  });
+
+  it('shows the error when the first load fails before the columns are known', async () => {
+    vi.stubGlobal('fetch', json({ message: 'boom' }, 500));
+    const dt = new AcunDataTable('#orders', { serverSide: true, ajax: '/api/orders' });
+    await expect(dt.ready).rejects.toThrow();
+    expect(document.querySelector('.adt-notice[role="alert"]')!.textContent).toBe('The data could not be loaded.');
+    expect(document.querySelector('.adt-skeleton')).toBeNull();
   });
 });
 
