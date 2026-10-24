@@ -38,9 +38,9 @@ export function tableResponse<TRow extends Record<string, unknown>>(query: Serve
  * `{ message, errors: { field: message } }`, or for a DataTables request a 200
  * with its `error`, as DataTables expects. Other errors are thrown on.
  */
-export function tableError(error: unknown, input?: { readonly draw?: unknown } | URLSearchParams): { status: number; body: Record<string, unknown> } {
+export function tableError(error: unknown, input?: { readonly draw?: unknown } | URLSearchParams | FormData): { status: number; body: Record<string, unknown> } {
   if (!(error instanceof TableQueryError)) throw error;
-  const draw = input instanceof URLSearchParams ? input.get('draw') : input?.draw;
+  const draw = typeof (input as URLSearchParams | undefined)?.get === 'function' ? (input as URLSearchParams).get('draw') : (input as { draw?: unknown } | undefined)?.draw;
   if (draw !== undefined && draw !== null) {
     return { status: 200, body: { draw: Number(draw) || 0, error: error.message, data: [], recordsTotal: 0, recordsFiltered: 0 } };
   }

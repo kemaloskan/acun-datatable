@@ -47,6 +47,12 @@ const MAX_FILTERS = 20;
 const MAX_SORT = 5;
 const MAX_TERMS = 10;
 
+/** The operators each column type takes, as the browser's filters use them. */
+const OPERATORS_BY_TYPE: Readonly<Record<ServerColumn['type'], readonly FilterOperator[]>> = (() => {
+  const ordered: FilterOperator[] = ['eq', 'gt', 'gte', 'lt', 'lte', 'between', 'in', 'empty', 'notEmpty'];
+  return Object.freeze({ text: FILTER_OPERATORS, number: ordered, decimal: ordered, date: ordered, datetime: ordered, boolean: ['eq', 'in', 'empty', 'notEmpty'] });
+})();
+
 type Input = URLSearchParams | FormData | Readonly<Record<string, unknown>>;
 
 /**
@@ -85,27 +91,28 @@ function fromTable(raw: Record<string, unknown>, byId: Map<string, ServerColumn>
 }
 
 function fromDataTables(raw: Record<string, unknown>, byId: Map<string, ServerColumn>, maxPageSize: number, defaultPageSize: number): ServerTableQuery {
-  const listed = list(raw['columns']).map((column, index) => {
+  // A column without data (`data: null`, e.g. an actions column) is no column of the query:
+  // ordering by it is ignored, as is its search.
+  const listed = list(raw['columns']).map(column => {
     const entry = column as Record<string, unknown> | undefined;
-    const id = entry?.['data'] ?? entry?.['name'];
-    if (typeof id !== 'string') throw new TableQueryError(`columns.${index}.data`, 'columns[].data must be a column ID');
+    const id = entry?.['data'] || entry?.['name'];
     const search = (entry?.['search'] as Record<string, unknown> | undefined)?.['value'];
-    return { id, search: typeof search === 'string' ? search : '' };
+    return { id: typeof id === 'string' ? id : '', search: typeof search === 'string' ? search : '' };
   });
   const lengthRaw = raw['length'] ?? defaultPageSize;
   const length = lengthRaw === '-1' || lengthRaw === -1 ? -1 : integer(lengthRaw, 'length', 1, 1_000_000);
   const pageSize = length === -1 ? maxPageSize : Math.min(length, maxPageSize);
   const start = integer(raw['start'] ?? 0, 'start', 0, MAX_PAGE * maxPageSize);
-  const sort = list(raw['order']).map((rule, index) => {
+  const sort = list(raw['order']).flatMap((rule, index) => {
     const entry = rule as Record<string, unknown> | undefined;
     const position = Number(entry?.['column']);
     const column = Number.isInteger(position) ? listed[position] : undefined;
     if (!column) throw new TableQueryError(`order.${index}.column`, 'order[].column must be the index of a column');
-    return `${column.id}:${entry?.['dir'] === 'desc' ? 'desc' : 'asc'}`;
+    return column.id === '' ? [] : [`${column.id}:${entry?.['dir'] === 'desc' ? 'desc' : 'asc'}`];
   });
   const extra = list(raw['filters']);
   for (const column of listed) {
-    if (column.search.trim() !== '') extra.push({ field: column.id, op: 'contains', value: column.search });
+    if (column.id !== '' && column.search.trim() !== '') extra.push({ field: column.id, op: 'contains', value: column.search });
   }
   const searchRaw = raw['search'];
   const search = text(typeof searchRaw === 'object' && searchRaw !== null ? (searchRaw as Record<string, unknown>)['value'] ?? '' : searchRaw ?? '', 'search');
@@ -151,6 +158,7 @@ function filters(value: unknown, byId: Map<string, ServerColumn>): readonly Serv
     if (!column.filterable) throw new TableQueryError(`${at}.field`, `column "${column.id}" cannot be filtered`);
     const operator = String(entry?.['op'] ?? entry?.['operator'] ?? '') as FilterOperator;
     if (!FILTER_OPERATORS.includes(operator)) throw new TableQueryError(`${at}.op`, `unknown operator "${operator}"`);
+    if (!OPERATORS_BY_TYPE[column.type].includes(operator)) throw new TableQueryError(`${at}.op`, `"${operator}" does not apply to the ${column.type} column "${column.id}"`);
     const raw = entry?.['value'];
     if (operator === 'empty' || operator === 'notEmpty') {
       out.push(Object.freeze({ column, operator }));
@@ -188,9 +196,9 @@ function typed(column: ServerColumn, raw: unknown, field: string): unknown {
       return typeof decimal === 'string' && /^[+-]?\d{1,30}(\.\d{1,30})?$/.test(decimal) ? decimal : fail();
     }
     case 'date':
-      return typeof value === 'string' && /^\d{4}-\d{2}-\d{2}/.test(value) && !Number.isNaN(Date.parse(value.slice(0, 10))) ? value.slice(0, 10) : fail();
+      return typeof value === 'string' && /^\d{4}-\d{2}-\d{2}/.test(value) && realDay(value) ? value.slice(0, 10) : fail();
     case 'datetime': {
-      if (typeof value !== 'string' || value.length > 40) return fail();
+      if (typeof value !== 'string' || value.length > 40 || (/^\d{4}-\d{2}-\d{2}/.test(value) && !realDay(value))) return fail();
       const date = /^\d{4}-\d{2}-\d{2}$/.test(value) ? new Date(`${value}T00:00:00`) : new Date(value);
       return Number.isNaN(date.getTime()) ? fail() : date;
     }
@@ -201,6 +209,13 @@ function typed(column: ServerColumn, raw: unknown, field: string): unknown {
     default:
       return text(value, field);
   }
+}
+
+/** Whether `YYYY-MM-DD…` names a day of the calendar (`Date` rolls 2024-02-30 over to March). */
+function realDay(value: string): boolean {
+  const [year, month, day] = value.slice(0, 10).split('-').map(Number) as [number, number, number];
+  const date = new Date(Date.UTC(year, month - 1, day));
+  return date.getUTCFullYear() === year && date.getUTCMonth() === month - 1 && date.getUTCDate() === day;
 }
 
 function integer(value: unknown, field: string, min: number, max: number): number {

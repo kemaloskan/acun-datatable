@@ -127,11 +127,30 @@ describe('sqlQuery (SQLite)', () => {
   it('writes PostgreSQL and MySQL with their own placeholders and quoting', () => {
     const query = readTableQuery(new URLSearchParams('sort=ordered:desc&filters[0][field]=customer&filters[0][op]=contains&filters[0][value]=ali&search=kaya'), columns);
     const pg = sqlQuery(query, columns, { dialect: 'postgres', table: 'orders', scope: { text: 'tenant_id = ?', values: [9] } });
-    expect(pg.page.text).toBe('SELECT * FROM "orders" WHERE (tenant_id = $1) AND "customer_search" LIKE $2 ESCAPE \'\\\' AND ("customer_search" LIKE $3 ESCAPE \'\\\' OR "city" ILIKE $4 ESCAPE \'\\\') ORDER BY "ordered_at" DESC, "id" DESC LIMIT 25 OFFSET 0');
+    expect(pg.page.text).toBe('SELECT * FROM "orders" WHERE (tenant_id = $1) AND "customer_search" LIKE $2 ESCAPE \'!\' AND ("customer_search" LIKE $3 ESCAPE \'!\' OR CAST("city" AS TEXT) ILIKE $4 ESCAPE \'!\') ORDER BY "ordered_at" DESC, "id" DESC LIMIT 25 OFFSET 0');
     expect(pg.page.values).toEqual([9, '%ali%', '%kaya%', '%kaya%']);
     const my = sqlQuery(query, columns, { dialect: 'mysql', table: 'orders' });
-    expect(my.page.text).toContain('`customer_search` LIKE ? ESCAPE \'\\\\\'');
+    expect(my.page.text).toContain('`customer_search` LIKE ? ESCAPE \'!\''); // the same in every SQL mode
     expect(() => sqlQuery(query, columns, { dialect: 'postgres', table: 'orders; drop table x' })).toThrow('plain SQL identifier');
+  });
+});
+
+describe('sqlQuery (SQL Server)', () => {
+  it('writes T-SQL: @p placeholders, [names], OFFSET … FETCH, [ escaped in LIKE', () => {
+    const query = readTableQuery(new URLSearchParams('page=3&pageSize=10&sort=total:desc&filters[0][field]=city&filters[0][op]=contains&filters[0][value]=a[b]_c%25&filters[1][field]=paid&filters[1][op]=eq&filters[1][value]=true'), columns);
+    const sql = sqlQuery(query, columns, { dialect: 'sqlserver', table: 'dbo.orders', select: ['id', 'city', 'total'], scope: { text: 'tenant_id = ?', values: [9] } });
+    expect(sql.page.text).toBe("SELECT [id], [city], [total] FROM [dbo].[orders] WHERE (tenant_id = @p1) AND [city] LIKE @p2 ESCAPE '!' AND [paid] = @p3 ORDER BY [total] DESC, [id] DESC OFFSET 20 ROWS FETCH NEXT 10 ROWS ONLY");
+    expect(sql.page.values).toEqual([9, '%a![b]!_c!%%', true]);
+    expect(sql.count.text).toBe("SELECT COUNT(*) AS [count] FROM [dbo].[orders] WHERE (tenant_id = @p1) AND [city] LIKE @p2 ESCAPE '!' AND [paid] = @p3");
+    const cursor = sqlQuery(readTableQuery(new URLSearchParams('sort=total:desc&paging=cursor'), columns), columns, { dialect: 'sqlserver', table: 'orders' });
+    expect(cursor.page.text).toMatch(/ORDER BY \[total\] DESC, \[id\] DESC OFFSET 0 ROWS FETCH NEXT 26 ROWS ONLY$/);
+  });
+
+  it('stays within SQL Server\'s 2,100 parameters', () => {
+    const many = { filters: Array.from({ length: 3 }, () => ({ field: 'qty', op: 'in', value: Array.from({ length: 800 }, (_, i) => i) })) };
+    const query = readTableQuery(many, columns);
+    expect(() => sqlQuery(query, columns, { dialect: 'sqlserver', table: 'orders' })).toThrow('sqlserver allows 2100 per statement');
+    expect(() => sqlQuery(query, columns, { dialect: 'postgres', table: 'orders' })).not.toThrow();
   });
 });
 
@@ -164,5 +183,74 @@ describe('tableResponse and tableError', () => {
     expect(tableError(error, params)).toEqual({ status: 422, body: { message: 'unknown column "secret"', errors: { sort: 'unknown column "secret"' } } });
     expect(tableError(error, { draw: '5' })).toMatchObject({ status: 200, body: { draw: 5, error: 'unknown column "secret"' } });
     expect(() => tableError(new Error('boom'))).toThrow('boom');
+  });
+});
+
+describe('NULL values, big integers and odd requests', () => {
+  const scored = defineColumns({ score: { type: 'number', sortable: true, nullable: true }, name: { sortable: true, filterable: true } });
+  const scores = [5, null, 3, null, 5, 1, null, 3, 8, null, 2];
+  beforeAll(() => {
+    db.exec('CREATE TABLE scores (id INTEGER PRIMARY KEY, score INTEGER, name TEXT)');
+    scores.forEach((score, index) => db.prepare('INSERT INTO scores VALUES (?, ?, ?)').run(index + 1, score, `n${index % 3}`));
+  });
+  const walk = (sort: string, dialect: 'sqlite' | 'postgres' = 'sqlite') => {
+    const seen: number[] = [];
+    let cursor: string | undefined;
+    for (let page = 1; page < 20; page++) {
+      const query = readTableQuery(new URLSearchParams(`sort=${sort}&pageSize=3&paging=cursor${cursor ? `&cursor=${cursor}` : ''}`), scored);
+      const sql = sqlQuery(query, scored, { dialect, table: 'scores' });
+      const body = tableResponse(query, run(sql.page), undefined, { cursorOf: sql.cursorOf });
+      seen.push(...(body['rows'] as Record<string, unknown>[]).map(row => Number(row['id'])));
+      cursor = body['nextCursor'] as string | undefined;
+      if (!cursor) break;
+    }
+    return seen;
+  };
+  const ordered = (sort: string) => (db.prepare(`SELECT id FROM scores ORDER BY ${sort}`).all() as { id: number }[]).map(row => row.id);
+
+  it('reaches every row by cursor when a sort column holds NULL', () => {
+    expect(walk('score:asc')).toEqual(ordered('score ASC, id ASC'));
+    expect(walk('score:desc')).toEqual(ordered('score DESC, id DESC'));
+    expect(walk('name:asc,score:desc')).toEqual(ordered('name ASC, score DESC, id DESC'));
+  });
+
+  it('writes NULL-aware keyset conditions for PostgreSQL, where NULL sorts last', () => {
+    const first = sqlQuery(readTableQuery(new URLSearchParams('sort=score:asc&paging=cursor'), scored), scored, { dialect: 'postgres', table: 'scores' });
+    const next = (values: Record<string, unknown>) => sqlQuery(readTableQuery(new URLSearchParams(`sort=score:asc&paging=cursor&cursor=${first.cursorOf(values)}`), scored), scored, { dialect: 'postgres', table: 'scores' }).page;
+    expect(next({ score: 3, id: 8 }).text).toContain('WHERE ("score" >= $1 OR "score" IS NULL) AND (("score" > $2 OR "score" IS NULL) OR ("score" = $3 AND "id" > $4))');
+    expect(next({ score: null, id: 4 }).text).toContain('WHERE "score" IS NULL AND ("score" IS NULL AND "id" > $1)');
+  });
+
+  it('carries big integers and keeps Prisma NULL-aware', () => {
+    const query = readTableQuery(new URLSearchParams('sort=score:asc&paging=cursor'), scored);
+    const prisma = prismaQuery(query, scored);
+    expect(prisma.findMany.orderBy).toEqual([{ score: { sort: 'asc', nulls: 'last' } }, { id: 'asc' }]);
+    const cursor = prisma.cursorOf({ score: null, id: 9007199254740993n });
+    const next = prismaQuery(readTableQuery(new URLSearchParams(`sort=score:asc&paging=cursor&cursor=${cursor}`), scored), scored);
+    expect(next.findMany.where).toEqual({ AND: [{ score: null }, { OR: [{ id: { in: [] } }, { AND: [{ score: null }, { id: { gt: 9007199254740993n } }] }] }] });
+  });
+
+  it('binds dates as asked', () => {
+    const query = readTableQuery(new URLSearchParams('filters[0][field]=ordered&filters[0][op]=lt&filters[0][value]=2024-01-02T05:00:00Z'), columns);
+    expect(sqlQuery(query, columns, { dialect: 'sqlite', table: 'orders', bindDate: date => date.toISOString() }).page.values).toEqual(['2024-01-02T05:00:00.000Z']);
+    expect(sqlQuery(query, columns, { dialect: 'postgres', table: 'orders' }).page.values[0]).toBeInstanceOf(Date);
+  });
+
+  it('refuses impossible days and operators the type has not, and ignores DataTables columns without data', () => {
+    const fail = (input: Record<string, unknown>) => { try { readTableQuery(input, columns); return 'ok'; } catch (error) { return (error as Error).message; } };
+    expect(fail({ filters: [{ field: 'ordered', op: 'eq', value: '2024-02-30' }] })).toMatch(/is not a valid datetime/);
+    expect(fail({ filters: [{ field: 'ordered', op: 'eq', value: '2024-02-29' }] })).toBe('ok');
+    expect(fail({ filters: [{ field: 'qty', op: 'contains', value: '1' }] })).toBe('"contains" does not apply to the number column "qty"');
+    expect(fail({ filters: [{ field: 'paid', op: 'gt', value: 'true' }] })).toBe('"gt" does not apply to the boolean column "paid"');
+    const datatables = readTableQuery(new URLSearchParams('draw=1&columns[0][data]=&columns[0][search][value]=x&columns[1][data]=city&order[0][column]=0&order[0][dir]=asc&order[1][column]=1&order[1][dir]=desc'), columns);
+    expect(datatables.sorting.map(rule => rule.column.id)).toEqual(['city']);
+    expect(datatables.filters).toEqual([]);
+  });
+
+  it('answers a DataTables POST form with its error format', () => {
+    const form = new FormData();
+    form.set('draw', '4');
+    form.set('sort', 'secret:asc');
+    expect(tableError(new TableQueryError('sort', 'no'), form)).toMatchObject({ status: 200, body: { draw: 4, error: 'no' } });
   });
 });

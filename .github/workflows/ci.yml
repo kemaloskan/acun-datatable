@@ -130,3 +130,54 @@ jobs:
       - name: MariaDB (through the mysql driver)
         run: vendor/bin/phpunit --filter MysqlCountTest
         env: { ADT_TEST_MYSQL: 'mysql://root:secret@127.0.0.1:3307/adt_test' }
+
+  node-databases:
+    # @acunsoft/datatable-server's SQL on real servers through the usual
+    # drivers (pg, mysql2, mssql: dev dependencies only, never required by
+    # the package): filters, search, sorting, OFFSET and cursor paging.
+    runs-on: ubuntu-latest
+    name: Node SQL (PostgreSQL, MySQL, MariaDB, SQL Server)
+    services:
+      postgres:
+        image: postgres:17
+        env: { POSTGRES_PASSWORD: secret, POSTGRES_DB: adt_test }
+        ports: ['5432:5432']
+        options: --health-cmd "pg_isready -U postgres" --health-interval 5s --health-retries 10
+      mysql:
+        image: mysql:8.4
+        env: { MYSQL_ROOT_PASSWORD: secret, MYSQL_DATABASE: adt_test }
+        ports: ['3306:3306']
+        options: --health-cmd "mysqladmin ping -psecret" --health-interval 5s --health-retries 20
+      mariadb:
+        image: mariadb:11
+        env: { MARIADB_ROOT_PASSWORD: secret, MARIADB_DATABASE: adt_test }
+        ports: ['3307:3306']
+        options: --health-cmd "healthcheck.sh --connect" --health-interval 5s --health-retries 20
+      sqlserver:
+        image: mcr.microsoft.com/mssql/server:2022-latest
+        env: { ACCEPT_EULA: 'Y', MSSQL_SA_PASSWORD: 'Secret-12345' }
+        ports: ['1433:1433']
+        options: --health-cmd "/opt/mssql-tools18/bin/sqlcmd -C -S localhost -U sa -P Secret-12345 -Q 'SELECT 1'" --health-interval 10s --health-retries 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: '.nvmrc'
+          cache: 'npm'
+      - run: npm ci
+      - name: PostgreSQL
+        run: npx vitest run tests/databases.test.ts
+        working-directory: packages/server
+        env: { ADT_TEST_PGSQL: 'postgres://postgres:secret@127.0.0.1:5432/adt_test' }
+      - name: MySQL
+        run: npx vitest run tests/databases.test.ts
+        working-directory: packages/server
+        env: { ADT_TEST_MYSQL: 'mysql://root:secret@127.0.0.1:3306/adt_test' }
+      - name: MariaDB
+        run: npx vitest run tests/databases.test.ts
+        working-directory: packages/server
+        env: { ADT_TEST_MYSQL: 'mysql://root:secret@127.0.0.1:3307/adt_test' }
+      - name: SQL Server
+        run: npx vitest run tests/databases.test.ts
+        working-directory: packages/server
+        env: { ADT_TEST_MSSQL: 'mssql://sa:Secret-12345@127.0.0.1:1433/master' }

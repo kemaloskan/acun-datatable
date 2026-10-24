@@ -9,6 +9,13 @@ export interface ServerColumnSpec {
   /** Read and compare values as this type. Default `text`. */
   readonly type?: ColumnType;
   readonly sortable?: boolean;
+  /**
+   * The column may hold `NULL`. Cursor paging then also reaches the `NULL`
+   * rows, in the database's own order (PostgreSQL: last when ascending;
+   * MySQL, MariaDB, SQLite, SQL Server: first). Prisma sorts such a column
+   * with explicit `nulls` (last when ascending) on every database.
+   */
+  readonly nullable?: boolean;
   /** May be used in `filters`. */
   readonly filterable?: boolean;
   /** Part of the global search. Default: filterable text columns. */
@@ -28,6 +35,7 @@ export interface ServerColumn {
   readonly field: string;
   readonly type: ColumnType;
   readonly sortable: boolean;
+  readonly nullable: boolean;
   readonly filterable: boolean;
   readonly searchable: boolean;
   readonly search: string | undefined;
@@ -59,6 +67,7 @@ export function defineColumns(spec: Readonly<Record<string, ServerColumnSpec>>):
       field: column.field ?? id,
       type,
       sortable: column.sortable === true,
+      nullable: column.nullable === true,
       filterable,
       searchable: column.searchable ?? (filterable && type === 'text'),
       search: column.search === undefined ? undefined : checkIdentifier(column.search, `column "${id}".search`),

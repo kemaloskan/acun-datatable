@@ -155,5 +155,7 @@ Directories are named by role (`renderer-dom`, `datasource-http`); published nam
 - ADR-003: DataSource is a contract, not Laravel-specific.
 - ADR-004: Remote mode owns scalability; performance must be measured.
 - ADR-005: Accessibility and secure rendering are release criteria, not add-ons.
+- ADR-006: Acun DataTable manages data, not the database. Back ends and their database adapters run the queries; no database driver is ever a dependency (the Node package writes SQL text and values for PostgreSQL, MySQL, MariaDB, SQLite and SQL Server).
+- ADR-007: Wire protocol v1 is frozen (additive changes only), so the optional Acun DataEngine can be added to a server later without changing any front end. Its contracts — Capability Detection, Query Budget, Search-First, Index Advisor, queued operations — are in [DATAENGINE.md](DATAENGINE.md).
 
 Update this document when any boundary or design decision changes; don't silently deviate.

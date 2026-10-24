@@ -23,8 +23,10 @@ const fromBase64Url = (text: string): string => {
 
 /** The cursor after a row: its sort values (and key), for this sort only. */
 export function encodeCursor(signature: string, values: readonly unknown[]): string {
-  // Dates travel as { d: ISO } and come back as Date, so each driver binds them its own way.
-  return toBase64Url(JSON.stringify({ s: signature, v: values.map(value => (value instanceof Date ? { d: value.toISOString() } : value)) }));
+  // Dates travel as { d: ISO } and big integers as { b: digits }; both come back as they were,
+  // so each driver binds them its own way.
+  return toBase64Url(JSON.stringify({ s: signature, v: values.map(value => (value instanceof Date ? { d: value.toISOString() }
+    : typeof value === 'bigint' ? { b: value.toString() } : value)) }));
 }
 
 /** The values a cursor carries, checked against the sort; throws `TableQueryError`. */
@@ -39,9 +41,11 @@ export function decodeCursor(cursor: string, signature: string, count: number): 
   const values = decoded.v;
   const isDate = (value: unknown): value is { d: string } => typeof value === 'object' && value !== null && typeof (value as { d?: unknown }).d === 'string'
     && !Number.isNaN(Date.parse((value as { d: string }).d));
+  const isBig = (value: unknown): value is { b: string } => typeof value === 'object' && value !== null
+    && typeof (value as { b?: unknown }).b === 'string' && /^-?\d{1,40}$/.test((value as { b: string }).b);
   if (!Array.isArray(values) || values.length !== count
-    || !values.every(value => value === null || ['string', 'number', 'boolean'].includes(typeof value) || isDate(value))) {
+    || !values.every(value => value === null || ['string', 'number', 'boolean'].includes(typeof value) || isDate(value) || isBig(value))) {
     throw new TableQueryError('cursor', 'cursor must be the nextCursor of a previous page');
   }
-  return values.map(value => (isDate(value) ? new Date(value.d) : value));
+  return values.map(value => (isDate(value) ? new Date(value.d) : isBig(value) ? BigInt(value.b) : value));
 }

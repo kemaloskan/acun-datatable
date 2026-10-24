@@ -4,9 +4,11 @@ The Node back end of [Acun DataTable](https://kemaloskan.github.io/acun-datatabl
 for Next.js route handlers, Express, Fastify or any server that has a
 `Request` or its query string. It reads the table's request, checks it
 against a column allowlist, builds **bound-parameter SQL** for PostgreSQL,
-MySQL and SQLite (or **Prisma** arguments), and answers in the format the
-request used. No runtime dependency besides `@acunsoft/datatable-core`; it
-runs on the Edge runtime too.
+MySQL, MariaDB, SQLite and SQL Server (or **Prisma** arguments), and answers
+in the format the request used. It manages the data, not the database: it
+writes SQL text and values, and your own driver runs them. No database driver
+is a dependency (install only the one you use); the only runtime dependency
+is `@acunsoft/datatable-core`, and it runs on the Edge runtime too.
 
 ```bash
 npm install @acunsoft/datatable-server
@@ -60,25 +62,67 @@ or `createHttpDataSource({ url: '/api/orders' })` with the React or Vue package.
   size, 20 filters, 5 sort rules, 200-character texts, 10 search words) and
   anything else throws `TableQueryError`.
 - **`sqlQuery`** writes the page and the count with every value bound
-  (`$1` for PostgreSQL, `?` for MySQL and SQLite): filters (`contains`,
+  (`$1` for PostgreSQL, `?` for MySQL, MariaDB and SQLite, `@p1` for SQL
+  Server): filters (`contains`,
   `startsWith`, `eq`, `gt`, `gte`, `lt`, `lte`, `between`, `in`, `empty`,
   `notEmpty`; a day on a date-time column means the whole day), the smart
   search (every word must match some searchable column; letters are never
   looked for in numbers or dates), sorting with the key as the last
-  tie-breaker, and `LIMIT`/`OFFSET`. `scope` is your own condition (tenant,
-  owner) with `?` placeholders; every query stays inside it.
+  tie-breaker, and `LIMIT`/`OFFSET` (`OFFSET … FETCH` on SQL Server). `scope`
+  is your own condition (tenant, owner) with `?` placeholders, whatever the
+  dialect; every query stays inside it. Filter operators must suit the
+  column type (`contains` is for text, `gt` not for yes/no), and `LIKE`
+  patterns are escaped with `!`, which means the same in every SQL mode.
 - **Cursor paging** (`paging=cursor`): the page continues after the last row
   of the page before, written so a `(column, id)` index serves it on every
   database (the first sort column is bounded before the exact comparison), so
   page 100,000 costs what page 2 does. `tableResponse` reads one extra row to
   know there is a next page and returns `nextCursor` (`cursorOf`). Cursors
-  are tied to their sort; sort columns should not hold `NULL`s.
+  are tied to their sort. Mark sort columns that may hold `NULL` with
+  `nullable: true`, so later pages also reach the `NULL` rows (in the
+  database's own `NULL` order). Big integers (`bigint`) and dates travel in
+  the cursor as they are. node-postgres reads timestamps as JavaScript
+  dates, which keep milliseconds: sort by a `timestamp(3)` column, or have
+  the driver return timestamps as text, so microseconds never split a page.
 - **`prismaQuery`** gives `findMany` / `count` arguments instead
-  (`insensitive: false` on MySQL and SQLite).
+  (`insensitive: false` on MySQL, SQLite and SQL Server). Nullable sort
+  columns are sorted with `nulls` (Prisma 4.16 or later).
+- **Dates** are bound as `Date` (the drivers send local time); on SQLite as
+  local `YYYY-MM-DD HH:MM:SS` text. `bindDate: date => date.toISOString()`
+  matches SQLite columns that store ISO text in UTC.
 - **`tableResponse`** answers `{ rows, totalRows, nextCursor? }`, or
   `{ draw, recordsTotal, recordsFiltered, data }` for a DataTables request;
   `map` picks what each row sends. **`tableError`** turns a `TableQueryError`
   into a 422 (or DataTables' `error` with a 200) and throws anything else on.
+
+## Databases and drivers
+
+| Database | `dialect` | Driver (yours, not a dependency) | Running a statement |
+|---|---|---|---|
+| PostgreSQL | `postgres` | `pg`, `@neondatabase/serverless`; `postgres` (postgres.js) | `pool.query(text, [...values])`; `sql.unsafe(text, [...values])` |
+| MySQL, MariaDB | `mysql` | `mysql2` | `connection.query(text, [...values])` |
+| SQLite | `sqlite` | `node:sqlite`, `better-sqlite3`, libSQL | `db.prepare(text).all(...values)` |
+| SQL Server | `sqlserver` | `mssql` (tedious) | ``request.input(`p${i + 1}`, value)`` for each value, then `request.query(text)` |
+
+SQL Server takes at most 2,100 parameters per statement; a query that would
+need more (very long `in` lists) is refused with a `TableQueryError` rather
+than failing in the driver (`MAX_BINDINGS` has the limit of each dialect).
+
+```ts
+// SQL Server with mssql
+const sql = sqlQuery(query, columns, { dialect: 'sqlserver', table: 'dbo.orders', select: ['id', 'customer', 'total'] });
+const run = async ({ text, values }: SqlStatement) => {
+  const request = pool.request();
+  values.forEach((value, index) => request.input(`p${index + 1}`, value));
+  return (await request.query(text)).recordset;
+};
+const [rows, [{ count }]] = await Promise.all([run(sql.page), run(sql.count)]);
+return Response.json(tableResponse(query, rows, count, { cursorOf: sql.cursorOf }));
+```
+
+SQL Server compares text by the column's collation: a `_CI_AI` collation
+(e.g. `Turkish_100_CI_AI`) ignores case and accents; otherwise use a folded
+column (below).
 
 ## Turkish and accent-insensitive search
 

@@ -16,7 +16,7 @@ export interface PrismaQueryOptions {
 
 export interface PrismaTableQuery {
   /** Arguments for `findMany`: `where`, `orderBy`, `take` and `skip`. */
-  readonly findMany: { readonly where: Where; readonly orderBy: readonly Record<string, 'asc' | 'desc'>[]; readonly take: number; readonly skip?: number };
+  readonly findMany: { readonly where: Where; readonly orderBy: readonly Record<string, 'asc' | 'desc' | { sort: 'asc' | 'desc'; nulls: 'first' | 'last' }>[]; readonly take: number; readonly skip?: number };
   /** Arguments for `count`. */
   readonly count: { readonly where: Where };
   /** The cursor that continues after a row of the page. */
@@ -83,25 +83,35 @@ export function prismaQuery(query: ServerTableQuery, columns: readonly ServerCol
     throw new TypeError(`unknown operator ${String(operator)}`);
   }
 
-  const orders = query.sorting.map(rule => ({ column: rule.column.field, direction: rule.direction }));
-  if (!orders.some(order => order.column === key)) orders.push({ column: key, direction: orders.at(-1)?.direction ?? 'asc' });
-  const signature = sortSignature(orders);
+  const orders = query.sorting.map(rule => ({ column: rule.column.field, direction: rule.direction, nullable: rule.column.nullable }));
+  if (!orders.some(order => order.column === key)) orders.push({ column: key, direction: orders.at(-1)?.direction ?? 'asc', nullable: false });
+  const signature = sortSignature(orders.map(({ column, direction }) => ({ column, direction })));
   const base = and.length === 0 ? {} : and.length === 1 ? and[0]! : { AND: and };
   let pageWhere: Where = base;
   if (query.cursorPaging && query.cursor !== undefined) {
     const after = decodeCursor(query.cursor, signature, orders.length);
-    const first = orders[0]!;
-    const nest = (index: number): Where => {
+    // Nullable columns sort with explicit `nulls` (the largest value: last when ascending).
+    const beyond = (index: number, orEqual: boolean): Where | undefined => {
       const order = orders[index]!;
-      const strict = { [order.column]: { [order.direction === 'desc' ? 'lt' : 'gt']: after[index] } };
-      return index + 1 < orders.length ? { OR: [strict, { AND: [{ [order.column]: after[index] }, nest(index + 1)] }] } : strict;
+      const value = after[index];
+      if (value === null) {
+        if (!order.nullable) throw new TypeError(`"${order.column}" holds NULL: declare the column nullable: true`);
+        return order.direction === 'desc' ? (orEqual ? undefined : { NOT: { [order.column]: null } }) : (orEqual ? { [order.column]: null } : { [key]: { in: [] } });
+      }
+      const compare = { [order.column]: { [`${order.direction === 'desc' ? 'lt' : 'gt'}${orEqual ? 'e' : ''}`]: value } };
+      return order.nullable && order.direction === 'asc' ? { OR: [compare, { [order.column]: null }] } : compare;
     };
-    pageWhere = { AND: [...and, { [first.column]: { [first.direction === 'desc' ? 'lte' : 'gte']: after[0] } }, nest(0)] };
+    const nest = (index: number): Where => {
+      const strict = beyond(index, false)!;
+      return index + 1 < orders.length ? { OR: [strict, { AND: [{ [orders[index]!.column]: after[index] }, nest(index + 1)] }] } : strict;
+    };
+    const bound = beyond(0, true);
+    pageWhere = { AND: [...and, ...(bound ? [bound] : []), nest(0)] };
   }
   return Object.freeze({
     findMany: {
       where: pageWhere,
-      orderBy: orders.map(order => ({ [order.column]: order.direction })),
+      orderBy: orders.map(order => ({ [order.column]: order.nullable ? { sort: order.direction, nulls: order.direction === 'asc' ? 'last' as const : 'first' as const } : order.direction })),
       take: query.cursorPaging ? query.pageSize + 1 : query.pageSize,
       ...(query.cursorPaging ? {} : { skip: (query.page - 1) * query.pageSize }),
     },
