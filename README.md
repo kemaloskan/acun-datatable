@@ -5,13 +5,24 @@
 [![Packagist](https://img.shields.io/packagist/v/acunsoft/datatable-laravel.svg)](https://packagist.org/packages/acunsoft/datatable-laravel)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
-Documentation: **https://kemaloskan.github.io/acun-datatable/**
+**[Documentation](https://kemaloskan.github.io/acun-datatable/)** ·
+**[Live demo](https://kemaloskan.github.io/acun-datatable/demo/)** ·
+[Performance measurements](https://kemaloskan.github.io/acun-datatable/#/performance) ·
+[Upgrading](UPGRADING.md)
 
-A framework-independent data table for **Laravel + Livewire, Vue, React and
-plain HTML**: one headless TypeScript core, renderers that share the same
-accessible markup and stylesheet, and a Laravel package that runs the same
-query rules on the server. Free and MIT licensed, with no third-party runtime
-dependencies.
+A framework-independent data table for **Laravel + Livewire, Vue, React,
+Next.js and plain HTML**. Sorting, smart search, filters, paging, export and
+mobile layouts come ready; the table manages the interface and your back end
+decides how the data is queried. Free and MIT licensed, with no third-party
+runtime dependencies.
+
+```html
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@acunsoft/datatable@0.4.0/dist/styles.css">
+<script src="https://cdn.jsdelivr.net/npm/@acunsoft/datatable@0.4.0/dist/acun-datatable.min.js"></script>
+
+<table id="orders">…</table>
+<script>new AcunDataTable('#orders', { language: 'tr' });</script>
+```
 
 | Package | What it is |
 |---|---|
@@ -20,7 +31,7 @@ dependencies.
 | [`@acunsoft/datatable-dom`](packages/renderer-dom) | Accessible renderer without a framework: `renderDataTable` with a DataTables-style layout, optional `styles.css`. |
 | [`@acunsoft/datatable-vue`](packages/vue) · [`@acunsoft/datatable-react`](packages/react) | Components and composables/hooks with the same markup. |
 | [`@acunsoft/datatable-http`](packages/datasource-http) | Server mode over `fetch`: latest request wins, abort, retry. |
-| [`@acunsoft/datatable-server`](packages/server) | Node back end (Next.js, Express, Fastify): checks the query against a column allowlist, builds bound-parameter SQL (PostgreSQL, MySQL, SQLite) or Prisma arguments, answers in the table or DataTables format. |
+| [`@acunsoft/datatable-server`](packages/server) | Node back end (Next.js, Express, Fastify): checks the query against a column allowlist, builds bound-parameter SQL (PostgreSQL, MySQL, MariaDB, SQLite, SQL Server; no driver required) or Prisma arguments, answers in the table or DataTables format. |
 | [`@acunsoft/datatable-export`](packages/export) | Excel (.xlsx) and CSV export and import, written from scratch. |
 | [`acunsoft/datatable-laravel`](packages/adapter-laravel) | Livewire table and JSON endpoint; allowlisted columns, measured on 5 million rows. |
 
