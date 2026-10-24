@@ -1,8 +1,8 @@
 export { useDataTable, useTable, type TableView } from './hooks.js';
 export {
-  BulkActions, ColumnToggle, DataTable, PageInfo, PageSize, Pagination, Search,
+  BulkActions, ColumnToggle, DataTable, FilterChips, Filters, PageInfo, PageSize, Pagination, Search,
   type BulkActionsProps, type CellRenderProps, type ColumnToggleProps, type DataTableProps,
-  type PageInfoProps, type PageSizeProps, type PaginationProps, type SearchProps,
+  type FiltersProps, type PageInfoProps, type PageSizeProps, type PaginationProps, type SearchProps,
 } from './components.js';
 export {
   LABELS, labelsDe, labelsEn, labelsEs, labelsFr, labelsTr, resolveLabels, type BulkAction, type BulkSelection, type CellFormatter, type DataTableLabels, type RowAction,

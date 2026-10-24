@@ -167,6 +167,18 @@ texts (`'tr'` → Turkish); `labels` overrides single texts. Features are
 empty element to fill and may return `{ destroy }`. A bar with no features is
 left out. Each part is also available on its own (below), for your own markup.
 
+## `renderFilters(container, table, options?)` · `renderFilterChips(…)`
+
+A "Filters" menu with one control per column that has `filter`, chosen from
+its `type`: a search box (`contains`), min–max for numbers, from–to for dates
+(`between`, `gte`, `lte`; whole days), any/yes/no for booleans, or ticks for
+`filter: { options: [{ value, label }] }` (`in`). Changes apply at once;
+the button shows how many filters are active. `renderFilterChips` lists the
+active filters as removable chips with "Clear filters". `renderDataTable`
+adds both by itself (layout feature `filters`). The pure helpers
+`filterControls`, `readFilter`, `filterRules` and `describeFilter` are
+exported for your own controls.
+
 ## `renderPagination(container, table, options?)`
 
 Numbered pages in a `<nav>`: `‹ 1 … 4 5 6 … 20 ›`. While there are more pages

@@ -87,7 +87,7 @@ describe('renderDataTable', () => {
   });
 
   it('rejects unknown features and slots, and destroys every part', () => {
-    expect(() => renderDataTable(host, make(), { layout: { topStart: 'filters' as never } })).toThrow('Unknown layout feature "filters"');
+    expect(() => renderDataTable(host, make(), { layout: { topStart: 'buttons' as never } })).toThrow('Unknown layout feature "buttons"');
     expect(() => renderDataTable(host, make(), { layout: { middle: 'info' } as never })).toThrow('Unknown layout slot "middle"');
     const destroy = vi.fn();
     const table = make();

@@ -154,3 +154,26 @@ describe('filter cache (second review: search speed)', () => {
     expect(accessor).toHaveBeenCalledTimes(10);
   });
 });
+
+describe('gte and lte', () => {
+  it('include the value, and the whole day for dates', async () => {
+    const { createColumns, createRows, filterRows } = await import('../src/index');
+    type R = { id: number; total: number; at: string };
+    const columns = createColumns<R>([
+      { id: 'total', header: 'Total', accessorKey: 'total', type: 'number', enableFiltering: true },
+      { id: 'at', header: 'At', accessorKey: 'at', type: 'datetime', enableFiltering: true },
+    ]);
+    const rows = createRows<R>([
+      { id: 1, total: 100, at: '2026-10-22T23:59:00' },
+      { id: 2, total: 150, at: '2026-10-23T00:00:00' },
+      { id: 3, total: 200, at: '2026-10-23T18:30:00' },
+      { id: 4, total: 250, at: '2026-10-24T08:00:00' },
+    ]);
+    const ids = (filters: unknown) => filterRows(rows, columns, { filters: filters as never }).map(row => row.original.id);
+    expect(ids([{ field: 'total', operator: 'gte', value: 150 }])).toEqual([2, 3, 4]);
+    expect(ids([{ field: 'total', operator: 'lte', value: 150 }])).toEqual([1, 2]);
+    expect(ids([{ field: 'at', operator: 'gte', value: '2026-10-23' }])).toEqual([2, 3, 4]);
+    expect(ids([{ field: 'at', operator: 'lte', value: '2026-10-23' }])).toEqual([1, 2, 3]);
+    expect(() => ids([{ field: 'total', operator: 'gte', value: [1] }])).toThrow('gte value must be');
+  });
+});

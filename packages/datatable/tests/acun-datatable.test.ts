@@ -111,3 +111,22 @@ describe('AcunDataTable', () => {
     expect(() => new AcunDataTable('#orders', { serverSide: true, ajax: '/x', pagination: false })).toThrow('pagination cannot be turned off');
   });
 });
+
+describe('filters', () => {
+  it('adds the filter panel and chips for columns with filter', async () => {
+    const dt = new AcunDataTable('#orders', {
+      data: orders,
+      language: 'tr',
+      columns: [
+        { data: 'customer', title: 'Müşteri', filter: true },
+        { data: 'total', title: 'Tutar', type: 'number', filter: true },
+        { data: 'id', title: 'No', filter: [{ value: 1, label: 'Bir' }, { value: 2, label: 'İki' }] },
+      ],
+    });
+    await dt.ready;
+    expect([...document.querySelectorAll('.adt-filter legend')].map(legend => legend.textContent)).toEqual(['Müşteri', 'Tutar', 'No']);
+    dt.table!.setFilters([{ field: 'total', operator: 'gte', value: 250 }]);
+    expect(document.querySelector('.adt-chip')!.textContent).toBe('Tutar: ≥ 250');
+    expect(info()).toBe('Toplam: 6 kaydın 1 ile 6 arasını gösteriyor');
+  });
+});

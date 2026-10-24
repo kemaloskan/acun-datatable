@@ -1,6 +1,7 @@
 import type { DataTable } from '@acunsoft/datatable-core';
 import { renderBulkActions, type BulkAction } from './actions';
 import { renderColumnToggle } from './columns';
+import { filterControls, renderFilterChips, renderFilters } from './filters';
 import {
   renderPageInfo, renderPageSize, renderPagination, renderSearch, type RenderPaginationOptions, type RenderSearchOptions,
 } from './controls';
@@ -10,7 +11,7 @@ import { checkSize, renderTable, type RenderTableOptions } from './table';
 
 /** A built-in control, or your own: a function that fills the given element. */
 export type LayoutFeature =
-  | 'pageSize' | 'search' | 'columns' | 'info' | 'paging'
+  | 'pageSize' | 'search' | 'filters' | 'columns' | 'info' | 'paging'
   | ((slot: HTMLElement) => RenderedComponent | void);
 
 /** One slot holds one feature, several (shown side by side) or nothing (`null`). */
@@ -24,10 +25,10 @@ export interface DataTableLayout {
   readonly bottomEnd?: LayoutSlot;
 }
 
-/** Page size and search top left, the column menu top right, info bottom left, pages bottom right. */
+/** Page size and search top left, filters and the column menu top right, info bottom left, pages bottom right. */
 export const DEFAULT_LAYOUT: Readonly<Required<DataTableLayout>> = Object.freeze({
   topStart: Object.freeze(['pageSize', 'search'] as const),
-  topEnd: 'columns',
+  topEnd: Object.freeze(['filters', 'columns'] as const),
   bottomStart: 'info',
   bottomEnd: 'paging',
 });
@@ -45,7 +46,7 @@ export interface RenderDataTableOptions<TData> extends RenderTableOptions<TData>
   readonly bulkActions?: readonly BulkAction<TData>[];
 }
 
-const FEATURES = new Set(['pageSize', 'search', 'columns', 'info', 'paging']);
+const FEATURES = new Set(['pageSize', 'search', 'filters', 'columns', 'info', 'paging']);
 
 /**
  * Render a complete table: the table plus its controls arranged in a top and
@@ -89,6 +90,9 @@ export function renderDataTable<TData>(
       case 'columns':
         part = renderColumnToggle(node, table, { labels });
         break;
+      case 'filters':
+        part = renderFilters(node, table, { labels, locale });
+        break;
       case 'info':
         part = renderPageInfo(node, table, { labels });
         break;
@@ -114,6 +118,12 @@ export function renderDataTable<TData>(
   container.replaceChildren(root);
   const top = bar('top', layout.topStart, layout.topEnd);
   if (top) root.append(top);
+  // Active filters as chips, below the top bar, when any column is in the filter panel.
+  if (filterControls(table.getColumns()).length > 0) {
+    const chips = element(doc, 'div', { class: 'adt-feature adt-feature--chips' });
+    root.append(chips);
+    parts.push(renderFilterChips(chips, table, { labels, locale }));
+  }
   if (options.bulkActions && options.bulkActions.length > 0) {
     const selection = element(doc, 'div', { class: 'adt-feature adt-feature--selection' });
     root.append(selection);

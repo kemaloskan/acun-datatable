@@ -3,7 +3,7 @@ import { act, createElement as h, StrictMode, useState, type ReactElement } from
 import { createRoot, type Root } from 'react-dom/client';
 import { createDataTable, type ColumnDef, type Row } from '@acunsoft/datatable-core';
 import {
-  BulkActions, ColumnToggle, DataTable, PageInfo, PageSize, Pagination, Search, labelsTr, useDataTable, type BulkSelection,
+  BulkActions, ColumnToggle, DataTable, FilterChips, Filters, PageInfo, PageSize, Pagination, Search, labelsTr, useDataTable, type BulkSelection,
 } from '../src/index';
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
@@ -234,5 +234,19 @@ describe('responsive modes and sizes', () => {
     expect([...dialog.querySelectorAll('dt')].map(dt => dt.textContent)).toEqual(['Müşteri', 'Tutar']);
     click(dialog.querySelector('.adt-dialog-close'));
     expect(dialog.open).toBe(false);
+  });
+});
+
+describe('filters', () => {
+  it('renders the filter menu and chips from the DOM renderer', () => {
+    const table = createDataTable<Order>({ data: orders, columns: [
+      { id: 'customer', header: 'Müşteri', accessorKey: 'customer', enableFiltering: true },
+      { id: 'total', header: 'Tutar', accessorKey: 'total', type: 'decimal', enableFiltering: true, filter: true },
+    ] });
+    render(h('div', null, h(Filters, { table, labels: labelsTr }), h(FilterChips, { table, labels: labelsTr, locale: 'tr' })));
+    expect(host.querySelector('.adt-filters summary')!.textContent).toContain('Filtreler');
+    act(() => table.setFilters([{ field: 'total', operator: 'gte', value: '100' }]));
+    expect(host.querySelector('.adt-chip')!.textContent).toBe('Tutar: ≥ 100');
+    expect(table.getPage().rows.map(row => row.original.customer)).toEqual(['Ayşe', 'Can']);
   });
 });

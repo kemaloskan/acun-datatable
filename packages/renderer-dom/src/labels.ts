@@ -40,6 +40,16 @@ export interface DataTableLabels {
   /** Responsive `collapse` / `modal`: the details button of a row and the dialog title. */
   readonly details: (name: string) => string;
   readonly close: string;
+  /** Filter panel and chips. */
+  readonly filters: string;
+  readonly clearFilters: string;
+  readonly removeFilter: (column: string) => string;
+  readonly activeFilters: (count: number) => string;
+  readonly filterAny: string;
+  readonly filterMin: string;
+  readonly filterMax: string;
+  readonly filterFrom: string;
+  readonly filterTo: string;
 }
 
 /** Plural-aware word choice and locale digit grouping for count texts. */
@@ -84,6 +94,15 @@ export const labelsEn: DataTableLabels = Object.freeze({
   showColumns: 'Show columns',
   details: (name: string) => `Details of ${name}`,
   close: 'Close',
+  filters: 'Filters',
+  clearFilters: 'Clear filters',
+  removeFilter: (column: string) => `Remove filter: ${column}`,
+  activeFilters: (count: number) => `${en.number(count)} ${en.one(count) ? 'filter' : 'filters'} active`,
+  filterAny: 'Any',
+  filterMin: 'Min',
+  filterMax: 'Max',
+  filterFrom: 'From',
+  filterTo: 'To',
 });
 
 export const labelsTr: DataTableLabels = Object.freeze({
@@ -116,6 +135,15 @@ export const labelsTr: DataTableLabels = Object.freeze({
   showColumns: 'Gösterilecek kolonlar',
   details: (name: string) => `${name} ayrıntıları`,
   close: 'Kapat',
+  filters: 'Filtreler',
+  clearFilters: 'Filtreleri temizle',
+  removeFilter: (column: string) => `Filtreyi kaldır: ${column}`,
+  activeFilters: (count: number) => `${tr.number(count)} filtre etkin`,
+  filterAny: 'Tümü',
+  filterMin: 'En az',
+  filterMax: 'En çok',
+  filterFrom: 'Başlangıç',
+  filterTo: 'Bitiş',
 });
 
 export const labelsDe: DataTableLabels = Object.freeze({
@@ -148,6 +176,15 @@ export const labelsDe: DataTableLabels = Object.freeze({
   showColumns: 'Angezeigte Spalten',
   details: (name: string) => `Details zu ${name}`,
   close: 'Schließen',
+  filters: 'Filter',
+  clearFilters: 'Filter zurücksetzen',
+  removeFilter: (column: string) => `Filter entfernen: ${column}`,
+  activeFilters: (count: number) => `${de.number(count)} Filter aktiv`,
+  filterAny: 'Alle',
+  filterMin: 'Min.',
+  filterMax: 'Max.',
+  filterFrom: 'Von',
+  filterTo: 'Bis',
 });
 
 export const labelsFr: DataTableLabels = Object.freeze({
@@ -180,6 +217,15 @@ export const labelsFr: DataTableLabels = Object.freeze({
   showColumns: 'Colonnes affichées',
   details: (name: string) => `Détails de ${name}`,
   close: 'Fermer',
+  filters: 'Filtres',
+  clearFilters: 'Effacer les filtres',
+  removeFilter: (column: string) => `Retirer le filtre : ${column}`,
+  activeFilters: (count: number) => `${fr.number(count)} ${fr.one(count) ? 'filtre actif' : 'filtres actifs'}`,
+  filterAny: 'Tous',
+  filterMin: 'Min.',
+  filterMax: 'Max.',
+  filterFrom: 'Du',
+  filterTo: 'Au',
 });
 
 export const labelsEs: DataTableLabels = Object.freeze({
@@ -212,6 +258,15 @@ export const labelsEs: DataTableLabels = Object.freeze({
   showColumns: 'Columnas visibles',
   details: (name: string) => `Detalles de ${name}`,
   close: 'Cerrar',
+  filters: 'Filtros',
+  clearFilters: 'Borrar filtros',
+  removeFilter: (column: string) => `Quitar filtro: ${column}`,
+  activeFilters: (count: number) => `${es.number(count)} ${es.one(count) ? 'filtro activo' : 'filtros activos'}`,
+  filterAny: 'Todos',
+  filterMin: 'Mín.',
+  filterMax: 'Máx.',
+  filterFrom: 'Desde',
+  filterTo: 'Hasta',
 });
 
 /** The bundled label sets by language. */

@@ -24,8 +24,9 @@ const table = createDataTable({
   data: names.map((customer, index) => ({ id: index + 1, customer, total: ((index * 37) % 100) + 10, city: ['İstanbul', 'Ankara', 'İzmir'][index % 3] })),
   columns: [
     { id: 'customer', header: 'Customer', accessorKey: 'customer', enableSorting: true, enableFiltering: true },
-    { id: 'total', header: 'Total', accessorKey: 'total', enableSorting: true },
-    { id: 'city', header: 'City', accessorKey: 'city', priority: 3 },
+    { id: 'total', header: 'Total', accessorKey: 'total', type: 'number', enableSorting: true, enableFiltering: true, filter: true },
+    { id: 'city', header: 'City', accessorKey: 'city', priority: 3, enableFiltering: true,
+      filter: { options: [{ value: 'İstanbul', label: 'İstanbul' }, { value: 'Ankara', label: 'Ankara' }, { value: 'İzmir', label: 'İzmir' }] } },
   ],
   locale: 'tr',
   initialState: { pageSize: 5 },

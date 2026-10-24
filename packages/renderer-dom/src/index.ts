@@ -17,5 +17,9 @@ export {
   renderBulkActions, type BulkAction, type BulkSelection, type RenderBulkActionsOptions, type RowAction,
 } from './actions';
 export { renderColumnToggle, type RenderColumnToggleOptions } from './columns';
+export {
+  describeFilter, filterControls, filterRules, readFilter, renderFilterChips, renderFilters, replaceFilter,
+  type FilterControl, type FilterKind, type FilterValues, type RenderFiltersOptions,
+} from './filters';
 export { downloadFile } from './download';
 export { cellValue, createCellText, nextSorting, rowName, type CellTextOptions } from './cells';

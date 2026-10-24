@@ -57,6 +57,8 @@ columns: [
 ```
 
 `render` returns text; cells are always written as text, never as HTML.
+`filter: true` (or a list of `{ value, label }`) puts a column in the
+"Filters" menu; active filters show as removable chips.
 
 ## Server side
 

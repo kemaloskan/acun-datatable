@@ -2,14 +2,16 @@
  * Supported column filter operators.
  *
  * - `contains`, `startsWith`: text, case-/accent-/Turkish-insensitive.
- * - `eq`, `gt`, `lt`: one value of the column's type.
+ * - `eq`, `gt`, `lt`, `gte`, `lte`: one value of the column's type (`gte` / `lte`
+ *   include the value: "at least", "at most"; for dates the whole day).
  * - `between`: `[min, max]`, both ends included.
  * - `in`: a non-empty list; matches any of its values.
  * - `empty`, `notEmpty`: no value; missing values and blank text are empty.
  */
-export type FilterOperator = 'contains' | 'startsWith' | 'eq' | 'gt' | 'lt' | 'between' | 'in' | 'empty' | 'notEmpty';
+export type FilterOperator =
+  | 'contains' | 'startsWith' | 'eq' | 'gt' | 'lt' | 'gte' | 'lte' | 'between' | 'in' | 'empty' | 'notEmpty';
 export const FILTER_OPERATORS: readonly FilterOperator[] = Object.freeze([
-  'contains', 'startsWith', 'eq', 'gt', 'lt', 'between', 'in', 'empty', 'notEmpty',
+  'contains', 'startsWith', 'eq', 'gt', 'lt', 'gte', 'lte', 'between', 'in', 'empty', 'notEmpty',
 ]);
 /** Largest list an `in` rule may hold. */
 export const MAX_IN_VALUES = 1000;
@@ -50,6 +52,8 @@ export function checkFilterRule(rule: unknown, label: string): asserts rule is F
       throw new TypeError(`filter "${field}" eq value must be a string, number, boolean or valid Date`);
     case 'gt':
     case 'lt':
+    case 'gte':
+    case 'lte':
       if (isComparable(value)) return;
       throw new TypeError(`filter "${field}" ${operator} value must be a string, number or valid Date`);
     case 'between':

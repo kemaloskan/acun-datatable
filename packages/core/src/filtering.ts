@@ -84,13 +84,13 @@ const isoDate = (date: Date): string => `${date.getFullYear()}-${pad(date.getMon
  * - Global search is "smart", like DataTables: every word must match in some
  *   filterable column (not necessarily the same one), and a quoted phrase is
  *   one term: `ali ankara`, `"new york" 2026`.
- * - `eq`, `gt`, `lt`, `between`, `in` compare values of the same type. With a
+ * - `eq`, `gt`, `lt`, `gte`, `lte`, `between`, `in` compare values of the same type. With a
  *   column `type`, text such as `"100.00"` or `"2026-10-23"` is read as that type
  *   first; without one, values are compared as they are and never coerced.
  * - Days: a `date` column compares calendar days. In a `datetime` column a
  *   date-only value (`"2026-10-23"` or a local midnight) means that whole day:
  *   `eq` matches any time on it, `gt` starts the next day, `lt` ends before it,
- *   `between` covers both end days.
+ *   `gte` starts on it, `lte` ends with it, `between` covers both end days.
  * - `empty` matches missing values (`null`, `undefined`, `NaN`, invalid `Date`,
  *   unreadable typed values) and blank text; `notEmpty` the rest. Every other
  *   operator never matches a missing value. Only `enableFiltering` columns can
@@ -145,7 +145,7 @@ export function filterRows<TData>(
     if (!column) throw new Error(`unknown filter column ID: ${field}`);
     if (!column.enableFiltering) throw new Error(`filtering is disabled for column "${field}"`);
     const type = column.type;
-    const ordered = operator === 'gt' || operator === 'lt' || operator === 'between';
+    const ordered = operator === 'gt' || operator === 'lt' || operator === 'gte' || operator === 'lte' || operator === 'between';
     if (ordered && type === 'boolean') {
       throw new TypeError(`filter "${field}" ${operator} is not supported for boolean columns`);
     }
@@ -238,6 +238,14 @@ export function filterRows<TData>(
       case 'lt': {
         const order = isSpan(targets[0]) ? place(cell as Date, targets[0]) : compare(cell, targets[0], type);
         return order !== undefined && order < 0;
+      }
+      case 'gte': {
+        const order = isSpan(targets[0]) ? place(cell as Date, targets[0]) : compare(cell, targets[0], type);
+        return order !== undefined && order >= 0;
+      }
+      case 'lte': {
+        const order = isSpan(targets[0]) ? place(cell as Date, targets[0]) : compare(cell, targets[0], type);
+        return order !== undefined && order <= 0;
       }
       case 'between': {
         if (isSpan(targets[0]) && isSpan(targets[1])) {

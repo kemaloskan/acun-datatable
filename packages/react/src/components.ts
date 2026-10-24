@@ -1,11 +1,12 @@
 import {
   createElement as h, useCallback, useEffect, useId, useMemo, useRef, useState, useSyncExternalStore,
-  type ChangeEvent, type CSSProperties, type KeyboardEvent, type MouseEvent, type ReactElement, type ReactNode,
+  type ChangeEvent, type CSSProperties, type KeyboardEvent, type RefObject, type MouseEvent, type ReactElement, type ReactNode,
 } from 'react';
 import { getPageItems, type ColumnDef, type DataTable, type Row } from '@acunsoft/datatable-core';
 import {
   cellValue, checkPageSizes, checkResponsive, checkSize, createCellText, ICONS, labelsEn, nextSorting, pageInfoText,
-  numeric, pageSizeChoices, priorityOf, rowName, scrollHeight, type ResponsiveMode, type TableSize,
+  numeric, pageSizeChoices, priorityOf, renderFilterChips, renderFilters, rowName, scrollHeight,
+  type RenderedComponent, type ResponsiveMode, type TableSize,
   type BulkAction, type BulkSelection, type CellFormatter, type DataTableLabels, type RowAction, type StatusSource,
 } from '@acunsoft/datatable-dom';
 import { useTable } from './hooks.js';
@@ -442,4 +443,35 @@ export function BulkActions<TData>({ table, actions, labels: custom }: BulkActio
       }, action.label);
     }),
     h('button', { type: 'button', className: 'adt-clear-selection', onClick: () => table.clearSelection() }, labels.clearSelection));
+}
+
+export interface FiltersProps {
+  readonly table: AnyTable;
+  readonly labels?: Partial<DataTableLabels>;
+  /** For dates and numbers in the chips. Default `'en'`. */
+  readonly locale?: string;
+}
+
+/** Mount a DOM-renderer control once per table, labels and locale. */
+function useDomControl(render: (el: HTMLElement) => RenderedComponent, deps: readonly unknown[]): RefObject<HTMLDivElement | null> {
+  const host = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!host.current) return undefined;
+    const part = render(host.current);
+    return () => part.destroy();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, deps);
+  return host;
+}
+
+/** The "Filters" menu: a control per column with `filter` (see `renderFilters`). */
+export function Filters({ table, labels, locale = 'en' }: FiltersProps): ReactElement {
+  const host = useDomControl(el => renderFilters(el, table, { labels: withLabels(labels), locale }), [table, locale, JSON.stringify(labels ?? {})]);
+  return h('div', { ref: host, className: 'adt-feature' });
+}
+
+/** The active filters as removable chips (see `renderFilterChips`). */
+export function FilterChips({ table, labels, locale = 'en' }: FiltersProps): ReactElement {
+  const host = useDomControl(el => renderFilterChips(el, table, { labels: withLabels(labels), locale }), [table, locale, JSON.stringify(labels ?? {})]);
+  return h('div', { ref: host, className: 'adt-feature' });
 }

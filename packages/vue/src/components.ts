@@ -1,11 +1,12 @@
 import {
-  computed, defineComponent, h, nextTick, onScopeDispose, shallowRef, watch,
+  computed, defineComponent, h, nextTick, onMounted, onScopeDispose, shallowRef, watch,
   type PropType, type SlotsType, type VNode,
 } from 'vue';
 import { getPageItems, type ColumnDef, type DataTable, type Row } from '@acunsoft/datatable-core';
 import {
   cellValue, checkPageSizes, checkResponsive, checkSize, createCellText, ICONS, labelsEn, nextSorting, pageInfoText,
-  numeric, pageSizeChoices, priorityOf, rowName, scrollHeight, type ResponsiveMode, type TableSize,
+  numeric, pageSizeChoices, priorityOf, renderFilterChips, renderFilters, rowName, scrollHeight,
+  type RenderedComponent, type ResponsiveMode, type TableSize,
   type BulkAction, type BulkSelection, type CellFormatter, type DataTableLabels, type RowAction, type StatusSource,
 } from '@acunsoft/datatable-dom';
 import { useTable } from './composables';
@@ -488,3 +489,23 @@ export const AcunBulkActions = defineComponent({
     };
   },
 });
+
+/** Mount a DOM-renderer control in a wrapper element and keep it for the component's life. */
+function domControl(name: string, render: (el: HTMLElement, props: { table: AnyTable; labels: Partial<DataTableLabels>; locale: string }) => RenderedComponent) {
+  return defineComponent({
+    name,
+    props: { table: tableProp, labels: labelsProp, locale: { type: String, default: 'en' } },
+    setup(props) {
+      const host = shallowRef<HTMLElement | null>(null);
+      let part: RenderedComponent | undefined;
+      onMounted(() => { if (host.value) part = render(host.value, { table: props.table, labels: withLabels(props.labels), locale: props.locale }); });
+      onScopeDispose(() => part?.destroy());
+      return (): VNode => h('div', { ref: host, class: 'adt-feature' });
+    },
+  });
+}
+
+/** The "Filters" menu: a control per column with `filter` (see `renderFilters`). */
+export const AcunFilters = domControl('AcunFilters', (el, props) => renderFilters(el, props.table, props));
+/** The active filters as removable chips (see `renderFilterChips`). */
+export const AcunFilterChips = domControl('AcunFilterChips', (el, props) => renderFilterChips(el, props.table, props));

@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createApp, defineComponent, h, nextTick, ref, type App, type Component } from 'vue';
 import { createDataTable, type ColumnDef, type Row } from '@acunsoft/datatable-core';
 import {
-  AcunBulkActions, AcunColumnToggle, AcunDataTable, AcunPageInfo, AcunPageSize, AcunPagination, AcunSearch, labelsTr, useDataTable, type BulkSelection,
+  AcunBulkActions, AcunColumnToggle, AcunDataTable, AcunFilterChips, AcunFilters, AcunPageInfo, AcunPageSize, AcunPagination, AcunSearch, labelsTr, useDataTable, type BulkSelection,
 } from '../src/index';
 
 type Order = { id: number; customer: string; total: string; locked?: boolean };
@@ -252,5 +252,21 @@ describe('responsive modes and sizes', () => {
     expect(dialog.open).toBe(true);
     expect(dialog.querySelector('h2')!.textContent).toBe('Ayşe ayrıntıları');
     expect([...dialog.querySelectorAll('dt')].map(dt => dt.textContent)).toEqual(['Müşteri', 'Tutar']);
+  });
+});
+
+describe('filters', () => {
+  it('renders the filter menu and chips from the DOM renderer', async () => {
+    const table = createDataTable<Order>({ data: orders, columns: [
+      { id: 'customer', header: 'Müşteri', accessorKey: 'customer', enableFiltering: true },
+      { id: 'total', header: 'Tutar', accessorKey: 'total', type: 'decimal', enableFiltering: true, filter: true },
+    ] });
+    await mount(() => h('div', [h(AcunFilters, { table, labels: labelsTr }), h(AcunFilterChips, { table, labels: labelsTr, locale: 'tr' })]));
+    expect(host.querySelector('.adt-filters summary')!.textContent).toContain('Filtreler');
+    table.setFilters([{ field: 'total', operator: 'gte', value: '100' }]);
+    expect(host.querySelector('.adt-chip')!.textContent).toBe('Tutar: ≥ 100');
+    app!.unmount();
+    app = undefined;
+    table.setFilters([]); // listeners are gone with the component
   });
 });

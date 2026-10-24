@@ -59,6 +59,7 @@ export const ICONS = Object.freeze({
   expand: 'M12 8v8M8 12h8M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18z',
   collapse: 'M8 12h8M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18z',
   close: 'M18 6 6 18M6 6l12 12',
+  filter: 'M3 5h18l-7 8.5V19l-4 2v-7.5z',
 } as const);
 
 /** A decorative stroke icon (hidden from screen readers; the control carries the name). */

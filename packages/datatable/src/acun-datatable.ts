@@ -1,5 +1,5 @@
 import {
-  createDataTable, type ColumnDef, type ColumnType, type DataTable, type DataTableListener, type Row, type SortRule,
+  createDataTable, type ColumnDef, type ColumnType, type DataTable, type DataTableListener, type FilterOption, type Row, type SortRule,
 } from '@acunsoft/datatable-core';
 import {
   DEFAULT_LAYOUT, renderDataTable, resolveLabels,
@@ -29,6 +29,12 @@ export interface ColumnOptions {
   readonly priority?: 1 | 2 | 3;
   /** Cell text from the value (always shown as text, never as HTML). */
   readonly render?: (value: unknown, row: Data) => string;
+  /**
+   * Put the column in the filter panel: `true` picks the control from `type`
+   * (text, min–max, from–to, yes/no), a list of `{ value, label }` gives
+   * choices to tick.
+   */
+  readonly filter?: boolean | readonly FilterOption[];
 }
 
 export interface AjaxOptions {
@@ -397,7 +403,8 @@ function toColumnDef(column: ColumnOptions | ColumnDef<Data>, options: AcunDataT
     header: column.title ?? readable(column.data),
     accessorKey: column.data,
     enableSorting: sortingOn && column.sortable !== false,
-    enableFiltering: column.searchable !== false,
+    enableFiltering: column.searchable !== false || Boolean(column.filter),
+    ...(column.filter ? { filter: Array.isArray(column.filter) ? { options: column.filter } : true } : {}),
     ...(column.hideable === false ? { enableHiding: false } : {}),
     ...(column.type ? { type: column.type } : {}),
     ...(column.priority ? { priority: column.priority } : {}),
@@ -428,6 +435,7 @@ function readTable(table: HTMLTableElement, options: AcunDataTableOptions): { co
     ...(cell.dataset['type'] ? { type: cell.dataset['type'] as ColumnType } : {}),
     ...(cell.dataset['sortable'] === 'false' ? { sortable: false } : {}),
     ...(cell.dataset['priority'] ? { priority: Number(cell.dataset['priority']) as 1 | 2 | 3 } : {}),
+    ...(cell.dataset['filter'] !== undefined ? { filter: true } : {}),
   }, options));
   const rows = [...table.tBodies].flatMap(body => [...body.rows]).map(tr => {
     const row: Data = {};

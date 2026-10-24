@@ -90,3 +90,18 @@ describe('column visibility', () => {
     })).toThrow('priority must be 1, 2 or 3');
   });
 });
+
+describe('filter panel metadata', () => {
+  it('keeps filter: true or options and validates them', () => {
+    const table = createDataTable<Order>({ data, columns: [
+      { id: 'city', header: 'City', accessorKey: 'city', enableFiltering: true, filter: { options: [{ value: 'İzmir', label: 'İzmir' }] } },
+      { id: 'total', header: 'Total', accessorKey: 'total', enableFiltering: true, filter: true },
+    ] });
+    expect(table.getColumns()[0]!.filter).toEqual({ options: [{ value: 'İzmir', label: 'İzmir' }] });
+    expect(table.getColumns()[1]!.filter).toBe(true);
+    expect(() => createDataTable<Order>({ data, columns: [{ id: 'city', header: 'City', accessorKey: 'city', filter: true }] }))
+      .toThrow('filter needs enableFiltering');
+    expect(() => createDataTable<Order>({ data, columns: [{ id: 'city', header: 'City', accessorKey: 'city', enableFiltering: true, filter: { options: [] } }] }))
+      .toThrow('filter.options must be');
+  });
+});

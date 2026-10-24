@@ -21,6 +21,23 @@ interface ColumnBase {
    * Default: `1` for the first column, `2` for the others.
    */
   readonly priority?: 1 | 2 | 3;
+  /**
+   * Show the column in a renderer's filter panel (needs `enableFiltering`).
+   * `true` picks the control from `type`: text → contains, number/decimal →
+   * min–max, date/datetime → from–to, boolean → yes/no. `options` gives a
+   * list of values to tick instead.
+   */
+  readonly filter?: boolean | ColumnFilter;
+}
+
+/** A filter-panel control with fixed choices, e.g. a status. */
+export interface ColumnFilter {
+  readonly options?: readonly FilterOption[];
+}
+
+export interface FilterOption {
+  readonly value: string | number | boolean;
+  readonly label: string;
 }
 
 type ValueKey<TData, TValue> = {
@@ -44,7 +61,7 @@ export function createColumns<TData>(
     if (!definition || typeof definition !== 'object') {
       throw new TypeError(`column[${index}] must be an object`);
     }
-    const { id, header, accessorKey, accessorFn, enableSorting, enableFiltering, enableHiding, type, priority } = definition;
+    const { id, header, accessorKey, accessorFn, enableSorting, enableFiltering, enableHiding, type, priority, filter } = definition;
     if (typeof id !== 'string' || id.trim().length === 0) {
       throw new TypeError(`column[${index}].id must be a non-empty string`);
     }
@@ -73,12 +90,22 @@ export function createColumns<TData>(
     if (priority !== undefined && priority !== 1 && priority !== 2 && priority !== 3) {
       throw new TypeError(`column "${id}".priority must be 1, 2 or 3`);
     }
+    if (filter !== undefined && filter !== false) {
+      if (filter !== true && (typeof filter !== 'object' || filter === null)) throw new TypeError(`column "${id}".filter must be a boolean or { options }`);
+      if (enableFiltering !== true) throw new TypeError(`column "${id}".filter needs enableFiltering`);
+      const options = filter === true ? undefined : filter.options;
+      if (options !== undefined && (!Array.isArray(options) || options.length === 0 || !options.every(option =>
+        option && typeof option.label === 'string' && ['string', 'number', 'boolean'].includes(typeof option.value)))) {
+        throw new TypeError(`column "${id}".filter.options must be a non-empty list of { value, label }`);
+      }
+    }
     ids.add(id);
     const base = {
       id, header, enableSorting: enableSorting ?? false, enableFiltering: enableFiltering ?? false,
       ...(enableHiding !== undefined ? { enableHiding } : {}),
       ...(type !== undefined ? { type } : {}),
       ...(priority !== undefined ? { priority } : {}),
+      ...(filter !== undefined && filter !== false ? { filter: filter === true ? true : Object.freeze({ ...filter, ...(filter.options ? { options: Object.freeze([...filter.options]) } : {}) }) } : {}),
     };
     // Validation above establishes the exclusive accessor branch at runtime.
     const copy = 'accessorKey' in definition
