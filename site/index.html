@@ -219,6 +219,9 @@ const ICON = {
   html:`<svg width="17" height="17" viewBox="0 0 512 512"><path fill="#E34F26" d="M71 460 30 0h452l-41 460-185 52z"/><path fill="#EF652A" d="M256 472l149-41 35-394H256z"/><path fill="#fff" d="M256 208h-75l-5-53h80v-52H119l15 157h122zm0 134-63-17-4-45h-52l7 89 112 31z"/><path fill="#EBEBEB" d="M256 208v52h70l-7 73-63 17v54l112-31 15-165zm0-105v52h132l4-52z"/></svg>`,
   guide:`<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20V3H6.5A2.5 2.5 0 0 0 4 5.5z"/><path d="M4 19.5A2.5 2.5 0 0 0 6.5 22H20v-5"/></svg>`,
   livewire:`<svg width="18" height="18" viewBox="0 0 24 24" fill="#FB70A9"><path d="M13 2 4.5 13H11l-1 9 9-12h-6z"/></svg>`,
+  nuxt:`<svg width="20" height="20" viewBox="0 0 24 24"><path d="M13.4 19.5h6.6c.6 0 .9-.6.6-1.1l-4.4-7.6a.7.7 0 0 0-1.2 0l-1.6 2.7-3-5.3a.7.7 0 0 0-1.2 0L2.6 18.4c-.3.5 0 1.1.6 1.1h4.1c1.6 0 2.8-.7 3.6-2l2-3.4" fill="none" stroke="#00DC82" stroke-width="1.8" stroke-linejoin="round"/></svg>`,
+  inertia:`<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#9553E9" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6l6 6-6 6M12 6l6 6-6 6"/></svg>`,
+  webcomponent:`<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 4 3 12l5 8M16 4l5 8-5 8M13.5 4l-3 16"/></svg>`,
   nextjs:`<svg width="18" height="18" viewBox="0 0 24 24"><circle cx="12" cy="12" r="11" fill="currentColor"/><path d="M9.5 7.5v9M9.5 7.5l7 9.5" stroke="var(--bg, #fff)" stroke-width="1.8" stroke-linecap="round"/><path d="M15 7.5v5" stroke="var(--bg, #fff)" stroke-width="1.8" stroke-linecap="round"/></svg>`,
   laravel:`<svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#FF2D20" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"><path d="M3 7l4.5-2.5L12 7 7.5 9.5z"/><path d="M3 7v5l4.5 2.5V9.5"/><path d="M12 7v5l-4.5 2.5"/><path d="M12 7l4.5-2.5L21 7l-4.5 2.5z"/><path d="M16.5 9.5V15L12 17.5"/></svg>`
 };
@@ -542,6 +545,149 @@ const { table } = useDataTable({
     <template #top-end><button type="button" class="adt-button">Yeni sipariş</button></template>
   </AcunDataTableLayout>
 </template>` },
+  nuxt:{ name:"Nuxt", pkg:"@acunsoft/datatable-vue", status:"ready",
+    install:"npm install @acunsoft/datatable-core @acunsoft/datatable-vue @acunsoft/datatable-http @acunsoft/datatable-server",
+    unpub:{tr:"MIT lisanslı. Vue paketi ön yüz, sunucu paketi Nitro API rotası için:", en:"MIT licensed. The Vue package for the page, the server package for the Nitro API route:"},
+    api:'@acunsoft/datatable-vue',
+    lead:{tr:"Nuxt 3/4: tablo Vue bileşeni olarak sayfada, veriler <code>server/api</code> rotasından. Rota <code>@acunsoft/datatable-server</code> ile isteği denetler ve SQL'i (ya da Prisma argümanlarını) üretir; Next.js ile aynı üç çağrı.",
+          en:"Nuxt 3/4: the table is a Vue component on the page, the rows come from a <code>server/api</code> route. The route checks the request and builds the SQL (or Prisma arguments) with <code>@acunsoft/datatable-server</code>; the same three calls as in Next.js."},
+    note:{tr:"Tablo tarayıcıda çalışır: <code>&lt;ClientOnly&gt;</code> içine alın ya da bileşeni <code>.client.vue</code> yapın. Sunucu rotasında kullanıcıyı yetkilendirin; kiracı kuralını <code>scope</code>'a koyun.",
+          en:"The table runs in the browser: wrap it in <code>&lt;ClientOnly&gt;</code> or name the component <code>.client.vue</code>. Authorize the user in the server route; put tenant rules in <code>scope</code>."},
+    lang:"typescript", code:
+`// server/api/orders.get.ts
+import { defineColumns, readTableQuery, sqlQuery, tableError, tableResponse } from '@acunsoft/datatable-server';
+
+const columns = defineColumns({
+  customer: { sortable: true, filterable: true, search: 'customer_search' },
+  total: { type: 'decimal', sortable: true, filterable: true },
+});
+
+export default defineEventHandler(async (event) => {
+  const params = new URLSearchParams(getRequestURL(event).search);
+  try {
+    const query = readTableQuery(params, columns);
+    const sql = sqlQuery(query, columns, { dialect: 'postgres', table: 'orders', scope: { text: 'tenant_id = ?', values: [event.context.user.tenantId] } });
+    const [page, count] = await Promise.all([db.query(sql.page.text, [...sql.page.values]), db.query(sql.count.text, [...sql.count.values])]);
+    return tableResponse(query, page.rows, count.rows[0].count, { cursorOf: sql.cursorOf });
+  } catch (error) {
+    const { status, body } = tableError(error, params);
+    setResponseStatus(event, status);
+    return body;
+  }
+});`,
+    examples:[
+      { title:{tr:"Sayfa", en:"The page"}, desc:{tr:"Vue paketinin yerleşim bileşeni; ClientOnly içinde.", en:"The Vue package's layout component, inside ClientOnly."}, lang:"xml", code:
+`<script setup lang="ts">
+import { createDataTable } from '@acunsoft/datatable-core';
+import { connectTable, createHttpDataSource, createQueryRunner } from '@acunsoft/datatable-http';
+import { AcunDataTableLayout, labelsTr } from '@acunsoft/datatable-vue';
+import '@acunsoft/datatable-dom/styles.css';
+
+const table = createDataTable({ mode: 'server', locale: 'tr', columns: [
+  { id: 'customer', header: 'Müşteri', accessorKey: 'customer', enableSorting: true, enableFiltering: true },
+  { id: 'total', header: 'Tutar', accessorKey: 'total', type: 'decimal', enableSorting: true },
+] });
+const runner = createQueryRunner(createHttpDataSource({ url: '/api/orders' }));
+onMounted(() => connectTable(table, runner));
+<\/script>
+
+<template>
+  <ClientOnly>
+    <AcunDataTableLayout :table="table" :status="runner" locale="tr" :labels="labelsTr" responsive="auto" />
+  </ClientOnly>
+</template>` },
+    ] },
+  inertia:{ name:"Inertia", pkg:"acunsoft/datatable-laravel", status:"ready",
+    install:"composer require acunsoft/datatable-laravel && npm install @acunsoft/datatable",
+    unpub:{tr:"MIT lisanslı. Laravel paketi uç nokta, tarayıcı paketi sayfa için:", en:"MIT licensed. The Laravel package for the endpoint, a browser package for the page:"},
+    api:'@acunsoft/datatable',
+    lead:{tr:"Inertia (Vue veya React) sayfasında tablo, verileri Laravel'deki <code>TableResponse</code> uç noktasından alır: sayfa Inertia ile gelir, tablo sayfaları JSON ile. Sıralama, filtre, sayfa değişince sayfa yenilenmez, Inertia ziyareti olmaz.",
+          en:"On an Inertia page (Vue or React) the table reads its rows from a Laravel <code>TableResponse</code> endpoint: the page comes through Inertia, the table's pages as JSON. Sorting, filters and paging never reload the page or make an Inertia visit."},
+    note:{tr:"Uç nokta web oturumunu kullanır (aynı origin); POST için CSRF belirtecini <code>AcunDataTable</code> meta etiketinden kendisi gönderir. Uç noktayı policy veya middleware ile yetkilendirin.",
+          en:"The endpoint uses the web session (same origin); for POST, <code>AcunDataTable</code> sends the CSRF token from the meta tag itself. Authorize the endpoint with a policy or middleware."},
+    lang:"php", code:
+`// routes/web.php — the same session as the Inertia pages
+Route::get('/orders', fn () => Inertia::render('Orders'));
+Route::get('/orders/data', fn () => TableResponse::for(Order::query()->whereBelongsTo(auth()->user()->team))
+    ->columns([
+        Column::make('customer')->sortable()->filterable()->searchUsing('customer_search'),
+        Column::make('total')->type('decimal')->sortable()->filter(),
+    ]))->middleware('auth');`,
+    examples:[
+      { title:{tr:"Vue sayfası (resources/js/Pages/Orders.vue)", en:"Vue page (resources/js/Pages/Orders.vue)"}, desc:{tr:"Tek çağrılık AcunDataTable; React'te aynısı useEffect içinde.", en:"The one-call AcunDataTable; in React the same inside useEffect."}, lang:"xml", code:
+`<script setup>
+import { onMounted, onBeforeUnmount, ref } from 'vue';
+import { AcunDataTable } from '@acunsoft/datatable';
+import '@acunsoft/datatable/styles.css';
+
+const el = ref(null);
+let table;
+onMounted(() => {
+  table = new AcunDataTable(el.value, {
+    serverSide: true,
+    ajax: '/orders/data',
+    language: 'tr',
+    columns: [{ data: 'customer', title: 'Müşteri' }, { data: 'total', title: 'Tutar', type: 'decimal', filter: true }],
+  });
+});
+onBeforeUnmount(() => table?.destroy());
+<\/script>
+
+<template><div ref="el" /></template>` },
+    ] },
+  webcomponent:{ name:"Web Component", pkg:"@acunsoft/datatable", status:"ready",
+    install:"npm install @acunsoft/datatable",
+    unpub:{tr:"MIT lisanslı; ya da derleme adımı olmadan tek &lt;script&gt; etiketiyle (aşağıda):", en:"MIT licensed; or with a single &lt;script&gt; tag, no build step (below):"},
+    api:'@acunsoft/datatable',
+    lead:{tr:"<code>&lt;acun-datatable&gt;</code> özel öğesi tabloyu her yerde aynı şekilde kullandırır: Angular, Svelte, Astro, Alpine, Solid ya da düz HTML. Sık kullanılan seçenekler öznitelik (<code>src</code>, <code>server-side</code>, <code>language</code>, <code>page-size</code>, <code>responsive</code> …), geri kalanı <code>options</code> / <code>columns</code> / <code>data</code> özelliği.",
+          en:"The <code>&lt;acun-datatable&gt;</code> custom element brings the table everywhere the same way: Angular, Svelte, Astro, Alpine, Solid or plain HTML. Common options are attributes (<code>src</code>, <code>server-side</code>, <code>language</code>, <code>page-size</code>, <code>responsive</code> …), the rest the <code>options</code> / <code>columns</code> / <code>data</code> properties."},
+    note:{tr:"Light DOM kullanır, <code>styles.css</code> doğrudan uygulanır. İçine yazılmış bir <code>&lt;table&gt;</code> kaynak olur. Olaylar: <code>adt-ready</code> ve her değişiklikte <code>adt-change</code> (<code>{ state, event }</code>). npm ile <code>defineAcunDataTableElement()</code> çağırın; <code>&lt;script&gt;</code> derlemesi öğeyi kendisi tanımlar.",
+          en:"It uses light DOM, so <code>styles.css</code> applies directly. A <code>&lt;table&gt;</code> written inside it is the source. Events: <code>adt-ready</code>, and <code>adt-change</code> (<code>{ state, event }</code>) on every change. With npm call <code>defineAcunDataTableElement()</code>; the <code>&lt;script&gt;</code> build defines the element itself."},
+    lang:"xml", code:
+`<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@acunsoft/datatable/dist/styles.css">
+<script src="https://cdn.jsdelivr.net/npm/@acunsoft/datatable/dist/acun-datatable.min.js"><\/script>
+
+<acun-datatable id="orders" src="/api/orders" server-side language="tr" page-size="25" responsive="auto"></acun-datatable>
+<script>
+  document.getElementById('orders').columns = [
+    { data: 'customer', title: 'Müşteri' },
+    { data: 'total', title: 'Tutar', type: 'decimal', filter: true },
+  ];
+<\/script>`,
+    examples:[
+      { title:{tr:"Angular", en:"Angular"}, desc:{tr:"CUSTOM_ELEMENTS_SCHEMA ile; özellikler [ ] bağlamasıyla.", en:"With CUSTOM_ELEMENTS_SCHEMA; properties through [ ] bindings."}, lang:"typescript", code:
+`import { Component, CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
+import { defineAcunDataTableElement } from '@acunsoft/datatable';
+defineAcunDataTableElement();
+
+@Component({
+  selector: 'app-orders',
+  standalone: true,
+  schemas: [CUSTOM_ELEMENTS_SCHEMA],
+  template: \`<acun-datatable src="/api/orders" server-side language="tr" [columns]="columns"
+                 (adt-change)="onChange($event)"></acun-datatable>\`,
+})
+export class OrdersComponent {
+  columns = [{ data: 'customer', title: 'Müşteri' }, { data: 'total', title: 'Tutar', type: 'decimal' }];
+  onChange(event: Event) { console.log((event as CustomEvent).detail.state); }
+}` },
+      { title:{tr:"Svelte", en:"Svelte"}, desc:{tr:"Svelte özellikleri doğrudan öğeye verir.", en:"Svelte sets properties on the element directly."}, lang:"xml", code:
+`<script>
+  import { defineAcunDataTableElement } from '@acunsoft/datatable';
+  import '@acunsoft/datatable/styles.css';
+  defineAcunDataTableElement();
+  const columns = [{ data: 'customer', title: 'Müşteri' }, { data: 'total', title: 'Tutar', type: 'decimal' }];
+<\/script>
+
+<acun-datatable src="/api/orders" server-side language="tr" {columns} on:adt-ready={() => console.log('ready')}></acun-datatable>` },
+      { title:{tr:"Astro / Alpine", en:"Astro / Alpine"}, desc:{tr:"Astro'da düz HTML gibi; Alpine'de x-init ile özellik atanır.", en:"In Astro like plain HTML; in Alpine set properties with x-init."}, lang:"xml", code:
+`<!-- Astro: the element runs in the browser; no client directive needed -->
+<acun-datatable src="/api/orders" server-side language="tr"></acun-datatable>
+<script>import { defineAcunDataTableElement } from '@acunsoft/datatable'; defineAcunDataTableElement();<\/script>
+
+<!-- Alpine -->
+<acun-datatable x-data x-init="$el.data = await (await fetch('/products.json')).json()" language="tr" virtual></acun-datatable>` },
+    ] },
   nextjs:{ name:"Next.js", pkg:"@acunsoft/datatable-server", status:"ready",
     install:"npm install @acunsoft/datatable-server @acunsoft/datatable-react @acunsoft/datatable-http @acunsoft/datatable-core",
     unpub:{tr:"MIT lisanslı. Node arka ucu (Next.js route handler, Express, Fastify) ve React ön yüzü:", en:"MIT licensed. The Node back end (Next.js route handlers, Express, Fastify) and the React front end:"},
@@ -1866,7 +2012,7 @@ const GUIDES = {
  }
 };
 const GUIDE_ORDER = ["quick", "server", "filters", "tools", "pagesize", "mobile", "header", "look", "texts", "bigdata"];
-const FW_ORDER = ["laravel","html","vue","react","nextjs"];
+const FW_ORDER = ["laravel","html","vue","react","nextjs","nuxt","inertia","webcomponent"];
 
 const T = {
   tr:{ nav_start:"Başlangıç", nav_fw:"Frameworkler", nav_guides:"Kılavuzlar", nav_api:"API", cta:"Kuruluma başla",
@@ -1890,8 +2036,8 @@ const T = {
        h_s2:"Neler var?", h_s2d:"Her ortamda aynı çekirdek yetenekler.",
        h_s3:"Kod örneği", h_s3d:"Çekirdek bugün kullanılabilir.",
        h_core_install:"npm'de yayında (0.3.0). Yalnızca çekirdek için:", go:"İncele →",
-       fw_desc:{vue:"Hazır: composable\'lar ve bileşenler.",react:"Hazır: hook\'lar ve bileşenler.",html:"Hazır: framework olmadan DOM renderer.",laravel:"Hazır: Livewire tablosu ve JSON uç nokta, tek Composer paketi."},
-       api_title:"API referansı", api_lead:"Paketlerin genel API'si: tek çağrılık AcunDataTable, çekirdek, HTTP, DOM, dışa/içe aktarma, Vue, React (npm'de 0.3.0) ve Laravel (Packagist'te 0.4.0).",
+       fw_desc:{vue:"Hazır: composable\'lar ve bileşenler.",react:"Hazır: hook\'lar ve bileşenler.",html:"Hazır: framework olmadan DOM renderer.",laravel:"Hazır: Livewire tablosu ve JSON uç nokta, tek Composer paketi.",nextjs:"Route handler için Node sunucu paketi ve React ön yüz.",nuxt:"Nitro API rotası ve Vue bileşenleri.",inertia:"Laravel JSON uç noktası, Inertia sayfasında tablo.",webcomponent:"<acun-datatable>: Angular, Svelte, Astro, Alpine, düz HTML."},
+       api_title:"API referansı", api_lead:"Paketlerin genel API'si: tek çağrılık AcunDataTable, çekirdek, HTTP, Node sunucusu, DOM, dışa/içe aktarma, Vue, React (npm'de 0.3.0) ve Laravel (Packagist'te 0.4.0).",
        a_s1:"Fonksiyonlar", a_s1d:"İmza ve kısa açıklama.", a_s2:"Örnek", a_s2d:"Fonksiyonların birlikte kullanımı." },
   en:{ nav_start:"Getting started", nav_fw:"Frameworks", nav_guides:"Guides", nav_api:"API", cta:"Get started",
        g_start:"Getting started", g_fw:"Frameworks", g_guides:"Guides", g_core:"Core",
@@ -1914,8 +2060,8 @@ const T = {
        h_s2:"What's inside?", h_s2d:"The same core capabilities everywhere.",
        h_s3:"Code example", h_s3d:"The core is available today.",
        h_core_install:"Published on npm (0.3.0). Core only:", go:"Open →",
-       fw_desc:{vue:"Ready: composables and components.",react:"Ready: hooks and components.",html:"Ready: DOM renderer, no framework.",laravel:"Ready: a Livewire table and a JSON endpoint, one Composer package."},
-       api_title:"API reference", api_lead:"Public API of the packages: the one-call AcunDataTable, core, HTTP, DOM, export/import, Vue, React (on npm, 0.3.0) and Laravel (on Packagist, 0.4.0).",
+       fw_desc:{vue:"Ready: composables and components.",react:"Ready: hooks and components.",html:"Ready: DOM renderer, no framework.",laravel:"Ready: a Livewire table and a JSON endpoint, one Composer package.",nextjs:"A Node server package for route handlers, and the React front end.",nuxt:"A Nitro API route and the Vue components.",inertia:"A Laravel JSON endpoint, the table on an Inertia page.",webcomponent:"<acun-datatable>: Angular, Svelte, Astro, Alpine, plain HTML."},
+       api_title:"API reference", api_lead:"Public API of the packages: the one-call AcunDataTable, core, HTTP, Node server, DOM, export/import, Vue, React (on npm, 0.3.0) and Laravel (on Packagist, 0.4.0).",
        a_s1:"Functions", a_s1d:"Signature and short description.", a_s2:"Example", a_s2d:"Using the functions together." }
 };
 

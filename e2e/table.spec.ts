@@ -335,6 +335,15 @@ test('virtual scrolling keeps 50,000 rows to a handful in the page', async ({ pa
   expect(await first()).toBeGreaterThan(24_000);
 });
 
+test('<acun-datatable> works from the script build, as in Angular, Svelte or Astro', async ({ page }) => {
+  await page.goto('/e2e/fixtures/element.html');
+  await expect(page.locator('body[data-ready=true]')).toBeAttached();
+  await expect(page.getByRole('columnheader', { name: 'Ürün' })).toBeVisible();
+  await expect(page.locator('acun-datatable tbody .adt-row')).toHaveCount(10);
+  await page.getByRole('button', { name: 'Sayfa 2' }).click();
+  await expect(page.locator('acun-datatable .adt-info')).toContainText('11 ile 20');
+});
+
 test.describe('child rows', () => {
   for (const width of [1280, 375]) {
     test(`load and open below the row at ${width}px`, async ({ page }) => {

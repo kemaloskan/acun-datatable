@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="csrf-token" content="e2e-token">
+<title>E2E · custom element</title>
+<!-- <acun-datatable> from the <script> build: no bundler, no framework (Angular, Svelte, Astro use it the same way). -->
+<link rel="stylesheet" href="/packages/datatable/dist/styles.css">
+<script src="/packages/datatable/dist/acun-datatable.min.js"></script>
+<style>body { font-family: system-ui, sans-serif; margin: 0; padding: 24px 16px; background: #f5f6f8; }</style>
+</head>
+<body>
+<acun-datatable id="products" src="/e2e/api/products" method="POST" server-side language="tr" page-size="10" responsive="auto"></acun-datatable>
+<script>
+  document.getElementById('products').columns = [
+    { data: 'name', title: 'Ürün' },
+    { data: 'price', title: 'Fiyat', type: 'decimal' },
+  ];
+  document.getElementById('products').addEventListener('adt-ready', () => { document.body.dataset.ready = 'true'; });
+</script>
+</body>
+</html>

@@ -34,6 +34,25 @@ Or with a `<script>` tag, without a build step (`window.AcunDataTable`):
 </script>
 ```
 
+## `<acun-datatable>` (Angular, Svelte, Astro, Alpine, plain HTML)
+
+```html
+<acun-datatable id="orders" src="/api/orders" server-side language="tr" page-size="25" responsive="auto"></acun-datatable>
+<script>
+  document.getElementById('orders').columns = [{ data: 'customer', title: 'Müşteri' }, { data: 'total', type: 'decimal' }];
+</script>
+```
+
+The `<script>` build defines the element; with npm call
+`defineAcunDataTableElement()` once. Attributes: `src`, `server-side`,
+`method`, `language`, `page-size`, `responsive`, `size`, `fixed-header`,
+`scroll-y`, `virtual`, `cursor`, `state-save`; the `options`, `columns` and
+`data` properties take everything else. A `<table>` inside it is the source
+when there is no `src` or `data`. It uses light DOM (so `styles.css`
+applies), fires `adt-ready` and `adt-change` (`{ state, event }`), and
+`element.table` is the `AcunDataTable`. Importing it on a server (SSR) is
+safe; it only runs in the browser.
+
 ## Where the rows come from
 
 | You give | What happens |
