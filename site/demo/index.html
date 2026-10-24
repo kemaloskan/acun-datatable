@@ -4,67 +4,88 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Canlı demo · Acun DataTable</title>
-<meta name="description" content="Acun DataTable canlı demo: sunucu tarafı sayfalama, filtreler, alt toplamlar, hücrede düzenleme, kolon araçları, alt satırlar ve 100.000 satırlık sanal kaydırma.">
+<meta name="description" content="Acun DataTable canlı demo: sunucu tarafı sayfalama ve filtreler, sütunları taşıma ve boyutlandırma, hücrede düzenleme, 100.000 satırlık sanal kaydırma. Her örneğin kodu yanında.">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='9' fill='%236d3fff'/%3E%3C/svg%3E">
 <link rel="stylesheet" href="styles.css">
 <script src="acun-datatable.min.js"></script>
 <style>
   :root {
     --page-bg: #f4f5f8; --page-fg: #141b2d; --page-muted: #5b6273; --page-line: #e3e6eb; --page-card: #ffffff;
-    --page-accent: #6d3fff; --page-soft: #f1ecff;
+    --page-accent: #6d3fff; --page-soft: #f1ecff; --page-code: #141414; --page-code-fg: #e5e5e5;
     color-scheme: light;
   }
   :root[data-theme="dark"] {
     --page-bg: #0b0d12; --page-fg: #e6e8ec; --page-muted: #a3aab8; --page-line: #262c38; --page-card: #12151c;
-    --page-accent: #a48bff; --page-soft: #1d1830;
+    --page-accent: #a48bff; --page-soft: #1d1830; --page-code: #0d0f14;
     color-scheme: dark;
   }
   * { box-sizing: border-box; }
   body { margin: 0; font: 15px/1.5 system-ui, -apple-system, 'Segoe UI', sans-serif; color: var(--page-fg); background: var(--page-bg); }
   a { color: var(--page-accent); }
+  code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .9em; }
   /* The table's fixed header stops under the page's own sticky bar. */
-  #server { --adt-sticky-top: var(--header-height, 59px); }
+  .scenario { --adt-sticky-top: var(--header-height, 59px); }
   header { position: sticky; top: 0; z-index: 30; display: flex; align-items: center; gap: 16px; padding: 12px 24px; background: var(--page-card); border-bottom: 1px solid var(--page-line); }
   header .brand { display: flex; align-items: center; gap: 10px; font-weight: 700; color: inherit; text-decoration: none; }
   header .brand small { display: block; font-weight: 500; font-size: 12px; color: var(--page-muted); }
   header nav { margin-left: auto; display: flex; gap: 16px; font-size: 14px; }
   main { max-width: 1240px; margin: 0 auto; padding: 24px 16px 64px; }
-  h1 { margin: 0 0 6px; font-size: 26px; }
-  .lead { margin: 0 0 20px; color: var(--page-muted); max-width: 70ch; }
-  .controls { display: flex; flex-wrap: wrap; gap: 12px 20px; align-items: end; margin-bottom: 18px; padding: 14px 16px; background: var(--page-card); border: 1px solid var(--page-line); border-radius: 12px; }
-  .controls label { display: grid; gap: 4px; font-size: 12px; font-weight: 600; color: var(--page-muted); text-transform: uppercase; letter-spacing: .04em; }
-  .controls select { min-width: 9rem; height: 36px; padding: 0 10px; font: inherit; font-size: 14px; color: var(--page-fg); background: var(--page-bg); border: 1px solid var(--page-line); border-radius: 8px; }
-  .tabs { display: flex; gap: 6px; margin-bottom: 14px; flex-wrap: wrap; }
-  .tabs button { padding: 8px 14px; font: inherit; font-size: 14px; font-weight: 600; color: var(--page-muted); background: transparent; border: 1px solid var(--page-line); border-radius: 999px; cursor: pointer; }
+  h1 { margin: 0 0 6px; font-size: 28px; letter-spacing: -.02em; }
+  .lead { margin: 0 0 20px; color: var(--page-muted); max-width: 72ch; }
+  .tabs { display: flex; gap: 6px; margin-bottom: 16px; flex-wrap: wrap; }
+  .tabs button { display: grid; gap: 1px; text-align: left; padding: 9px 16px; font: inherit; font-size: 14px; font-weight: 600; color: var(--page-fg); background: var(--page-card); border: 1px solid var(--page-line); border-radius: 10px; cursor: pointer; }
+  .tabs button small { font-weight: 500; font-size: 12px; color: var(--page-muted); }
   .tabs button[aria-selected="true"] { color: var(--page-accent); background: var(--page-soft); border-color: color-mix(in srgb, var(--page-accent) 40%, transparent); }
   .panel[hidden] { display: none; }
-  .panel > p { margin: 0 0 14px; color: var(--page-muted); font-size: 14px; max-width: 80ch; }
-  .features { margin: 0 0 14px; padding: 0; list-style: none; display: flex; flex-wrap: wrap; gap: 6px; }
-  .features li { padding: 2px 10px; font-size: 12px; color: var(--page-muted); background: var(--page-card); border: 1px solid var(--page-line); border-radius: 999px; }
+  .intro { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; margin-bottom: 16px; }
+  .box { padding: 14px 16px; background: var(--page-card); border: 1px solid var(--page-line); border-radius: 12px; }
+  .box h2 { margin: 0 0 6px; font-size: 14px; text-transform: uppercase; letter-spacing: .04em; color: var(--page-muted); }
+  .box p { margin: 0 0 8px; font-size: 14px; color: var(--page-muted); }
+  .try { margin: 0; padding-left: 20px; font-size: 14px; }
+  .try li { margin: 3px 0; }
+  .try kbd { font: 12px ui-monospace, monospace; padding: 0 5px; border: 1px solid var(--page-line); border-bottom-width: 2px; border-radius: 4px; background: var(--page-bg); }
+  .tags { margin: 8px 0 0; padding: 0; list-style: none; display: flex; flex-wrap: wrap; gap: 6px; }
+  .tags li { padding: 1px 9px; font: 12px ui-monospace, monospace; color: var(--page-muted); background: var(--page-bg); border: 1px solid var(--page-line); border-radius: 999px; }
+  details.code { margin-top: 16px; background: var(--page-card); border: 1px solid var(--page-line); border-radius: 12px; }
+  details.code summary { padding: 12px 16px; font-weight: 600; font-size: 14px; cursor: pointer; }
+  details.code pre { margin: 0; padding: 16px; overflow: auto; background: var(--page-code); color: var(--page-code-fg); border-radius: 0 0 12px 12px; font: 13px/1.6 ui-monospace, SFMono-Regular, Menlo, monospace; }
+  details.code .links { padding: 10px 16px; font-size: 13.5px; border-top: 1px solid var(--page-line); }
+  .controls { display: flex; flex-wrap: wrap; gap: 12px 20px; align-items: end; margin: 0 0 16px; padding: 12px 16px; background: var(--page-card); border: 1px solid var(--page-line); border-radius: 12px; }
+  .controls .label { font-size: 13px; font-weight: 600; color: var(--page-muted); margin-right: auto; align-self: center; }
+  .controls label { display: grid; gap: 4px; font-size: 12px; font-weight: 600; color: var(--page-muted); }
+  .controls select { min-width: 9rem; height: 36px; padding: 0 10px; font: inherit; font-size: 14px; color: var(--page-fg); background: var(--page-bg); border: 1px solid var(--page-line); border-radius: 8px; }
   .badge { display: inline-block; padding: 1px 8px; border-radius: 999px; font-size: 12px; font-weight: 600; }
   .badge--paid { color: #067647; background: #ecfdf3; } .badge--new { color: #175cd3; background: #eff8ff; }
   .badge--shipped { color: #6941c6; background: #f4f3ff; } .badge--cancelled { color: #b42318; background: #fef3f2; }
   :root[data-theme="dark"] .badge { filter: brightness(.9) saturate(1.2); background: color-mix(in srgb, currentColor 16%, transparent); }
-  .lines { margin: 0; padding: 0 0 0 18px; }
   footer { max-width: 1240px; margin: 0 auto; padding: 0 16px 40px; color: var(--page-muted); font-size: 13px; }
-  @media (max-width: 640px) { header { padding: 10px 16px; } header nav { gap: 10px; } main { padding-top: 16px; } h1 { font-size: 22px; } }
+  @media (max-width: 760px) { .intro { grid-template-columns: minmax(0, 1fr); } .controls .label { flex-basis: 100%; } }
+  @media (max-width: 640px) { header nav .wide { display: none; } header { padding: 10px 16px; } header nav { gap: 10px; } main { padding-top: 16px; } h1 { font-size: 23px; } .controls select { min-width: 0; width: 100%; } .controls label { flex: 1 1 40%; } }
 </style>
 </head>
 <body>
 <header>
   <a class="brand" href="../"><svg width="30" height="30" viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="9" fill="#6d3fff"/><path d="M9 22 15 9h2l6 13M11.5 17h9" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Acun DataTable<small>Canlı demo</small></span></a>
-  <nav><a href="../">Dokümantasyon</a><a href="https://github.com/kemaloskan/acun-datatable">GitHub</a></nav>
+  <nav><a class="wide" href="../#/home/s1">5 dakikada başla</a><a href="../">Dokümantasyon</a><a href="https://github.com/kemaloskan/acun-datatable">GitHub</a></nav>
 </header>
 <main>
   <h1>Canlı demo</h1>
-  <p class="lead">Tarayıcıda, kurulum olmadan. Sunucu tarafı örnekte istekler sayfanın içindeki sahte bir API'ye gider (300 ms gecikmeyle); gerçek uygulamada bu, Laravel ya da Node uç noktanızdır.</p>
+  <p class="lead">Kurulum olmadan, tarayıcıda. Bir senaryo seçin, yanındaki adımları deneyin; her örneğin kodu altında. Sunucu tarafı örnekte istekler bu sayfadaki sahte bir API'ye gider (300 ms gecikmeyle); gerçek uygulamada bu sizin Laravel, Node.js ya da başka bir backend'inizdir.</p>
+
+  <div class="tabs" role="tablist" aria-label="Senaryolar">
+    <button role="tab" id="tab-server" aria-controls="panel-server" aria-selected="true">Sunucu tarafı<small>5.000 sipariş, filtreler</small></button>
+    <button role="tab" id="tab-columns" aria-controls="panel-columns" aria-selected="false" tabindex="-1">Sütunlar<small>taşı, boyutlandır, sabitle</small></button>
+    <button role="tab" id="tab-edit" aria-controls="panel-edit" aria-selected="false" tabindex="-1">Düzenleme<small>hücrede, doğrulamayla</small></button>
+    <button role="tab" id="tab-virtual" aria-controls="panel-virtual" aria-selected="false" tabindex="-1">Sanal kaydırma<small>100.000 satır</small></button>
+  </div>
 
   <div class="controls" role="group" aria-label="Görünüm ayarları">
-    <label>Mobil görünüm
-      <select id="responsive"><option value="auto">Otomatik</option><option value="cards">Kart</option><option value="scroll">Yana kaydır</option><option value="collapse">Açılır satır</option><option value="modal">Modal</option></select>
+    <span class="label">Her senaryo için görünüm</span>
+    <label>Telefonda
+      <select id="responsive"><option value="auto">Otomatik</option><option value="cards">Kart</option><option value="scroll">Yana kaydır</option><option value="collapse">Açılır satır</option><option value="modal">Pencere (modal)</option></select>
     </label>
-    <label>Boyut
-      <select id="size"><option value="md">Orta (md)</option><option value="sm">Küçük (sm)</option><option value="lg">Büyük (lg)</option></select>
+    <label>Yoğunluk
+      <select id="size"><option value="md">Orta</option><option value="sm">Sıkı</option><option value="lg">Geniş</option></select>
     </label>
     <label>Dil
       <select id="language"><option value="tr">Türkçe</option><option value="en">English</option><option value="de">Deutsch</option><option value="fr">Français</option><option value="es">Español</option></select>
@@ -74,26 +95,69 @@
     </label>
   </div>
 
-  <div class="tabs" role="tablist" aria-label="Örnekler">
-    <button role="tab" id="tab-server" aria-controls="panel-server" aria-selected="true">Sunucu tarafı · 5.000 sipariş</button>
-    <button role="tab" id="tab-local" aria-controls="panel-local" aria-selected="false" tabindex="-1">Yerel · düzenleme ve alt satır</button>
-    <button role="tab" id="tab-virtual" aria-controls="panel-virtual" aria-selected="false" tabindex="-1">Sanal kaydırma · 100.000 satır</button>
-  </div>
-
   <section class="panel" id="panel-server" role="tabpanel" aria-labelledby="tab-server">
-    <p>Her sayfa sunucudan gelir: sıralama, arama ("ayse" Ayşe'yi bulur), filtreler ve sayfalama sunucuda; alt toplam filtrelere uyan tüm siparişlerin toplamıdır. İlk yüklemede iskelet satırlar görünür.</p>
-    <ul class="features"><li>serverSide</li><li>filtreler ve etiketler</li><li>alt toplam</li><li>toplu işlem</li><li>kolon genişliği ve sırası</li><li>Excel / CSV</li><li>stateSave</li></ul>
-    <div id="server"></div>
+    <div class="intro">
+      <div class="box"><h2>Ne görüyorsunuz?</h2><p>Tablo yalnızca bir sayfa tutar; sıralama, arama, filtreler ve sayfalama sunucuda yapılır. İlk açılışta iskelet satırlar görünür.</p>
+        <ul class="tags"><li>serverSide</li><li>ajax</li><li>filtreler</li><li>toplu işlem</li><li>Excel / CSV</li><li>stateSave</li></ul></div>
+      <div class="box"><h2>Deneyin</h2><ol class="try">
+        <li>Aramaya <code>ayse istanbul</code> yazın: iki kelime, Türkçe harfler fark etmez.</li>
+        <li><strong>Filtreler</strong> ile şehir ve durum seçin; etiketlerden tek tıkla kaldırın.</li>
+        <li>Birkaç satırı seçin, ardından <strong>Kargoya ver</strong>.</li>
+        <li><strong>Araçlar</strong> menüsünden Excel indirin: filtreye uyan tüm satırlar gelir.</li>
+        <li>Sayfayı yenileyin: arama, filtre ve sayfa kalır (<code>stateSave</code>).</li>
+      </ol></div>
+    </div>
+    <div id="server" class="scenario"></div>
+    <details class="code"><summary>Bu örneğin kodu</summary><pre><code data-code="server"></code></pre>
+      <div class="links">Backend tarafı: <a href="../#/laravel">Laravel</a> · <a href="../#/nextjs">Node.js</a> · <a href="../#/server">istek ve yanıt biçimi</a> · Kılavuz: <a href="../#/filters">Filtreler</a></div></details>
   </section>
-  <section class="panel" id="panel-local" role="tabpanel" aria-labelledby="tab-local" hidden>
-    <p>Ürün ve stok hücrelerindeki kalemle (ya da çift tıklayarak) düzenleyin; ⊕ satırın altında ürünün ayrıntılarını açar. Ürün kolonu yana kaydırırken yerinde kalır.</p>
-    <ul class="features"><li>hücrede düzenleme</li><li>alt satır</li><li>sabit kolon</li><li>özel hücre</li><li>kopyala / yazdır</li></ul>
-    <div id="local"></div>
+
+  <section class="panel" id="panel-columns" role="tabpanel" aria-labelledby="tab-columns" hidden>
+    <div class="intro">
+      <div class="box"><h2>Ne görüyorsunuz?</h2><p>Kullanıcı sütunları kendi düzenine getirir; ilk ve son sütun yana kaydırırken yerinde kalır. Düzen tarayıcıda saklanır.</p>
+        <ul class="tags"><li>columnReorder</li><li>columnResize</li><li>fixedColumns</li><li>Kolonlar menüsü</li></ul></div>
+      <div class="box"><h2>Deneyin</h2><ol class="try">
+        <li>Bir başlığı tutup başka bir başlığın üstüne sürükleyin.</li>
+        <li>Başlığın sağ kenarını sürükleyerek genişletin; kenara çift tıklayınca içeriğe göre ayarlanır.</li>
+        <li>Klavyeyle: kenara <kbd>Tab</kbd> ile gelip <kbd>←</kbd> <kbd>→</kbd>.</li>
+        <li><strong>Kolonlar</strong> menüsünden gizleyin, yukarı/aşağı taşıyın ya da <strong>Sıfırla</strong>.</li>
+        <li>Pencereyi daraltıp yana kaydırın: ürün ve işlem sütunları sabit.</li>
+      </ol></div>
+    </div>
+    <div id="columns" class="scenario"></div>
+    <details class="code"><summary>Bu örneğin kodu</summary><pre><code data-code="columns"></code></pre>
+      <div class="links">Kılavuz: <a href="../#/header">Sabit başlık, kolonlar ve kaydırma</a></div></details>
   </section>
+
+  <section class="panel" id="panel-edit" role="tabpanel" aria-labelledby="tab-edit" hidden>
+    <div class="intro">
+      <div class="box"><h2>Ne görüyorsunuz?</h2><p>Hücreler yerinde düzenlenir; kaydetmeyi <code>onEdit</code> içinde siz yaparsınız (örneğin <code>fetch</code> ile). Hata verirseniz düzenleyici açık kalır ve mesajı gösterir.</p>
+        <ul class="tags"><li>editable</li><li>onEdit</li><li>seçenek listesi</li><li>evet / hayır</li></ul></div>
+      <div class="box"><h2>Deneyin</h2><ol class="try">
+        <li>Bir ürün adının yanındaki kaleme tıklayın ya da hücreye çift tıklayın.</li>
+        <li>Yazıp <kbd>Enter</kbd> ile kaydedin, <kbd>Esc</kbd> ile vazgeçin.</li>
+        <li>Stoku <code>-5</code> yapın: kayıt reddedilir, mesaj görünür.</li>
+        <li>Kategori bir listeden, "Satışta" evet/hayır olarak seçilir.</li>
+      </ol></div>
+    </div>
+    <div id="edit" class="scenario"></div>
+    <details class="code"><summary>Bu örneğin kodu</summary><pre><code data-code="edit"></code></pre>
+      <div class="links">Kılavuz: <a href="../#/tools">Araçlar, hücreler ve düzenleme</a></div></details>
+  </section>
+
   <section class="panel" id="panel-virtual" role="tabpanel" aria-labelledby="tab-virtual" hidden>
-    <p>100.000 satır tek listede: yalnızca görünen satırlar çizilir. Arama ve sıralama tarayıcıda yapılır.</p>
-    <ul class="features"><li>virtual</li><li>scrollY</li><li>akıllı arama</li></ul>
-    <div id="virtual"></div>
+    <div class="intro">
+      <div class="box"><h2>Ne görüyorsunuz?</h2><p>100.000 satır tek listede, sayfa yok: yalnızca görünen satırlar çizilir. Arama ve sıralama tarayıcıda yapılır.</p>
+        <ul class="tags"><li>virtual</li><li>scrollY</li><li>akıllı arama</li></ul></div>
+      <div class="box"><h2>Deneyin</h2><ol class="try">
+        <li>Listeyi hızla aşağı kaydırın.</li>
+        <li><strong>Puan</strong> başlığına tıklayıp 100.000 satırı sıralayın.</li>
+        <li>Aramaya bir şehir yazın; sonuç sayısı altta güncellenir.</li>
+      </ol></div>
+    </div>
+    <div id="virtual" class="scenario"></div>
+    <details class="code"><summary>Bu örneğin kodu</summary><pre><code data-code="virtual"></code></pre>
+      <div class="links">Kılavuz: <a href="../#/header">Sabit başlık, kolonlar ve kaydırma</a> · Sunucudaki büyük tablolar için: <a href="../#/bigdata">Büyük veri</a></div></details>
   </section>
 </main>
 <footer>MIT lisanslı, ücretsiz. Veriler örnek ve rastgele üretilmiştir; sayfadan ayrılınca kaybolur.</footer>
@@ -105,6 +169,7 @@
   const LAST = ['Yılmaz', 'Kaya', 'Demir', 'Şahin', 'Çelik', 'Yıldız', 'Öztürk', 'Aydın', 'Arslan', 'Doğan', 'Kılıç', 'Koç'];
   const CITIES = ['İstanbul', 'Ankara', 'İzmir', 'Bursa', 'Antalya', 'Konya', 'Eskişehir', 'Trabzon'];
   const STATUS = [['new', 'Yeni'], ['paid', 'Ödendi'], ['shipped', 'Kargoda'], ['cancelled', 'İptal']];
+  const CATEGORIES = ['Kırtasiye', 'Elektronik', 'Ev', 'Çanta'];
   let seed = 7;
   const random = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
   const pick = list => list[Math.floor(random() * list.length)];
@@ -120,7 +185,7 @@
     };
   });
 
-  // ---------- A fake server: the same request format as the Laravel and Node back ends ----------
+  // ---------- A fake server: the request format of the Laravel and Node back ends ----------
   const realFetch = window.fetch.bind(window);
   window.fetch = async (input, init) => {
     const url = new URL(typeof input === 'string' ? input : input.url, location.href);
@@ -132,8 +197,8 @@
       const field = q.get(`filters[${i}][field]`), op = q.get(`filters[${i}][op]`);
       const value = q.get(`filters[${i}][value]`);
       const list = []; for (let j = 0; q.has(`filters[${i}][value][${j}]`); j++) list.push(q.get(`filters[${i}][value][${j}]`));
-      const read = row => (field === 'total' ? Number(row.total) : field === 'ordered' ? row.ordered_at.slice(0, 10) : row[field]);
-      const typed = v => (field === 'total' ? Number(v) : field === 'ordered' ? String(v).slice(0, 10) : v);
+      const read = row => (field === 'total' ? Number(row.total) : field === 'ordered_at' ? row.ordered_at.slice(0, 10) : row[field]);
+      const typed = v => (field === 'total' ? Number(v) : field === 'ordered_at' ? String(v).slice(0, 10) : v);
       rows = rows.filter(row => {
         const v = read(row);
         switch (op) {
@@ -153,15 +218,14 @@
     for (const word of words.map(w => fold(w.replace(/"/g, '')))) rows = rows.filter(row => fold(`${row.customer} ${row.city}`).includes(word));
     const sort = (q.get('sort') ?? '').split(',').filter(Boolean).map(part => part.split(':'));
     if (sort.length) {
-      const key = field => row => (field === 'total' ? Number(row.total) : field === 'ordered' ? row.ordered_at : fold(row[field]));
+      const key = field => row => (field === 'total' ? Number(row.total) : field === 'ordered_at' ? row.ordered_at : fold(row[field]));
       rows = [...rows].sort((a, b) => {
         for (const [field, dir] of sort) { const x = key(field)(a), y = key(field)(b); if (x !== y) return (x < y ? -1 : 1) * (dir === 'desc' ? -1 : 1); }
         return a.id - b.id;
       });
     }
     const page = Number(q.get('page') ?? 1), size = Number(q.get('pageSize') ?? 25);
-    const sum = rows.reduce((total, row) => total + Math.round(Number(row.total) * 100), 0);
-    const body = { rows: rows.slice((page - 1) * size, page * size), totalRows: rows.length, totals: { total: (sum / 100).toFixed(2) } };
+    const body = { rows: rows.slice((page - 1) * size, page * size), totalRows: rows.length };
     return new Response(JSON.stringify(body), { headers: { 'Content-Type': 'application/json' } });
   };
 
@@ -169,20 +233,23 @@
     id: i + 1,
     sku: `SKU-${String(i + 1).padStart(5, '0')}`,
     name: `${pick(['Defter', 'Kalem seti', 'Masa lambası', 'Sırt çantası', 'Termos', 'Kulaklık', 'Mouse', 'Ajanda', 'Kupa', 'Matara'])} ${pick(['Mavi', 'Siyah', 'Beyaz', 'Kırmızı', 'Yeşil'])}`,
-    category: pick(['Kırtasiye', 'Elektronik', 'Ev', 'Çanta']),
+    category: pick(CATEGORIES),
+    supplier: `${pick(['Anadolu', 'Ege', 'Marmara', 'Karadeniz'])} ${pick(['Tedarik', 'Ticaret', 'Dağıtım'])}`,
     price: (Math.round(random() * 400_000) / 100 + 9.9).toFixed(2),
     stock: Math.floor(random() * 250),
     active: random() > 0.2,
+    updated: `2026-${pad(1 + Math.floor(random() * 10))}-${pad(1 + Math.floor(random() * 28))}`,
   }));
   const people = Array.from({ length: 100_000 }, (_, i) => ({ id: i + 1, name: `${pick(FIRST)} ${pick(LAST)}`, city: pick(CITIES), score: Math.floor(random() * 1000), joined: `2026-${pad(1 + Math.floor(random() * 10))}-${pad(1 + Math.floor(random() * 28))}` }));
 
-  // ---------- The tables ----------
+  // ---------- The tables (each code panel shows the options below, without the shared settings) ----------
   const { el } = AcunDataTable;
   const settings = () => ({
     responsive: document.getElementById('responsive').value,
     size: document.getElementById('size').value,
     language: document.getElementById('language').value,
   });
+  const money = value => (value == null ? '' : `${Number(value).toLocaleString('tr-TR', { minimumFractionDigits: 2 })} ₺`);
   const tables = {};
   const builders = {
     server: () => new AcunDataTable('#server', {
@@ -192,52 +259,58 @@
       pagination: { pageSize: 25, pageSizes: [10, 25, 50, 100], firstLast: true },
       fixedHeader: true,
       selectable: true,
-      columnResize: true,
-      columnReorder: true,
       stateSave: { key: 'demo-orders', storage: 'session' },
       buttons: ['excel', 'csv', 'copy', 'print'],
       exportFilename: 'siparisler',
       columns: [
         { data: 'customer', title: 'Müşteri', filter: true, priority: 1 },
         { data: 'city', title: 'Şehir', filter: CITIES.map(city => ({ value: city, label: city })) },
-        { data: 'total', title: 'Tutar', type: 'decimal', filter: true, aggregate: 'sum', priority: 1, render: value => (value == null ? '' : `${Number(value).toLocaleString('tr-TR', { minimumFractionDigits: 2 })} ₺`) },
+        { data: 'total', title: 'Tutar', type: 'decimal', filter: true, priority: 1, render: money },
         { data: 'status', title: 'Durum', filter: STATUS.map(([value, label]) => ({ value, label })), cell: value => el('span', { class: `badge badge--${value}` }, Object.fromEntries(STATUS)[value] ?? String(value)) },
         { data: 'ordered_at', title: 'Sipariş tarihi', type: 'datetime', filter: true, priority: 3 },
       ],
       rowActions: [{ id: 'view', label: 'Görüntüle', icon: 'view', iconOnly: true, onSelect: row => alert(`Sipariş #${row.id}: ${row.original.customer}`) }],
       bulkActions: [{ id: 'ship', label: 'Kargoya ver', onSelect: ({ rows }) => alert(`${rows.length} sipariş kargoya verilecek (demo).`) }],
     }),
-    local: () => {
-      let data = products;
-      const table = new AcunDataTable('#local', {
-        ...settings(),
-        data,
-        pagination: { pageSize: 10, pageSizes: [10, 25, 50] },
-        fixedColumns: { start: 1 },
-        buttons: ['copy', 'print'],
-        columns: [
-          { data: 'name', title: 'Ürün', editable: true, priority: 1 },
-          { data: 'sku', title: 'Kod' },
-          { data: 'category', title: 'Kategori', filter: ['Kırtasiye', 'Elektronik', 'Ev', 'Çanta'].map(value => ({ value, label: value })) },
-          { data: 'price', title: 'Fiyat', type: 'decimal', aggregate: 'avg', priority: 1 },
-          { data: 'stock', title: 'Stok', type: 'number', editable: true, aggregate: 'sum' },
-          { data: 'active', title: 'Satışta', type: 'boolean', editable: true },
-        ],
-        onEdit: async ({ field, value }) => {
-          await new Promise(resolve => setTimeout(resolve, 250)); // the save request
-          if (field === 'stock' && value < 0) throw new Error('Stok eksi olamaz.');
-        },
-        detail: row => el('ul', { class: 'lines' },
-          el('li', {}, `Ürün kodu: ${row.sku}`),
-          el('li', {}, `Stok değeri: ${(Number(row.price) * row.stock).toLocaleString('tr-TR', { minimumFractionDigits: 2 })} ₺`),
-          el('li', {}, row.stock < 20 ? 'Stok azaldı: sipariş verin.' : 'Stok yeterli.')),
-      });
-      return table;
-    },
+    columns: () => new AcunDataTable('#columns', {
+      ...settings(),
+      data: products,
+      pagination: { pageSize: 10, pageSizes: [10, 25, 50] },
+      columnReorder: true,
+      columnResize: true,
+      fixedColumns: { start: 1, end: 1 },
+      stateSave: { key: 'demo-columns', storage: 'session' },
+      columns: [
+        { data: 'name', title: 'Ürün', priority: 1 },
+        { data: 'sku', title: 'Kod' },
+        { data: 'category', title: 'Kategori' },
+        { data: 'supplier', title: 'Tedarikçi' },
+        { data: 'price', title: 'Fiyat', type: 'decimal', render: money },
+        { data: 'stock', title: 'Stok', type: 'number' },
+        { data: 'updated', title: 'Güncelleme', type: 'date' },
+      ],
+      rowActions: [{ id: 'open', label: 'Aç', icon: 'view', iconOnly: true, onSelect: row => alert(`${row.original.name}`) }],
+    }),
+    edit: () => new AcunDataTable('#edit', {
+      ...settings(),
+      data: products,
+      pagination: { pageSize: 10, pageSizes: [10, 25, 50] },
+      columns: [
+        { data: 'name', title: 'Ürün', editable: true, priority: 1 },
+        { data: 'category', title: 'Kategori', editable: CATEGORIES.map(value => ({ value, label: value })) },
+        { data: 'price', title: 'Fiyat', type: 'decimal', editable: true, render: money },
+        { data: 'stock', title: 'Stok', type: 'number', editable: true },
+        { data: 'active', title: 'Satışta', type: 'boolean', editable: true },
+      ],
+      onEdit: async ({ field, value }) => {
+        await new Promise(resolve => setTimeout(resolve, 250)); // the save request
+        if (field === 'stock' && value < 0) throw new Error('Stok eksi olamaz.');
+      },
+    }),
     virtual: () => new AcunDataTable('#virtual', {
       ...settings(),
       data: people,
-      virtual: { rowHeight: 0 },
+      virtual: true,
       scrollY: '520px',
       columns: [
         { data: 'name', title: 'Ad', priority: 1 },
@@ -247,6 +320,81 @@
       ],
     }),
   };
+
+  // ---------- The code shown under each scenario ----------
+  const CODE = {
+    server: `new AcunDataTable('#orders', {
+  serverSide: true,
+  ajax: '/api/orders',                 // Laravel TableResponse, Node tableResponse or your own
+  language: 'tr',
+  pagination: { pageSize: 25, pageSizes: [10, 25, 50, 100], firstLast: true },
+  fixedHeader: true,
+  selectable: true,
+  stateSave: true,
+  buttons: ['excel', 'csv', 'copy', 'print'],
+  columns: [
+    { data: 'customer', title: 'Müşteri', filter: true },
+    { data: 'city', title: 'Şehir', filter: [{ value: 'İstanbul', label: 'İstanbul' }, { value: 'Ankara', label: 'Ankara' }] },
+    { data: 'total', title: 'Tutar', type: 'decimal', filter: true },
+    { data: 'status', title: 'Durum', cell: value => AcunDataTable.el('span', { class: 'badge badge--' + value }, value) },
+    { data: 'ordered_at', title: 'Sipariş tarihi', type: 'datetime', filter: true },
+  ],
+  rowActions: [{ id: 'view', label: 'Görüntüle', icon: 'view', iconOnly: true, onSelect: row => openOrder(row.id) }],
+  bulkActions: [{ id: 'ship', label: 'Kargoya ver', onSelect: ({ rows }) => ship(rows) }],
+});`,
+    columns: `new AcunDataTable('#products', {
+  data: products,
+  language: 'tr',
+  columnReorder: true,                 // drag headers (or move them in the column menu)
+  columnResize: true,                  // drag an edge, double-click it, or ←/→ on it
+  fixedColumns: { start: 1, end: 1 },  // product and actions stay while scrolling sideways
+  stateSave: true,                     // order, widths and hidden columns are kept
+  columns: [
+    { data: 'name', title: 'Ürün' },
+    { data: 'sku', title: 'Kod' },
+    { data: 'category', title: 'Kategori' },
+    { data: 'supplier', title: 'Tedarikçi' },
+    { data: 'price', title: 'Fiyat', type: 'decimal' },
+    { data: 'stock', title: 'Stok', type: 'number' },
+    { data: 'updated', title: 'Güncelleme', type: 'date' },
+  ],
+  rowActions: [{ id: 'open', label: 'Aç', icon: 'view', iconOnly: true, onSelect: row => openProduct(row.id) }],
+});`,
+    edit: `new AcunDataTable('#products', {
+  data: products,
+  language: 'tr',
+  columns: [
+    { data: 'name', title: 'Ürün', editable: true },
+    { data: 'category', title: 'Kategori', editable: [{ value: 'Ev', label: 'Ev' }, { value: 'Çanta', label: 'Çanta' }] }, // a list
+    { data: 'price', title: 'Fiyat', type: 'decimal', editable: true },
+    { data: 'stock', title: 'Stok', type: 'number', editable: true },
+    { data: 'active', title: 'Satışta', type: 'boolean', editable: true },
+  ],
+  // Save it your way; throw to keep the editor open with the message.
+  onEdit: async ({ row, field, value }) => {
+    const response = await fetch('/api/products/' + row.id, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ [field]: value }),
+    });
+    if (!response.ok) throw new Error((await response.json()).message);
+  },
+});`,
+    virtual: `new AcunDataTable('#people', {
+  data: people,                        // 100,000 rows in the browser
+  language: 'tr',
+  virtual: true,                       // only the rows in view are drawn
+  scrollY: '520px',
+  columns: [
+    { data: 'name', title: 'Ad' },
+    { data: 'city', title: 'Şehir' },
+    { data: 'score', title: 'Puan', type: 'number' },
+    { data: 'joined', title: 'Katılım', type: 'date' },
+  ],
+});`,
+  };
+  for (const node of document.querySelectorAll('[data-code]')) node.textContent = CODE[node.dataset.code];
+
   const show = name => {
     for (const tab of document.querySelectorAll('[role="tab"]')) {
       const on = tab.id === `tab-${name}`;
@@ -255,6 +403,7 @@
       document.getElementById(tab.getAttribute('aria-controls')).hidden = !on;
     }
     tables[name] ??= builders[name]();
+    try { history.replaceState(null, '', `#/${name}`); } catch { /* sandboxed */ } // a link to this scenario
   };
   const rebuild = () => {
     for (const [name, table] of Object.entries(tables)) {
@@ -282,7 +431,8 @@
   const measure = () => document.documentElement.style.setProperty('--header-height', `${header.offsetHeight}px`);
   new ResizeObserver(measure).observe(header);
   measure();
-  show('server');
+  const first = location.hash.replace(/^#\/?/, '');
+  show(builders[first] ? first : 'server'); // #/columns, #/edit, #/virtual open that scenario
   window.demoTables = tables; // for the browser tests
 })();
 </script>

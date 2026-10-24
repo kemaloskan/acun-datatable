@@ -1,3 +1,4 @@
+import { existsSync } from 'node:fs';
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page } from '@playwright/test';
 
@@ -45,6 +46,17 @@ test.describe('accessibility (axe)', () => {
     await expect(page.locator('body[data-ready=true]')).toBeAttached();
     await check(page, '<acun-datatable>');
   });
+
+  for (const scenario of ['server', 'columns', 'edit', 'virtual']) {
+    test(`the live demo: #/${scenario}`, async ({ page }) => {
+      test.skip(!existsSync('site/demo/acun-datatable.min.js'), 'npm run demo first');
+      await page.goto(`/site/demo/index.html#/${scenario}`);
+      await expect(page.locator(`#${scenario} .adt-info`)).not.toHaveText('');
+      await expect(page.locator(`#${scenario} .adt-skeleton`)).toHaveCount(0);
+      const result = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa']).analyze();
+      expect(result.violations.map(violation => `${violation.id}: ${violation.help} (${violation.nodes.slice(0, 3).map(node => node.target.join(' ')).join(', ')})`)).toEqual([]);
+    });
+  }
 
   for (const route of ['home', 'laravel', 'nextjs', 'webcomponent', 'server', 'bigdata', 'api']) {
     test(`the docs site: #/${route}`, async ({ page }) => {
