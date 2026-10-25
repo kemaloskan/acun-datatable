@@ -43,6 +43,23 @@ for (const app of ['react', 'vue']) {
       await expect(info(page)).toHaveText(`Showing 1 to 10 of ${found.totalRows} rows`); // under the limit: exact
     });
 
+    test('keeps the column widths while virtual rows scroll by', async ({ page }) => {
+      await page.setViewportSize({ width: 1100, height: 800 });
+      await page.goto(`/e2e/fixtures/${app}.html?virtual`);
+      const scroller = page.locator('.adt-scroll');
+      await expect(page.locator('tbody .adt-row').first()).toBeVisible();
+      const widths = () => page.locator('thead th').evaluateAll(cells => cells.map(cell => Math.round(cell.getBoundingClientRect().width)).join(','));
+      const first = () => page.locator('tbody .adt-row').first().textContent();
+      await expect.poll(widths).not.toBe(''); // measured and locked after the first rows
+      const before = await widths();
+      for (const top of [3_000, 250_000, 600_000, 0]) {
+        const text = await first();
+        await scroller.evaluate((node, y) => { node.scrollTop = y; }, top);
+        await expect.poll(first).not.toBe(text);
+        expect(await widths()).toBe(before);
+      }
+    });
+
     test('follows keyset cursors page after page', async ({ page }) => {
       await page.goto(`/e2e/fixtures/${app}.html?cursor`);
       await expect(info(page)).toHaveText('Showing 1 to 10 of 500 rows');

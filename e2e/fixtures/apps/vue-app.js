@@ -1,7 +1,7 @@
 // Vue fixture: the documented pattern — table and runner made in setup, connected once mounted.
 import { createApp, defineComponent, h, onMounted, onUnmounted } from 'vue';
-import { AcunDataTableLayout, labelsEn } from '@acunsoft/datatable-vue';
-import { ordersTable } from './columns.js';
+import { AcunDataTable, AcunDataTableLayout, labelsEn } from '@acunsoft/datatable-vue';
+import { ordersTable, peopleTable } from './columns.js';
 
 const Orders = defineComponent(() => {
   const { table, runner, connect } = ordersTable();
@@ -11,5 +11,10 @@ const Orders = defineComponent(() => {
   return () => h(AcunDataTableLayout, { table, status: runner, locale: 'tr', labels: labelsEn, selectable: true });
 });
 
-createApp(Orders).mount('#orders');
+const People = defineComponent(() => {
+  const table = peopleTable();
+  return () => h(AcunDataTable, { table, labels: labelsEn, virtual: { rowHeight: 40 }, scrollY: '400px' });
+});
+
+createApp(new URLSearchParams(location.search).has('virtual') ? People : Orders).mount('#orders');
 document.body.dataset.ready = 'true';

@@ -361,6 +361,24 @@ test('responsive auto hides only the columns that do not fit, at any width', asy
   await expect(page.locator('.adt-detail')).toBeHidden();
 });
 
+test('virtual scrolling keeps the column widths while the rows change', async ({ page }) => {
+  await page.setViewportSize({ width: 1100, height: 800 });
+  for (const mode of ['scroll', 'auto']) {
+    await page.goto(`/e2e/fixtures/table.html?virtual&responsive=${mode}`);
+    await expect(page.locator('body[data-ready=true]')).toBeAttached();
+    const scroller = page.locator('.adt-scroll');
+    const widths = () => page.locator('thead th').evaluateAll(cells => cells.map(cell => Math.round(cell.getBoundingClientRect().width)).join(','));
+    const first = () => page.locator('tbody .adt-row').first().getAttribute('aria-rowindex');
+    const before = await widths();
+    for (const top of [4_000, 400_000, 1_200_000, 0]) {
+      const index = await first();
+      await scroller.evaluate((node, y) => { node.scrollTop = y; }, top);
+      if (top > 0) await expect.poll(first).not.toBe(index); // other rows are drawn
+      expect(await widths()).toBe(before); // with the same column widths
+    }
+  }
+});
+
 test('virtual scrolling keeps 50,000 rows to a handful in the page', async ({ page }) => {
   await page.setViewportSize({ width: 1000, height: 800 });
   await page.goto('/e2e/fixtures/table.html?virtual&responsive=scroll');

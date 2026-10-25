@@ -216,6 +216,10 @@ export const AcunDataTable = defineComponent({
     const scrollTop = shallowRef(0);
     const viewport = shallowRef(480);
     const measuredRow = shallowRef(0);
+    // The column widths of the first rows drawn, kept while scrolling virtually (otherwise every
+    // window of rows sizes the columns anew); measured again when the columns or the width change.
+    const locked = shallowRef<{ key: string; width: number; widths: Readonly<Record<string, number>> } | undefined>();
+    let lockKey = '';
     let frame = 0;
     const onScroll = (event: Event): void => {
       const node = event.currentTarget as HTMLElement;
@@ -229,7 +233,10 @@ export const AcunDataTable = defineComponent({
       stopViewport = undefined;
       const scroller = on ? node?.querySelector<HTMLElement>('.adt-scroll') : null;
       if (!scroller) return;
-      const measure = (): void => { if (scroller.clientHeight > 0) viewport.value = scroller.clientHeight; };
+      const measure = (): void => {
+        if (scroller.clientHeight > 0) viewport.value = scroller.clientHeight;
+        if (locked.value && locked.value.width !== scroller.clientWidth) locked.value = undefined; // a new width: measure again
+      };
       measure();
       const view = scroller.ownerDocument.defaultView as (Window & typeof globalThis) | null;
       if (typeof view?.ResizeObserver !== 'function') return;
@@ -247,6 +254,17 @@ export const AcunDataTable = defineComponent({
     };
     onMounted(measureRow);
     onUpdated(measureRow);
+    // Lock the column widths once rows are drawn (hidden cells measure 0 and get none).
+    const lockWidths = (): void => {
+      if (!props.virtual || locked.value?.key === lockKey) return;
+      const scroller = wrapEl.value?.querySelector<HTMLElement>('.adt-scroll');
+      if (!scroller?.querySelector('tbody .adt-row')) return;
+      const cells = [...scroller.querySelectorAll<HTMLElement>('thead [data-lock]')];
+      const widths = Object.fromEntries(cells.map(cell => [cell.dataset['lock']!, cell.getBoundingClientRect().width] as const).filter(([, width]) => width > 0));
+      if (Object.keys(widths).length > 0) locked.value = { key: lockKey, width: scroller.clientWidth, widths };
+    };
+    onMounted(lockWidths);
+    onUpdated(lockWidths);
     // Editing in place: the shared editor is mounted into the editing cell, which Vue leaves empty.
     const editing = shallowRef<{ rowId: string; columnId: string } | undefined>();
     let editor: (CellEditor & { rowId: string; columnId: string }) | undefined;
@@ -318,10 +336,13 @@ export const AcunDataTable = defineComponent({
       const levels = new Set(columns.map((column, index) => priorityOf(column, index)));
       if (actions.length > 0) levels.add(2);
       const level = (column: AnyColumn): string => (collapsible ? ` adt-col--p${priorityOf(column, columns.indexOf(column))}` : '');
-      if (expandable) head.push(h('td', { class: 'adt-expand-cell', key: '__expand' }));
+      lockKey = virtual ? `${columns.map(column => column.id).join('|')}#${props.selectable}#${actions.length > 0}#${expandable}` : '';
+      const lock = virtual && locked.value?.key === lockKey ? locked.value.widths : undefined;
+      const lockedWidth = (key: string): Record<string, string> | undefined => (lock?.[key] ? { width: `${lock[key]}px` } : undefined);
+      if (expandable) head.push(h('td', { class: 'adt-expand-cell', key: '__expand', 'data-lock': '__expand', style: lockedWidth('__expand') }));
       if (props.selectable) {
         const status = table.getSelectionStatus(pageIds);
-        head.push(h('th', { scope: 'col', class: 'adt-select', key: '__select' },
+        head.push(h('th', { scope: 'col', class: 'adt-select', key: '__select', 'data-lock': '__select', style: lockedWidth('__select') },
           table.getSelectionMode() === 'multiple' && pageIds.length > 0
             ? [h('input', {
               type: 'checkbox', 'aria-label': label.selectAll, checked: status === 'all', indeterminate: status === 'some',
@@ -340,7 +361,8 @@ export const AcunDataTable = defineComponent({
           scope: 'col', class: `adt-th${level(column)}${numeric(column) ? ' adt-num' : ''}`, key: column.id,
           'aria-sort': primary?.field === column.id ? (primary.direction === 'asc' ? 'ascending' : 'descending') : undefined,
           'data-column-id': column.id, draggable: props.reorderableColumns ? 'true' : undefined,
-          style: width !== undefined ? { width: `${width}px` } : undefined,
+          'data-lock': column.id,
+          style: width !== undefined ? { width: `${width}px` } : lockedWidth(column.id),
         }, [
           column.enableSorting
             ? h('button', {
@@ -359,7 +381,7 @@ export const AcunDataTable = defineComponent({
         ]));
       }
       if (actions.length > 0) {
-        head.push(h('th', { scope: 'col', class: `adt-th adt-actions${collapsible ? ' adt-col--p2' : ''}`, key: '__actions' }, label.actions));
+        head.push(h('th', { scope: 'col', class: `adt-th adt-actions${collapsible ? ' adt-col--p2' : ''}`, key: '__actions', 'data-lock': '__actions', style: lockedWidth('__actions') }, label.actions));
       }
       const span = columns.length + (props.selectable ? 1 : 0) + (actions.length > 0 ? 1 : 0) + (expandable ? 1 : 0);
       // Buttons in the row, the rest in a "⋮" menu; icons, danger colour and a confirm question.
@@ -543,7 +565,7 @@ export const AcunDataTable = defineComponent({
       const wrapClass = ['adt-table-wrap', `adt-responsive--${responsive}`, props.size === 'md' ? '' : `adt-size--${props.size}`,
         props.stickyHeader ? 'adt-sticky-header' : '', height ? 'adt-scroll-y' : '', busy ? 'adt-loading' : '', skeleton ? 'adt-skeleton-on' : '', virtual ? 'adt-virtual' : ''].filter(Boolean).join(' ');
       const tableClass = ['adt-table', collapsible && levels.has(2) ? 'adt-has-p2' : '', collapsible && levels.has(3) ? 'adt-has-p3' : '', detailSlot ? 'adt-has-detail' : '',
-        Object.keys(state.columnWidths).length > 0 ? 'adt-fixed-layout' : '']
+        Object.keys(state.columnWidths).length > 0 || lock ? 'adt-fixed-layout' : '']
         .filter(Boolean).join(' ');
       return h('div', { ref: wrapEl, class: wrapClass, style: height ? { '--adt-scroll-y': height } : undefined, 'aria-busy': props.status ? String(busy) : undefined }, [
         notice,

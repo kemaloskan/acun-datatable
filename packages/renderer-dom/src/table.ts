@@ -408,6 +408,10 @@ export function renderTable<TData>(
 
   // Virtual scrolling: the rows in view, re-drawn when the scroll position moves past them.
   let rowHeight = virtual?.rowHeight ?? 0;
+  // The column widths of the first rows drawn, kept while scrolling: otherwise every window of
+  // rows would size the columns anew and they would jump. Measured again when the columns or
+  // the width of the table change.
+  let locked: { key: string; width: number; widths: number[] } | undefined;
   let drawn: { start: number; end: number } | undefined;
   const windowOf = (total: number) => virtualWindow(total, rowHeight, scroller.scrollTop, scroller.clientHeight, virtual!.overscan);
 
@@ -431,7 +435,9 @@ export function renderTable<TData>(
     rowParts = [];
 
     const widths = state.columnWidths;
-    const tableEl = element(doc, 'table', { class: Object.keys(widths).length > 0 ? 'adt-table adt-fixed-layout' : 'adt-table' });
+    const layoutKey = virtual ? `${columns.map(column => column.id).join('|')}#${selectable}#${rowActions.length > 0}#${expandable}` : '';
+    const lock = virtual && locked?.key === layoutKey && locked.width === scroller.clientWidth ? locked : undefined;
+    const tableEl = element(doc, 'table', { class: Object.keys(widths).length > 0 || lock ? 'adt-table adt-fixed-layout' : 'adt-table' });
     if (page.all) tableEl.setAttribute('aria-rowcount', String(page.all.length + 1));
     if (options.caption !== undefined) tableEl.append(element(doc, 'caption', {}, options.caption));
 
@@ -659,6 +665,20 @@ export function renderTable<TData>(
       tableEl.append(foot);
     }
     scroller.replaceChildren(tableEl);
+    if (virtual) {
+      const cells = [...(tableEl.tHead?.rows[0]?.cells ?? [])];
+      if (lock) {
+        cells.forEach((cell, index) => { if (!cell.style.width && lock.widths[index]) cell.style.width = `${lock.widths[index]}px`; });
+      } else if (page.rows.length > 0) {
+        // Hidden cells (the responsive layout's) measure 0 and get no width of their own.
+        const measured = cells.map(cell => cell.getBoundingClientRect().width);
+        if (measured.some(width => width > 0)) {
+          locked = { key: layoutKey, width: scroller.clientWidth, widths: measured };
+          tableEl.classList.add('adt-fixed-layout');
+          cells.forEach((cell, index) => { if (!cell.style.width && measured[index]) cell.style.width = `${measured[index]}px`; });
+        }
+      }
+    }
     patchSelection();
   });
 
@@ -706,6 +726,12 @@ export function renderTable<TData>(
     }
     scroller.addEventListener('scroll', onScroll, { passive: true });
   }
+  // A new width for the table (window, sidebar): measure the column widths again.
+  const View = doc.defaultView as (Window & typeof globalThis) | null;
+  const resized = virtual && typeof View?.ResizeObserver === 'function'
+    ? new View.ResizeObserver(() => { if (locked && locked.width !== scroller.clientWidth) render(); })
+    : undefined;
+  resized?.observe(scroller);
   const unpin = pinColumns(root, fixed);
   const stopAuto = responsive === 'auto' ? autoResponsive(root) : () => undefined;
   const stopTools = options.resizableColumns || options.reorderableColumns
@@ -728,6 +754,7 @@ export function renderTable<TData>(
       closeDialog();
       editing?.editor.destroy();
       scroller.removeEventListener('scroll', onScroll);
+      resized?.disconnect();
       unpin();
       stopAuto();
       stopTools();

@@ -19,3 +19,19 @@ export function ordersTable() {
   window.__table = table;
   return { table, runner, connect: () => connectTable(table, runner) };
 }
+
+/** ?virtual: 20,000 rows in the browser, drawn as they scroll into view. */
+export function peopleTable() {
+  const names = ['Ayşe Yılmaz', 'Ali Kaya', 'Bartholomew Montgomery-Smith', 'Can', 'Zeynep Doğan', 'Ümit Kılıç'];
+  const cities = ['İstanbul', 'Ankara', 'Kahramanmaraş', 'Rize'];
+  const table = createDataTable({
+    data: Array.from({ length: 20_000 }, (_, i) => ({ id: i + 1, name: `${names[i % names.length]} ${i + 1}`, city: cities[(i * 7) % cities.length], score: (i * 7919) % 100_000 })),
+    columns: [
+      { id: 'name', header: 'Name', accessorKey: 'name', enableSorting: true },
+      { id: 'city', header: 'City', accessorKey: 'city' },
+      { id: 'score', header: 'Score', accessorKey: 'score', type: 'number', enableSorting: true },
+    ],
+  });
+  window.__table = table;
+  return table;
+}

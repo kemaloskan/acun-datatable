@@ -115,6 +115,9 @@ export function DataTable<TData>(props: DataTableProps<TData>): ReactElement {
   if (virtual && table.getMode() === 'server') throw new TypeError('virtual scrolling needs a local table; use cursor paging for server tables');
   const [scroll, setScroll] = useState({ top: 0, viewport: 480 });
   const [measuredRow, setMeasuredRow] = useState(0);
+  // The column widths of the first rows drawn, kept while scrolling virtually (otherwise every
+  // window of rows sizes the columns anew); measured again when the columns or the width change.
+  const [locked, setLocked] = useState<{ key: string; width: number; widths: Readonly<Record<string, number>> } | undefined>(undefined);
   const frame = useRef(0);
   const onScroll = (event: { currentTarget: HTMLElement }): void => {
     const node = event.currentTarget;
@@ -234,6 +237,7 @@ export function DataTable<TData>(props: DataTableProps<TData>): ReactElement {
     const measure = (): void => {
       const height = scroller.clientHeight;
       if (height > 0) setScroll(current => (current.viewport === height ? current : { ...current, viewport: height }));
+      setLocked(current => (current && current.width !== scroller.clientWidth ? undefined : current)); // a new width: measure again
     };
     measure();
     const view = scroller.ownerDocument.defaultView as (Window & typeof globalThis) | null;
@@ -242,6 +246,14 @@ export function DataTable<TData>(props: DataTableProps<TData>): ReactElement {
     observer.observe(scroller);
     return () => observer.disconnect();
   }, [isVirtual]);
+  // Virtual scrolling: lock the column widths once rows are drawn (hidden cells measure 0, get none).
+  useMeasureEffect(() => {
+    if (!virtual || (locked && locked.key === lockKey) || rows.length === 0) return;
+    const scroller = wrap.current?.querySelector<HTMLElement>('.adt-scroll');
+    const cells = [...(wrap.current?.querySelectorAll<HTMLElement>('thead [data-lock]') ?? [])];
+    const widths = Object.fromEntries(cells.map(cell => [cell.dataset['lock']!, cell.getBoundingClientRect().width]).filter(([, width]) => (width as number) > 0));
+    if (scroller && Object.keys(widths).length > 0) setLocked({ key: lockKey, width: scroller.clientWidth, widths });
+  });
   // Virtual scrolling without rowHeight: measure the first drawn row once.
   useEffect(() => {
     if (!virtual || virtual.rowHeight || measuredRow) return;
@@ -327,9 +339,12 @@ export function DataTable<TData>(props: DataTableProps<TData>): ReactElement {
       : null);
 
   const head: ReactNode[] = [];
-  if (expandable) head.push(h('td', { className: 'adt-expand-cell', key: '__expand' }));
+  const lockKey = virtual ? `${columns.map(column => column.id).join('|')}#${selectable}#${rowActions.length > 0}#${expandable}` : '';
+  const lock = virtual && locked?.key === lockKey ? locked.widths : undefined;
+  const lockedWidth = (key: string): CSSProperties | undefined => (lock?.[key] ? { width: `${lock[key]}px` } : undefined);
+  if (expandable) head.push(h('td', { className: 'adt-expand-cell', key: '__expand', 'data-lock': '__expand', style: lockedWidth('__expand') }));
   if (selectable) {
-    head.push(h('th', { scope: 'col', className: 'adt-select', key: '__select' },
+    head.push(h('th', { scope: 'col', className: 'adt-select', key: '__select', 'data-lock': '__select', style: lockedWidth('__select') },
       table.getSelectionMode() === 'multiple' && pageIds.length > 0
         ? h('input', {
           type: 'checkbox', ref: selectAll, 'aria-label': labels.selectAll, checked: pageStatus === 'all',
@@ -349,7 +364,8 @@ export function DataTable<TData>(props: DataTableProps<TData>): ReactElement {
       className: `adt-th${collapsible ? ` adt-col--p${priorityOf(column, columns.indexOf(column))}` : ''}${numeric(column) ? ' adt-num' : ''}`,
       'aria-sort': primary?.field === column.id ? (primary.direction === 'asc' ? 'ascending' : 'descending') : undefined,
       'data-column-id': column.id, draggable: props.reorderableColumns ? true : undefined,
-      style: width !== undefined ? { width: `${width}px` } : undefined,
+      'data-lock': column.id,
+      style: width !== undefined ? { width: `${width}px` } : lockedWidth(column.id),
     }, column.enableSorting
       ? h('button', {
         type: 'button', className: rule ? `adt-sort adt-sort--${rule.direction}` : 'adt-sort',
@@ -366,7 +382,7 @@ export function DataTable<TData>(props: DataTableProps<TData>): ReactElement {
       : null));
   }
   if (rowActions.length > 0) {
-    head.push(h('th', { scope: 'col', className: collapsible ? 'adt-th adt-actions adt-col--p2' : 'adt-th adt-actions', key: '__actions' }, labels.actions));
+    head.push(h('th', { scope: 'col', className: collapsible ? 'adt-th adt-actions adt-col--p2' : 'adt-th adt-actions', key: '__actions', 'data-lock': '__actions', style: lockedWidth('__actions') }, labels.actions));
   }
 
   const body: ReactNode[] = [];
@@ -483,7 +499,7 @@ export function DataTable<TData>(props: DataTableProps<TData>): ReactElement {
   const wrapClass = ['adt-table-wrap', `adt-responsive--${responsive}`, size === 'md' ? '' : `adt-size--${size}`,
     props.stickyHeader === true ? 'adt-sticky-header' : '', height ? 'adt-scroll-y' : '', busy ? 'adt-loading' : '', skeleton ? 'adt-skeleton-on' : '', virtual ? 'adt-virtual' : ''].filter(Boolean).join(' ');
   const tableClass = ['adt-table', collapsible && levels.has(2) ? 'adt-has-p2' : '', collapsible && levels.has(3) ? 'adt-has-p3' : '', detail ? 'adt-has-detail' : '',
-    Object.keys(state.columnWidths).length > 0 ? 'adt-fixed-layout' : '']
+    Object.keys(state.columnWidths).length > 0 || lock ? 'adt-fixed-layout' : '']
     .filter(Boolean).join(' ');
   return h('div', {
     className: wrapClass, ref: wrap, 'aria-busy': props.status ? busy : undefined,
