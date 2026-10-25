@@ -3,11 +3,11 @@
   "packages/core/dist/index.js": 16500,
   "packages/datasource-http/dist/index.js": 3600,
   "packages/server/dist/index.js": 8300,
-  "packages/renderer-dom/dist/index.js": 28500,
-  "packages/renderer-dom/dist/styles.css": 9300,
+  "packages/renderer-dom/dist/index.js": 30400,
+  "packages/renderer-dom/dist/styles.css": 9700,
   "packages/export/dist/index.js": 12400,
-  "packages/datatable/dist/index.js": 9000,
-  "packages/datatable/dist/acun-datatable.min.js": 46500,
-  "packages/vue/dist/index.js": 11800,
-  "packages/react/dist/index.js": 9900
+  "packages/datatable/dist/index.js": 9900,
+  "packages/datatable/dist/acun-datatable.min.js": 47800,
+  "packages/vue/dist/index.js": 12700,
+  "packages/react/dist/index.js": 10600
 }

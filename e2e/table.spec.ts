@@ -476,8 +476,8 @@ test('dark with the site\'s own theme switch: class="dark" (Tailwind) or data-bs
   const label = page.locator('#orders tbody td').nth(1);
   const color = () => label.evaluate(el => getComputedStyle(el).color);
   expect(await color()).toBe('rgb(31, 36, 48)');
-  for (const [name, value] of [['class', 'dark'], ['data-bs-theme', 'dark']]) {
-    await page.evaluate(([n, v]) => document.documentElement.setAttribute(n!, v!), [name, value]);
+  for (const name of ['class', 'data-bs-theme']) {
+    await page.evaluate(n => document.documentElement.setAttribute(n, 'dark'), name);
     expect(await color()).toBe('rgb(230, 232, 236)');
     await page.evaluate(n => document.documentElement.removeAttribute(n), name);
     expect(await color()).toBe('rgb(31, 36, 48)');
