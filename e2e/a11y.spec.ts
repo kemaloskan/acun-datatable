@@ -51,7 +51,7 @@ test.describe('accessibility (axe)', () => {
     test(`the live demo: #/${scenario}`, async ({ page }) => {
       test.skip(!existsSync('site/demo/acun-datatable.min.js'), 'npm run demo first');
       await page.goto(`/site/demo/index.html#/${scenario}`);
-      const table = scenario === 'mobile' ? page.frameLocator('iframe[data-phone="1"]').locator('.adt-info') : page.locator(`#${scenario} .adt-info`);
+      const table = scenario === 'mobile' ? page.frameLocator('iframe[data-phone]').locator('.adt-info') : page.locator(`#${scenario} .adt-info`);
       await expect(table).not.toHaveText('');
       await expect(page.locator(`#${scenario} .adt-skeleton`)).toHaveCount(0);
       const result = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa']).analyze();

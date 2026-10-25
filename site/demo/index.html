@@ -58,15 +58,20 @@
   .badge--paid { color: #067647; background: #ecfdf3; } .badge--new { color: #175cd3; background: #eff8ff; }
   .badge--shipped { color: #6941c6; background: #f4f3ff; } .badge--cancelled { color: #b42318; background: #fef3f2; }
   :root[data-theme="dark"] .badge { filter: brightness(.9) saturate(1.2); background: color-mix(in srgb, currentColor 16%, transparent); }
-  .phones { display: flex; flex-wrap: wrap; gap: 28px; justify-content: center; padding: 8px 0; }
+  .mobile-split { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 28px; align-items: start; }
+  .mobile-side { display: grid; gap: 14px; min-width: 0; }
+  .mode-list { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 8px; }
+  .mode-list button { display: grid; gap: 2px; text-align: left; padding: 10px 12px; font: inherit; font-size: 13px; color: var(--page-muted); background: var(--page-card); border: 1px solid var(--page-line); border-radius: 10px; cursor: pointer; }
+  .mode-list button strong { font-size: 14px; color: var(--page-fg); }
+  .mode-list button[aria-checked="true"] { background: var(--page-soft); border-color: color-mix(in srgb, var(--page-accent) 45%, transparent); }
+  .mode-list button[aria-checked="true"] strong { color: var(--page-accent); }
+  .mobile-code { background: var(--page-card); border: 1px solid var(--page-line); border-radius: 12px; overflow: hidden; }
+  .mobile-code pre { margin: 0; padding: 16px; overflow: auto; background: var(--page-code); color: var(--page-code-fg); font: 13px/1.6 ui-monospace, SFMono-Regular, Menlo, monospace; }
+  .mobile-code .links { padding: 10px 16px; font-size: 13.5px; }
+  @media (max-width: 960px) { .mobile-split { grid-template-columns: minmax(0, 1fr); justify-items: center; } .mobile-side { width: 100%; } }
   .phone { display: grid; gap: 10px; justify-items: center; }
-  .phone label { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; color: var(--page-muted); }
-  .phone select { height: 34px; padding: 0 8px; font: inherit; font-size: 14px; color: var(--page-fg); background: var(--page-card); border: 1px solid var(--page-line); border-radius: 8px; }
   .device { width: 390px; max-width: calc(100vw - 48px); height: 740px; padding: 12px; border-radius: 44px; background: #0f1117; box-shadow: 0 18px 40px rgb(16 24 40 / .22), inset 0 0 0 2px #2b2f3a; }
   .device iframe { display: block; width: 100%; height: 100%; border: 0; border-radius: 32px; background: #fff; }
-  .modes { margin: 14px 0 0; padding: 0; list-style: none; display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; }
-  .modes li { padding: 10px 12px; font-size: 13.5px; color: var(--page-muted); background: var(--page-card); border: 1px solid var(--page-line); border-radius: 10px; }
-  .modes strong { display: block; color: var(--page-fg); }
   .fw-tabs { display: flex; flex-wrap: wrap; gap: 4px; margin: 0 0 12px; border-bottom: 1px solid var(--page-line); }
   .fw-tabs button { padding: 9px 14px; font: inherit; font-size: 14px; font-weight: 600; color: var(--page-muted); background: none; border: 0; border-bottom: 2px solid transparent; margin-bottom: -1px; cursor: pointer; }
   .fw-tabs button[aria-selected="true"] { color: var(--page-accent); border-bottom-color: var(--page-accent); }
@@ -180,25 +185,20 @@
       <div class="box"><h2>Ne görüyorsunuz?</h2><p>Gerçek bir telefon genişliğinde (390 px) aynı tablo. Dar ekranda ne olacağını <code>responsive</code> seçer; hangi kolonun kalacağını <code>priority</code> belirler.</p>
         <ul class="tags"><li>responsive</li><li>priority</li><li>cards</li><li>collapse</li><li>modal</li><li>auto</li></ul></div>
       <div class="box"><h2>Deneyin</h2><ol class="try">
-        <li>Telefonların üstündeki listeden bir görünüm seçin; iki görünümü yan yana karşılaştırın.</li>
+        <li>Sağdan bir görünüm seçin: telefon ve kod birlikte değişir.</li>
         <li><strong>Açılır satır</strong>da ⊕ ile gizlenen kolonları satırın altında açın.</li>
         <li><strong>Pencere (modal)</strong>da satırın bütün değerleri bir pencerede açılır.</li>
         <li>Telefonun içinde arama, sıralama ve sayfalama da çalışır.</li>
       </ol></div>
     </div>
-    <div class="phones">
-      <div class="phone"><label>Görünüm <select data-phone="0" aria-label="Soldaki telefonun görünümü"></select></label><div class="device"><iframe data-phone="0" title="Telefon görünümü 1" loading="lazy"></iframe></div></div>
-      <div class="phone"><label>Görünüm <select data-phone="1" aria-label="Sağdaki telefonun görünümü"></select></label><div class="device"><iframe data-phone="1" title="Telefon görünümü 2" loading="lazy"></iframe></div></div>
+    <div class="mobile-split">
+      <div class="phone"><div class="device"><iframe data-phone title="Telefon görünümü" loading="lazy"></iframe></div></div>
+      <div class="mobile-side">
+        <div class="mode-list" role="radiogroup" aria-label="Telefondaki görünüm"></div>
+        <div class="mobile-code"><pre><code data-code="mobile"></code></pre>
+          <div class="links">Kılavuz: <a href="../#/mobile">Mobil görünüm</a> · Kolon önceliği: <code>priority</code> 1 her zaman görünür, 3 ilk gizlenir.</div></div>
+      </div>
     </div>
-    <ul class="modes">
-      <li><strong>Kart</strong>Varsayılan. Her satır bir kart, her değer kolon adıyla.</li>
-      <li><strong>Yana kaydır</strong>Tablo korunur, yana kaydırılır.</li>
-      <li><strong>Açılır satır</strong>Düşük öncelikli kolonlar gizlenir; ⊕ satırın altında açar.</li>
-      <li><strong>Pencere (modal)</strong>Gizlenen değerler bir pencerede açılır.</li>
-      <li><strong>Otomatik</strong>Sığmayan kolonlar ölçülerek gizlenir; her genişlikte çalışır.</li>
-    </ul>
-    <details class="code"><summary>Bu örneğin kodu</summary><pre><code data-code="mobile"></code></pre>
-      <div class="links">Kılavuz: <a href="../#/mobile">Mobil görünüm</a></div></details>
   </section>
 
   <section class="panel" id="panel-frameworks" role="tabpanel" aria-labelledby="tab-frameworks" hidden>
@@ -384,23 +384,54 @@
     }),
   };
 
-  // Mobile: the same table in phone-sized frames (media queries need a real narrow viewport).
-  const MODES = [['cards', 'Kart'], ['scroll', 'Yana kaydır'], ['collapse', 'Açılır satır'], ['modal', 'Pencere (modal)'], ['auto', 'Otomatik']];
-  const phoneModes = ['cards', 'collapse'];
+  // Mobile: the same table in a phone-sized frame (media queries need a real narrow viewport), its code beside it.
+  const MODES = [
+    ['cards', 'Kart', 'Varsayılan: her satır bir kart, her değer kolon adıyla.'],
+    ['scroll', 'Yana kaydır', 'Tablo korunur, parmakla yana kaydırılır.'],
+    ['collapse', 'Açılır satır', 'Düşük öncelikli kolonlar gizlenir; ⊕ satırın altında açar.'],
+    ['modal', 'Pencere (modal)', 'Gizlenen değerler bir pencerede açılır.'],
+    ['auto', 'Otomatik', 'Sığmayan kolonlar ölçülerek gizlenir; her genişlikte.'],
+  ];
+  let phoneMode = 'collapse';
+  const modeList = document.querySelector('.mode-list');
+  for (const [value, label, description] of MODES) {
+    const button = el('button', { type: 'button', role: 'radio', 'data-mode': value }, el('strong', {}, label), description);
+    button.addEventListener('click', () => { phoneMode = value; tables.mobile?.refresh(); });
+    modeList.append(button);
+  }
+  const mobileCode = mode => `new AcunDataTable('#orders', {
+  data: orders,
+  language: 'tr',
+  responsive: '${mode}',${' '.repeat(Math.max(1, 12 - mode.length))}// ${Object.fromEntries(MODES.map(([value, label]) => [value, label]))[mode]}
+  columns: [
+    { data: 'customer', title: 'Müşteri', priority: 1 },  // 1: always shown
+    { data: 'total', title: 'Tutar', type: 'decimal', priority: 1 },
+    { data: 'status', title: 'Durum', priority: 2 },      // 2: hidden on phones
+    { data: 'city', title: 'Şehir', priority: 3 },        // 3: hidden first
+    { data: 'ordered_at', title: 'Tarih', type: 'date', priority: 3 },
+  ],
+});`;
   builders.mobile = () => {
-    const load = () => document.querySelectorAll('iframe[data-phone]').forEach(frame => {
-      const params = new URLSearchParams({ mode: phoneModes[frame.dataset.phone], lang: settings().language, theme: theme.value });
-      frame.src = `phone.html?${params}`;
-      frame.title = `Telefon görünümü: ${Object.fromEntries(MODES)[phoneModes[frame.dataset.phone]]}`;
-    });
+    const load = () => {
+      const frame = document.querySelector('iframe[data-phone]');
+      frame.src = `phone.html?${new URLSearchParams({ mode: phoneMode, lang: settings().language, theme: theme.value })}`;
+      frame.title = `Telefon görünümü: ${Object.fromEntries(MODES.map(([value, label]) => [value, label]))[phoneMode]}`;
+      for (const button of modeList.children) {
+        const on = button.dataset.mode === phoneMode;
+        button.setAttribute('aria-checked', String(on));
+        button.tabIndex = on ? 0 : -1;
+      }
+      document.querySelector('[data-code="mobile"]').textContent = mobileCode(phoneMode);
+    };
     load();
     return { refresh: load, destroy: () => undefined };
   };
-  for (const select of document.querySelectorAll('select[data-phone]')) {
-    for (const [value, label] of MODES) select.append(new Option(label, value));
-    select.value = phoneModes[select.dataset.phone];
-    select.addEventListener('change', () => { phoneModes[select.dataset.phone] = select.value; tables.mobile?.refresh(); });
-  }
+  modeList.addEventListener('keydown', event => {
+    const buttons = [...modeList.children];
+    const index = buttons.findIndex(button => button.dataset.mode === phoneMode) + (event.key === 'ArrowRight' || event.key === 'ArrowDown' ? 1 : event.key === 'ArrowLeft' || event.key === 'ArrowUp' ? -1 : 0);
+    const next = buttons[(index + buttons.length) % buttons.length];
+    if (next.dataset.mode !== phoneMode) { event.preventDefault(); next.click(); next.focus(); }
+  });
 
   // Frameworks: the same 120 orders (as in site/demo/src/data.js) in each framework's own way.
   const fwOrders = (() => {
@@ -653,18 +684,6 @@ class OrdersTable extends \\Livewire\\Component
     if (!response.ok) throw new Error((await response.json()).message);
   },
 });`,
-    mobile: `new AcunDataTable('#orders', {
-  data: orders,
-  language: 'tr',
-  responsive: 'collapse',   // 'cards' (default), 'scroll', 'collapse', 'modal' or 'auto'
-  columns: [
-    { data: 'customer', title: 'Müşteri', priority: 1 },   // 1: always shown
-    { data: 'total', title: 'Tutar', type: 'decimal', priority: 1 },
-    { data: 'status', title: 'Durum', priority: 2 },       // 2: hidden on phones
-    { data: 'city', title: 'Şehir', priority: 3 },         // 3: hidden first
-    { data: 'ordered_at', title: 'Tarih', type: 'date', priority: 3 },
-  ],
-});`,
     virtual: `new AcunDataTable('#people', {
   data: people,                        // 100,000 rows in the browser
   language: 'tr',
@@ -678,7 +697,7 @@ class OrdersTable extends \\Livewire\\Component
   ],
 });`,
   };
-  for (const node of document.querySelectorAll('[data-code]')) node.textContent = CODE[node.dataset.code];
+  for (const node of document.querySelectorAll('[data-code]')) if (CODE[node.dataset.code]) node.textContent = CODE[node.dataset.code];
 
   const show = name => {
     for (const tab of document.querySelectorAll('.tabs [role="tab"]')) {

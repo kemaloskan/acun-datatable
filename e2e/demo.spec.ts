@@ -41,17 +41,19 @@ test('virtual scrolling: 100,000 rows, only those in view drawn', async ({ page 
   expect(await page.locator('#virtual tbody .adt-row').count()).toBeLessThan(40);
 });
 
-test('mobile: the same table in phone-sized frames, in the mode chosen for each', async ({ page }) => {
+test('mobile: one phone-sized frame in the chosen mode, with that mode\'s code beside it', async ({ page }) => {
   await page.goto('/site/demo/index.html#/mobile');
-  const left = page.frameLocator('iframe[data-phone="0"]');
-  const right = page.frameLocator('iframe[data-phone="1"]');
-  await expect(left.locator('.adt-table-wrap')).toHaveClass(/adt-responsive--cards/);
-  await expect(right.locator('.adt-table-wrap')).toHaveClass(/adt-responsive--collapse/);
-  await expect(right.locator('tbody .adt-expand').first()).toBeVisible(); // ⊕ opens the hidden columns
-  await page.locator('select[data-phone="1"]').selectOption('modal');
-  await expect(right.locator('.adt-table-wrap')).toHaveClass(/adt-responsive--modal/);
-  await right.locator('tbody .adt-expand').first().click();
-  await expect(right.getByRole('dialog')).toBeVisible();
+  const phone = page.frameLocator('iframe[data-phone]');
+  await expect(phone.locator('.adt-table-wrap')).toHaveClass(/adt-responsive--collapse/);
+  await expect(phone.locator('tbody .adt-expand').first()).toBeVisible(); // ⊕ opens the hidden columns
+  await expect(page.locator('[data-code="mobile"]')).toContainText("responsive: 'collapse'");
+  await page.getByRole('radio', { name: /Pencere \(modal\)/ }).click();
+  await expect(page.locator('[data-code="mobile"]')).toContainText("responsive: 'modal'");
+  await expect(phone.locator('.adt-table-wrap')).toHaveClass(/adt-responsive--modal/);
+  await phone.locator('tbody .adt-expand').first().click();
+  await expect(phone.getByRole('dialog')).toBeVisible();
+  await page.getByRole('radio', { name: /Kart/ }).click();
+  await expect(phone.locator('.adt-table-wrap')).toHaveClass(/adt-responsive--cards/);
 });
 
 test('frameworks: the same orders in plain JavaScript, the element, Vue and React', async ({ page }) => {
