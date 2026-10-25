@@ -138,6 +138,64 @@ keep a folded copy of the column (`foldText` from `@acunsoft/datatable-core`
 when you write the row) and name it in `search`; the term is folded the same
 way. Index it (`text_pattern_ops` or a trigram index on PostgreSQL).
 
+## Import: `@acunsoft/datatable-server/import`
+
+The back end of the import dialog (`@acunsoft/datatable-import`, protocol
+`acun-import/1`) as a web-standard handler — `(Request) => Promise<Response>`.
+Install `@acunsoft/datatable-export` too (it reads xlsx and CSV); the rest of
+this package does not need it. Your code decides who may import, where rows go
+and whether to work in the background; nothing needs a queue, Redis, a
+database driver or a framework.
+
+```js
+import { createImportHandler, toNodeListener } from '@acunsoft/datatable-server/import';
+
+const ordersImport = createImportHandler({
+  url: '/api/orders/import',
+  columns: [
+    { id: 'email', title: 'E-posta', required: true },
+    { id: 'customer', title: 'Müşteri', aliases: ['Ad Soyad'] },
+    { id: 'total', title: 'Tutar', type: 'decimal' },
+  ],
+  importKey: 'email',                                   // insert, update or upsert by e-mail
+  authorize: request => currentUser(request)?.can('import') ?? false,
+  owner: request => currentUser(request)?.id ?? null,  // imports belong to their owner …
+  tenant: request => currentUser(request)?.teamId ?? null, // … and tenant; anyone else gets 404
+  save: async (rows, context) => {                      // your database code, one chunk at a time
+    for (const { line, values } of rows) {
+      const result = await db.orders.upsert({ teamId: context.tenant, ...values });
+      result.created ? context.inserted() : context.updated();
+    }
+  },
+  read: { decimalSeparator: ',', locale: 'tr' },        // 1.234,50 and Turkish row messages
+});
+
+// Next.js: app/api/orders/import/[[...path]]/route.js
+export const GET = ordersImport.handle, POST = ordersImport.handle, DELETE = ordersImport.handle;
+// Hono, Bun, Deno: app.all('/api/orders/import/*', c => ordersImport.handle(c.req.raw));
+// Express, Fastify, node:http: app.all('/api/orders/import*', toNodeListener(ordersImport.handle));
+```
+
+- **Limits, checked on every upload:** `limits: { maxBytes, maxRows, accept }`
+  (10 MB, 100,000 rows, `.xlsx` and `.csv`), the declared size before the body
+  is read, and the file's own signature. The dialog only shows them as hints.
+- **The mapping is checked again on start** (one entry per file column, known
+  columns once, every required column, an offered mode); uploads with the same
+  `Idempotency-Key` give the same import; a second start answers 409.
+- **Rows** are read and typed by `@acunsoft/datatable-export` (`importRows`)
+  and handed to `save()` in chunks of `chunkSize` (1,000) with their line;
+  `context.reject(line, message, column, value)` refuses a row. A `save()` that
+  throws fails the import with a general message (`onError` gets the error).
+- **At once or in the background:** `background: ({ rows }) => rows > 5000`
+  answers the start at once and works afterwards; `schedule(run, { id })`
+  hands `run` to your queue or worker (BullMQ, a child process …), default
+  later in this process. `process(id)` runs a started import from a worker.
+- **Storage:** `memoryImportStore()` (default, one process),
+  `directoryImportStore('/var/app/imports')` (a folder; restarts and several
+  processes on one machine), or your own `ImportStore` (a database, S3,
+  Redis …). Imports and files are kept for `keepMs` (a day); the upload is
+  deleted when the import ends; the error report is a formula-guarded CSV.
+
 ## Security checklist
 
 - Authorize the user in the handler; put tenant or owner rules in `scope`.

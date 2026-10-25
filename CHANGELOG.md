@@ -23,6 +23,12 @@ All notable changes to this repository. Each npm package also has its own
   required), progress, cancel, a formula-guarded CSV error report;
   `importEndpoint()` opens the import dialog from a Livewire table;
   `acun-datatable:prune` also removes old import files.
+- **Node import endpoint (not released yet):** `@acunsoft/datatable-server/import`
+  — `createImportHandler()` (web-standard `Request` → `Response`; Next.js,
+  Hono, Bun, Deno, and Express / Fastify / `node:http` through
+  `toNodeListener()`) implements the import protocol with your own `save()`;
+  memory and folder stores; background work on your own queue.
+  `@acunsoft/datatable-export` is an optional peer dependency.
 
 ## npm 0.4.0 and `acunsoft/datatable-laravel` 0.5.0 (2026-10-25)
 

@@ -17,13 +17,15 @@
 const params = new URLSearchParams(location.search);
 if (params.has('dark')) document.documentElement.dataset.theme = 'dark';
 const language = params.get('lang') ?? 'en';
+// ?backend=node: the Node helper of @acunsoft/datatable-server instead of the reference back end.
+const api = params.get('backend') === 'node' ? '/e2e/api/node-import' : '/e2e/api/import';
 // The import is an item of the tools menu; the table is refreshed when rows changed.
 window.dt = new AcunDataTable('#records', {
-  ajax: { url: '/e2e/api/import-records', headers: { 'X-User': 'e2e' } }, // the back end keeps records per user
+  ajax: { url: `${api}-records`, headers: { 'X-User': 'e2e' } }, // the back end keeps records per user
   language,
   columns: [{ data: 'email', title: 'E-mail' }, { data: 'name', title: 'Name' }, { data: 'total', title: 'Total' }],
   buttons: ['csv', AcunImport.importButton({
-    url: '/e2e/api/import', language, headers: { 'X-User': 'e2e' },
+    url: api, language, headers: { 'X-User': 'e2e' },
     table: { reload: () => window.dt.reload(), get element() { return window.dt.element; } },
   })],
 });

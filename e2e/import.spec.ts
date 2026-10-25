@@ -16,7 +16,7 @@ const open = async (page: Page, query = '', texts = { tools: 'Tools', item: 'Imp
   // Each test is its own user (the back end keeps imports and records per user), so parallel tests do not mix.
   user = `e2e-${Math.random().toString(36).slice(2)}`;
   const mine = user;
-  await page.route('**/e2e/api/import**', (route, request) => route.continue({ headers: { ...request.headers(), 'x-user': mine } }));
+  await page.route(/\/e2e\/api\/(node-)?import/, (route, request) => route.continue({ headers: { ...request.headers(), 'x-user': mine } }));
   await page.goto(`/e2e/fixtures/import.html${query}`);
   await expect(page.locator('body[data-ready=true]')).toBeAttached();
   await page.locator('summary', { hasText: texts.tools }).click();
@@ -113,4 +113,26 @@ test('the back end passes the conformance run over real HTTP', async ({ baseURL 
   });
   expect(result.checks.filter(check => !check.ok)).toEqual([]);
   expect(result.ok).toBe(true);
+});
+
+test.describe('the Node helper of @acunsoft/datatable-server (createImportHandler over SQLite)', () => {
+  test('passes the conformance run over real HTTP', async ({ baseURL }) => {
+    const { runImportConformance } = await import('../packages/import/dist/testing.js');
+    const result = await runImportConformance({
+      url: `${baseURL}/e2e/api/node-import`, headers: { 'X-User': `conformance-${Math.random()}` },
+      file: new File(['E-mail,Name,Total\nn1@example.com,Nur,1\n,Missing,2\n'], 'orders.csv', { type: 'text/csv' }),
+    });
+    expect(result.checks.filter(check => !check.ok)).toEqual([]);
+  });
+
+  test('the dialog imports through it, in the background for a larger file; the table refreshes', async ({ page }) => {
+    const dialog = await open(page, '?backend=node');
+    await expect(dialog.locator('.adt-import-hint')).toHaveText('Accepted: .xlsx, .csv · Up to 64 KB · up to 2,000 rows');
+    await dialog.locator('input[type=file]').setInputFiles(csv(45, [3]));
+    await expect(dialog.getByRole('combobox', { name: 'E-mail: Imported as' })).toHaveValue('email');
+    await dialog.getByRole('button', { name: 'Import', exact: true }).click();
+    await expect(dialog.getByRole('heading', { name: 'Import finished' })).toBeVisible({ timeout: 15_000 });
+    await expect(dialog.locator('.adt-import-counts dd')).toHaveText(['44', '0', '0', '1']);
+    await expect(page.locator('#records .adt-info')).toHaveText('Showing 1 to 25 of 44 rows');
+  });
 });

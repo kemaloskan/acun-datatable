@@ -53,7 +53,7 @@ function productsApi(request, response) {
 }
 
 createServer((request, response) => {
-  if (/^\/e2e\/api\/import(-records)?(\/|\?|$)/.test(request.url ?? '')) {
+  if (/^\/e2e\/api\/(node-)?import(-records)?(\/|\?|$)/.test(request.url ?? '')) {
     importApi(request, response).catch(error => response.writeHead(500, { 'Content-Type': 'application/json' }).end(JSON.stringify({ message: String(error) })));
     return;
   }

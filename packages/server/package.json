@@ -33,6 +33,10 @@
     ".": {
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
+    },
+    "./import": {
+      "types": "./dist/import.d.ts",
+      "import": "./dist/import.js"
     }
   },
   "files": [
@@ -41,7 +45,7 @@
   "scripts": {
     "check": "tsc -p tsconfig.check.json",
     "test": "vitest run",
-    "build": "tsup src/index.ts --format esm --dts --clean --external @acunsoft/datatable-core"
+    "build": "tsup src/index.ts src/import.ts --format esm --dts --clean --no-splitting --external @acunsoft/datatable-core --external @acunsoft/datatable-export"
   },
   "dependencies": {
     "@acunsoft/datatable-core": "0.4.0"
@@ -52,12 +56,22 @@
     "pg": "8.23.1",
     "tsup": "^8.0.0",
     "typescript": "^5.0.0",
-    "vitest": "^5.0.5"
+    "vitest": "^5.0.5",
+    "@acunsoft/datatable-export": "0.4.0",
+    "@acunsoft/datatable-import": "0.4.0"
   },
   "engines": {
     "node": ">=22"
   },
   "publishConfig": {
     "access": "public"
+  },
+  "peerDependencies": {
+    "@acunsoft/datatable-export": "0.4.0"
+  },
+  "peerDependenciesMeta": {
+    "@acunsoft/datatable-export": {
+      "optional": true
+    }
   }
 }

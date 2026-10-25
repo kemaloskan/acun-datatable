@@ -92,7 +92,7 @@ export function createImportClient(options: ImportClientOptions): ImportClient {
 
   const headersFor = async (more?: HeadersInit): Promise<Headers> => {
     const headers = new Headers(typeof options.headers === 'function' ? await options.headers() : options.headers);
-    for (const [name, value] of new Headers(more)) headers.set(name, value);
+    new Headers(more).forEach((value, name) => headers.set(name, value));
     headers.set('Accept', 'application/json');
     return headers;
   };

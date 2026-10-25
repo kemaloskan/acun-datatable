@@ -192,6 +192,20 @@ final class OrdersImport extends TableImport
 
 ## 6. Node (`@acunsoft/datatable-server/import`)
 
+**Done** (2026-10-25): `createImportHandler()` (web-standard `Request` →
+`Response`), `toNodeListener()` (Express, Fastify, `node:http`; the body is
+streamed), `memoryImportStore()` and `directoryImportStore()`, `process(id)`
+for your own worker. `@acunsoft/datatable-export` is an optional peer
+dependency; the subpath is 6.2 KB gzip and costs nothing to users of the main
+entry. Tests: Vitest (the conformance run with both stores, at once and in the
+background, over `node:http`; limits and signature; owner and tenant;
+insert / update / upsert; cancel; a throwing `save()`; the error report;
+restart with the folder store) and end to end in three browsers against a
+SQLite app over real HTTP (conformance, and the dialog importing in the
+background). Differences from the sketch below: `owner()` is required,
+`background({ rows })` plus `schedule()`, `read` for decimals, dates and the
+row-message language.
+
 ```js
 import { createImportHandler } from '@acunsoft/datatable-server/import';
 

@@ -330,7 +330,10 @@ test('edit a cell in place: Enter saves, errors keep the editor, Escape cancels,
   await page.getByRole('button', { name: 'Edit Customer: Deniz' }).click();
   await page.keyboard.type('Deniz Ak');
   await page.getByRole('heading').or(page.locator('caption')).first().click(); // leave the field
-  await expect(page.getByRole('cell', { name: 'Deniz Ak' })).toBeVisible();
+  // Saved and drawn again: the cell's own edit button carries the new value (the text alone matches
+  // the row's checkbox cell too, and for a moment the button still has the old name).
+  await expect(page.getByRole('button', { name: 'Edit Customer: Deniz Ak' })).toBeAttached();
+  await expect(page.locator('td[data-label="Customer"]', { hasText: 'Deniz Ak' })).toBeVisible();
 });
 
 test('a click that closes an editor still reaches the control it was meant for', async ({ page }) => {
@@ -410,7 +413,9 @@ test('virtual scrolling keeps the column widths while the rows change', async ({
       const index = await first();
       await scroller.evaluate((node, y) => { node.scrollTop = y; }, top);
       if (top > 0) await expect.poll(first).not.toBe(index); // other rows are drawn
-      expect(await widths()).toBe(before); // with the same column widths
+      // With the same column widths. Polled: under heavy load WebKit can answer one measurement
+      // before its layout (all zeros); a real change of width still fails.
+      await expect.poll(widths, { timeout: 2_000 }).toBe(before);
     }
   }
 });

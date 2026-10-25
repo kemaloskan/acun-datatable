@@ -3,7 +3,11 @@
   "compilerOptions": {
     "rootDir": "..",
     "noEmit": true,
-    "paths": { "@acunsoft/datatable-core": ["../core/src/index.ts"] }
+    "paths": {
+      "@acunsoft/datatable-core": ["../core/src/index.ts"],
+      "@acunsoft/datatable-export": ["../export/src/index.ts"],
+      "@acunsoft/datatable-import/testing": ["../import/src/testing.ts"]
+    }
   },
   "include": ["src/**/*.ts", "tests/**/*.ts"]
 }
