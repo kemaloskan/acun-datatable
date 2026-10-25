@@ -510,3 +510,36 @@ test.describe('new AcunDataTable(...) from a <script> tag', () => {
     expect(requests.at(-1)).toContain('sort=price%3Aasc');
   });
 });
+
+test.describe('filterPanel: the filter fields in a drawer or a modal', () => {
+  for (const mode of ['drawer', 'modal'] as const) {
+    test(`${mode}: opens from the button, filters, and closes with Escape, the backdrop or Close`, async ({ page }) => {
+      await page.goto(`/e2e/fixtures/table.html?filterPanel=${mode}`);
+      await expect(page.locator('body[data-ready=true]')).toBeAttached();
+      const button = page.locator('.adt-filter-open');
+      await expect(button).toHaveAccessibleName(/^Filters/);
+      const dialog = page.getByRole('dialog', { name: 'Filters' });
+      await expect(dialog).toBeHidden();
+      await button.click();
+      await expect(dialog).toBeVisible();
+      await dialog.getByRole('checkbox', { name: 'Ankara' }).check();
+      await expect(page.locator('.adt-chip')).toContainText('Ankara');
+      await expect(button.locator('.adt-badge')).toHaveText('1');
+      await page.keyboard.press('Escape');
+      await expect(dialog).toBeHidden();
+      await expect(button).toBeFocused(); // focus back on the button
+      await button.click();
+      await page.mouse.click(5, 400); // the backdrop, left of a drawer or around a modal
+      await expect(dialog).toBeHidden();
+      await button.click();
+      await dialog.getByRole('button', { name: 'Close' }).last().click();
+      await expect(dialog).toBeHidden();
+      if (mode === 'drawer') {
+        await button.click();
+        const { width, height } = page.viewportSize()!;
+        // Against the right edge, full height (once it has slid in).
+        await expect.poll(async () => { const box = (await dialog.boundingBox())!; return [Math.round(box.x + box.width), Math.round(box.height)]; }).toEqual([width, height]);
+      }
+    });
+  }
+});

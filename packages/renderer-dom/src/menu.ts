@@ -1,4 +1,4 @@
-import { element, icon, placeMenu, type RenderedComponent } from './dom';
+import { element, fillButton, placeMenu, type RenderedComponent, type ToolbarButton } from './dom';
 import { labelsEn, type DataTableLabels } from './labels';
 
 /** An entry of a menu such as the tools menu (export, copy, print, your own). */
@@ -17,6 +17,8 @@ export interface MenuItem {
 export interface RenderMenuOptions {
   /** The button text. Default: the `tools` label. */
   readonly label?: string;
+  /** The button's text, icon and classes (`button.label` wins over `label`). */
+  readonly button?: ToolbarButton;
   readonly items: readonly MenuItem[];
   readonly labels?: Partial<DataTableLabels>;
 }
@@ -41,7 +43,7 @@ export function renderMenu(container: HTMLElement, options: RenderMenuOptions): 
   }
   const root = element(doc, 'details', { class: 'adt-columns adt-menu adt-tools' });
   const summary = element(doc, 'summary');
-  summary.append(icon(doc, 'download'), element(doc, 'span', { class: 'adt-summary-text' }, options.label ?? labels.tools));
+  fillButton(doc, summary, { label: options.label ?? labels.tools, icon: 'download' }, options.button);
   root.addEventListener('toggle', () => placeMenu(root));
   const list = element(doc, 'div', { class: 'adt-menu-list' });
   const status = element(doc, 'p', { class: 'adt-menu-status', role: 'status', 'aria-live': 'polite' });

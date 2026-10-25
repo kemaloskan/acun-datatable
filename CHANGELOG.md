@@ -31,6 +31,12 @@ npm package's `CHANGELOG.md` has its own notes.
 - **Columns:** pinned columns stay put when columns can also be resized; virtual
   scrolling keeps the column widths; `responsive: 'auto'` keeps every column once the
   user sized one.
+- **Filters in a drawer or a modal:** `filterPanel` (`'dropdown'`, `'drawer'`,
+  `'modal'`) in every package; `renderFilterPanel()` / `FilterPanel` /
+  `AcunFilterPanel` / `@include('acun-datatable::livewire.filter-panel')` put
+  only the fields into a drawer or modal of your own.
+- **Toolbar buttons:** `toolbarButtons` sets the text, icon, icon-only look and
+  classes of the columns, filters and tools buttons.
 - **Dark mode** also follows Bootstrap 5.3's `data-bs-theme="dark"`, besides
   `class="dark"` (Tailwind) and `data-theme="dark"`.
 - **Print** prints only the table (every matching row in `@acunsoft/datatable`,
@@ -54,6 +60,8 @@ npm package's `CHANGELOG.md` has its own notes.
   `TableResponse`.
 - **Changed:** the user's sort comes before an `orderBy()` in `query()`;
   MariaDB gets its count time limit; see UPGRADING.md.
+- **Filters and buttons:** `filterPanel()` (`dropdown`, `drawer`, `modal`), the
+  `filter-panel` view for your own modal, and `toolbarButtons()`.
 - **Print** (`printable()`) prints only the table with the rows on screen, not the
   page around it; on phones the menu buttons show their icon only and open inside
   the window.

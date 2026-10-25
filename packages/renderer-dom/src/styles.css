@@ -92,17 +92,17 @@
 .adt-feature--search { display: block; flex: 1 1 18rem; max-width: 28rem; min-width: 0; }
 
 /* Shared look of inputs, selects and buttons */
-:where(.adt-control, .adt-search input, .adt-length select, .adt-columns summary, .adt-button, .adt-export button,
+:where(.adt-control, .adt-search input, .adt-length select, .adt-columns summary, .adt-filter-open, .adt-button, .adt-export button,
   .adt-import button, .adt-retry, .adt-selection .adt-bulk-action) {
   font: inherit; font-size: 0.9375em; color: var(--adt-fg); background: var(--adt-bg);
   height: var(--adt-control-height); padding: 0 0.875rem; border: 1px solid var(--adt-line);
   border-radius: var(--adt-control-radius); line-height: 1; margin: 0;
   transition: border-color 0.15s, box-shadow 0.15s, background-color 0.15s;
 }
-:where(.adt-columns summary, .adt-button, .adt-export button, .adt-import button, .adt-retry, .adt-selection .adt-bulk-action) {
+:where(.adt-columns summary, .adt-filter-open, .adt-button, .adt-export button, .adt-import button, .adt-retry, .adt-selection .adt-bulk-action) {
   display: inline-flex; align-items: center; gap: 0.5rem; cursor: pointer; font-weight: 500; white-space: nowrap;
 }
-:where(.adt-columns summary, .adt-button, .adt-export button, .adt-import button, .adt-retry, .adt-selection .adt-bulk-action):hover { background: var(--adt-hover); }
+:where(.adt-columns summary, .adt-filter-open, .adt-button, .adt-export button, .adt-import button, .adt-retry, .adt-selection .adt-bulk-action):hover { background: var(--adt-hover); }
 :where(.adt-search input, .adt-length select):hover { border-color: color-mix(in srgb, var(--adt-line) 50%, var(--adt-muted)); }
 :where(.adt-search input, .adt-length select):focus { outline: none; border-color: var(--adt-accent); box-shadow: 0 0 0 3px var(--adt-focus); }
 .adt-button[aria-pressed="true"] { color: var(--adt-accent); border-color: var(--adt-accent); background: color-mix(in srgb, var(--adt-accent) 8%, var(--adt-bg)); }
@@ -245,6 +245,11 @@
   border-right: 1.5px solid var(--adt-muted); border-bottom: 1.5px solid var(--adt-muted); transform: rotate(45deg);
 }
 .adt-columns[open] summary { border-color: var(--adt-accent); box-shadow: 0 0 0 3px var(--adt-focus); }
+/* A toolbar button with iconOnly: the text stays for screen readers */
+:is(.adt-columns > summary, .adt-filter-open).adt-icon-only { position: relative; justify-content: center; width: var(--adt-control-height); padding: 0; }
+.adt-columns > summary.adt-icon-only::after { display: none; }
+.adt-icon-only .adt-summary-text { position: absolute; width: 1px; height: 1px; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.adt-icon-only .adt-badge { position: absolute; top: -0.45rem; right: -0.45rem; }
 /* --adt-menu-shift: set by placeMenu() when an open panel would stick out of the window */
 :is(.adt-columns > fieldset, .adt-menu-list, .adt-filter-panel) { transform: translateX(var(--adt-menu-shift, 0)); }
 .adt-columns > fieldset {
@@ -281,12 +286,27 @@
   border-radius: 999px; background: var(--adt-accent); color: var(--adt-accent-fg); font-size: 0.75em; font-weight: 700; line-height: 1;
 }
 .adt-badge[hidden] { display: none; }
-.adt-filter-panel {
+/* The fields: on their own (renderFilterPanel, in your drawer or modal), under the button, or in a dialog */
+.adt-filter-panel { display: flex; flex-direction: column; gap: 0.75rem; }
+.adt-filters > .adt-filter-panel {
   position: absolute; right: 0; z-index: 20; width: min(22rem, calc(100vw - 2rem)); max-height: min(32rem, 70vh); overflow: auto;
-  margin-top: 0.375rem; padding: 0.75rem; display: flex; flex-direction: column; gap: 0.75rem;
+  margin-top: 0.375rem; padding: 0.75rem;
   border: 1px solid var(--adt-line); border-radius: var(--adt-radius); background: var(--adt-bg);
   box-shadow: 0 12px 24px -6px rgb(16 24 40 / 0.16), 0 4px 8px -4px rgb(16 24 40 / 0.08);
 }
+/* filterPanel: 'drawer' (from the side) and 'modal' (centred) */
+.adt-filter-dialog .adt-filter-panel { padding: 1rem 1.25rem 0; }
+.adt-filter-dialog .adt-filter-foot {
+  position: sticky; bottom: 0; gap: 0.5rem; margin: 0 -1.25rem; padding: 0.75rem 1.25rem; background: var(--adt-bg);
+}
+.adt-filter-dialog .adt-filter-foot .adt-button { height: var(--adt-control-height); }
+.adt-dialog.adt-filter-dialog--modal { width: min(32rem, calc(100vw - 2rem)); }
+.adt-dialog.adt-filter-dialog--drawer {
+  width: min(24rem, 100vw); height: 100dvh; max-height: 100dvh; margin: 0 0 0 auto;
+  border-width: 0 0 0 1px; border-radius: 0; animation: adt-drawer-in 0.2s ease-out;
+}
+@keyframes adt-drawer-in { from { transform: translateX(100%); } }
+@media (prefers-reduced-motion: reduce) { .adt-dialog.adt-filter-dialog--drawer { animation: none; } }
 .adt-filter { margin: 0; padding: 0; border: 0; min-width: 0; display: flex; flex-wrap: wrap; gap: 0.375rem 0.75rem; }
 .adt-filter legend {
   float: left; width: 100%; padding: 0 0 0.375rem; color: var(--adt-muted); font-size: 0.75em; font-weight: 600;
@@ -564,12 +584,12 @@
   .adt-top .adt-bar-end { justify-content: flex-start; }
   .adt-feature--search { flex: 1 1 10rem; max-width: none; }
   /* The menu buttons (columns, filters, tools) as icons; the name stays for screen readers */
-  .adt-columns > summary { position: relative; justify-content: center; width: var(--adt-control-height); padding: 0; }
+  :is(.adt-columns > summary, .adt-filter-open) { position: relative; justify-content: center; width: var(--adt-control-height); padding: 0; }
   .adt-columns > summary::after { display: none; }
-  .adt-columns > summary .adt-summary-text {
+  :is(.adt-columns > summary, .adt-filter-open) .adt-summary-text {
     position: absolute; width: 1px; height: 1px; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap;
   }
-  .adt-columns > summary .adt-badge { position: absolute; top: -0.45rem; right: -0.45rem; }
+  :is(.adt-columns > summary, .adt-filter-open) .adt-badge { position: absolute; top: -0.45rem; right: -0.45rem; }
   /* The selection bar ("select all N matching", bulk actions) under the rows, held at the
      bottom of the window while they scroll by: a bar above the table is out of sight there */
   .adt-selection { order: 1; position: sticky; bottom: 0.75rem; z-index: 6; flex-wrap: nowrap; box-shadow: 0 10px 28px -6px rgb(16 24 40 / 0.28); }

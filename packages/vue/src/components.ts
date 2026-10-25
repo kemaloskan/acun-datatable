@@ -6,8 +6,8 @@ import {
 import { COLUMN_WIDTH_LIMITS, getPageItems, type ColumnDef, type DataTable, type Row } from '@acunsoft/datatable-core';
 import {
   cellValue, checkPageSizes, checkResponsive, checkSize, confirmed, filterControls, splitActions, createCellText, ICONS, labelsEn, knownPageCount, nextSorting, pageInfoText,
-  afterPointerRelease, autoResponsive, cellEditor, checkVirtual, virtualWindow, columnsChanged, columnTools, isEditable, numeric, pageSizeChoices, pinColumns, placeMenu, resetColumns, priorityOf, rangeOf, renderBulkActions, renderFilterChips, renderFilters, renderMenu, rowName, scrollHeight,
-  checkFixedColumns, type CellEditor, type EditHandler, type FixedColumns, type MenuItem, type RenderedComponent, type ResponsiveMode, type TableSize,
+  afterPointerRelease, autoResponsive, cellEditor, checkVirtual, virtualWindow, columnsChanged, columnTools, isEditable, numeric, pageSizeChoices, pinColumns, placeMenu, resetColumns, priorityOf, rangeOf, renderBulkActions, renderFilterChips, renderFilterPanel, renderFilters, renderMenu, rowName, scrollHeight,
+  checkFixedColumns, type FilterPanelMode, type ToolbarButton, type ToolbarButtons, type CellEditor, type EditHandler, type FixedColumns, type MenuItem, type RenderedComponent, type ResponsiveMode, type TableSize,
   type BulkAction, type BulkSelection, type CellFormatter, type DataTableLabels, type RowAction, type StatusSource,
 } from '@acunsoft/datatable-dom';
 import { useTable } from './composables';
@@ -31,6 +31,7 @@ const tableProp = {
   validator: (value: unknown) => typeof (value as AnyTable)?.getPage === 'function' && typeof (value as AnyTable)?.subscribe === 'function',
 };
 const labelsProp = { type: Object as PropType<Partial<DataTableLabels>>, default: () => ({}) };
+const buttonProp = { type: Object as PropType<ToolbarButton>, default: undefined };
 const withLabels = (labels: Partial<DataTableLabels>): DataTableLabels => ({ ...labelsEn, ...labels });
 // Mounted DOM controls: a new labels object with the same texts is no change.
 const labelsKey = (labels: Partial<DataTableLabels>): string => JSON.stringify(labels);
@@ -604,6 +605,15 @@ export const AcunDataTable = defineComponent({
 /** Placeholder rows while the first rows load: as many as a page, at most this many. */
 const SKELETON_ROWS = 10;
 
+/** A toolbar button's summary, as `fillButton` builds it in the DOM. */
+function toolbarSummary(custom: ToolbarButton | undefined, label: string, fallback: keyof typeof ICONS): VNode {
+  const text = custom?.label ?? label;
+  const chosen = custom?.icon ?? fallback;
+  const className = [custom?.iconOnly ? 'adt-icon-only' : '', custom?.className ?? ''].filter(Boolean).join(' ');
+  return h('summary', { ...(className ? { class: className } : {}), ...(custom?.iconOnly ? { title: text } : {}) },
+    [...(chosen === false ? [] : [iconNode(chosen)]), h('span', { class: 'adt-summary-text' }, text)]);
+}
+
 const iconNode = (name: keyof typeof ICONS | { readonly path: string }): VNode => h('svg', {
   class: 'adt-icon', viewBox: '0 0 24 24', width: 16, height: 16, fill: 'none', stroke: 'currentColor', 'stroke-width': 2,
   'stroke-linecap': 'round', 'stroke-linejoin': 'round', 'aria-hidden': 'true', focusable: 'false',
@@ -746,6 +756,8 @@ export const AcunColumnToggle = defineComponent({
     table: tableProp, labels: labelsProp,
     /** Up/down buttons per column to change the order with the keyboard. */
     reorderable: { type: Boolean, default: false },
+    /** The button's text, icon and classes. */
+    button: buttonProp,
   },
   setup(props) {
     const binding = useTable(() => props.table);
@@ -756,7 +768,7 @@ export const AcunColumnToggle = defineComponent({
       const byId = new Map(columns.map(column => [column.id, column]));
       const lastVisible = columns.length - hidden.length === 1;
       return h('details', { class: 'adt-columns', onToggle: (event: Event) => placeMenu(event.currentTarget as HTMLDetailsElement) }, [
-        h('summary', [iconNode('columns'), h('span', { class: 'adt-summary-text' }, label.columns)]),
+        toolbarSummary(props.button, label.columns, 'columns'),
         h('fieldset', [h('legend', label.showColumns), ...columnOrder.map((id, index) => {
           const column = byId.get(id)!;
           const shown = !hidden.includes(id);
@@ -834,8 +846,38 @@ function domControl(name: string, render: (el: HTMLElement, props: { table: AnyT
   });
 }
 
-/** The "Filters" menu: a control per column with `filter` (see `renderFilters`). */
-export const AcunFilters = domControl('AcunFilters', (el, props) => renderFilters(el, props.table, props));
+/**
+ * The "Filters" button: a control per column with `filter`, under the button
+ * (default), in a drawer or a modal (`panel`; see `renderFilters`).
+ */
+export const AcunFilters = defineComponent({
+  name: 'AcunFilters',
+  props: {
+    table: tableProp, labels: labelsProp, locale: { type: String, default: 'en' },
+    /** Where the fields open: `'dropdown'` (default), `'drawer'` or `'modal'`. For your own, use `AcunFilterPanel`. */
+    panel: { type: String as PropType<FilterPanelMode>, default: 'dropdown' },
+    /** The button's text, icon and classes. */
+    button: buttonProp,
+  },
+  setup(props) {
+    const host = shallowRef<HTMLElement | null>(null);
+    let part: RenderedComponent | undefined;
+    const mount = (): void => {
+      part?.destroy();
+      if (host.value) {
+        part = renderFilters(host.value, props.table, {
+          labels: withLabels(props.labels), locale: props.locale, panel: props.panel, ...(props.button ? { button: props.button } : {}),
+        });
+      }
+    };
+    onMounted(mount);
+    watch([() => props.table, () => labelsKey(props.labels), () => props.locale, () => props.panel, () => JSON.stringify(props.button ?? {})], mount);
+    onScopeDispose(() => part?.destroy());
+    return (): VNode => h('div', { ref: host, class: 'adt-feature' });
+  },
+});
+/** Only the filter fields and "Clear filters", for your own drawer, modal or sidebar (see `renderFilterPanel`). */
+export const AcunFilterPanel = domControl('AcunFilterPanel', (el, props) => renderFilterPanel(el, props.table, props));
 /** The active filters as removable chips (see `renderFilterChips`). */
 export const AcunFilterChips = domControl('AcunFilterChips', (el, props) => renderFilterChips(el, props.table, props));
 
@@ -845,6 +887,8 @@ export const AcunTools = defineComponent({
   props: {
     items: { type: Array as PropType<readonly MenuItem[]>, required: true },
     label: { type: String, default: undefined },
+    /** The button's text, icon and classes. */
+    button: buttonProp,
     labels: labelsProp,
   },
   setup(props) {
@@ -853,11 +897,11 @@ export const AcunTools = defineComponent({
     const latest = (): readonly MenuItem[] => props.items;
     const mount = (): void => {
       part?.destroy();
-      if (host.value) part = renderMenu(host.value, { items: following(latest(), latest), labels: withLabels(props.labels), ...(props.label ? { label: props.label } : {}) });
+      if (host.value) part = renderMenu(host.value, { items: following(latest(), latest), labels: withLabels(props.labels), ...(props.label ? { label: props.label } : {}), ...(props.button ? { button: props.button } : {}) });
     };
     onMounted(mount);
     // Mounted once per items, label and labels: a parent re-render keeps the menu open.
-    watch([() => shapeOf(props.items), () => props.label, () => labelsKey(props.labels)], mount);
+    watch([() => shapeOf(props.items), () => props.label, () => labelsKey(props.labels), () => JSON.stringify(props.button ?? {})], mount);
     onScopeDispose(() => part?.destroy());
     return (): VNode => h('div', { ref: host, class: 'adt-feature' });
   },
@@ -889,6 +933,10 @@ export const AcunDataTableLayout = defineComponent({
     /** Scroll through every matching row instead of pages (see `AcunDataTable`). */
     virtual: { type: [Boolean, Object] as PropType<boolean | { rowHeight?: number; overscan?: number }>, default: false },
     tools: { type: Array as PropType<readonly MenuItem[]>, default: () => [] },
+    /** Where the filter fields open: `'dropdown'` (default), `'drawer'` or `'modal'`. */
+    filterPanel: { type: String as PropType<FilterPanelMode>, default: 'dropdown' },
+    /** Text, icon and classes of the columns, filters and tools buttons. */
+    toolbarButtons: { type: Object as PropType<ToolbarButtons>, default: () => ({}) },
     bulkActions: { type: Array as PropType<readonly BulkAction<never>[]>, default: () => [] },
     paging: { type: Object as PropType<{ siblings?: number; boundaries?: number; firstLast?: boolean }>, default: () => ({}) },
     size: {
@@ -910,9 +958,9 @@ export const AcunDataTableLayout = defineComponent({
           slots['top-start']?.(),
         ], [
           slots['top-end']?.(),
-          hasFilters ? h(AcunFilters, { ...common, locale: props.locale }) : null,
-          props.columnToggle ? h(AcunColumnToggle, { ...common, reorderable: props.reorderableColumns }) : null,
-          props.tools.length > 0 ? h(AcunTools, { items: props.tools, labels: props.labels }) : null,
+          hasFilters ? h(AcunFilters, { ...common, locale: props.locale, panel: props.filterPanel, ...(props.toolbarButtons.filters ? { button: props.toolbarButtons.filters } : {}) }) : null,
+          props.columnToggle ? h(AcunColumnToggle, { ...common, reorderable: props.reorderableColumns, ...(props.toolbarButtons.columns ? { button: props.toolbarButtons.columns } : {}) }) : null,
+          props.tools.length > 0 ? h(AcunTools, { items: props.tools, labels: props.labels, ...(props.toolbarButtons.tools ? { button: props.toolbarButtons.tools } : {}) }) : null,
         ]),
         hasFilters ? h(AcunFilterChips, { ...common, locale: props.locale }) : null,
         // The selection bar (count, "select all N matching", clear, bulk actions) with any selectable table.

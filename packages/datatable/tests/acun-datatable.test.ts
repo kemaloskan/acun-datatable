@@ -474,3 +474,41 @@ describe('stateSave', () => {
     expect(document.querySelector<HTMLInputElement>('.adt-search input')!.value).toBe('ali');
   });
 });
+
+describe('filter panel and toolbar buttons', () => {
+  const columns = [
+    { data: 'customer', title: 'Müşteri', filter: true },
+    { data: 'total', title: 'Tutar', type: 'number' as const, filter: true },
+  ];
+
+  it('filterPanel: modal opens the fields in a dialog; toolbarButtons set text, icon and classes', async () => {
+    HTMLDialogElement.prototype.showModal ??= function (this: HTMLDialogElement) { this.setAttribute('open', ''); };
+    const dt = new AcunDataTable('#orders', {
+      data: orders, language: 'tr', columns, filterPanel: 'modal',
+      toolbarButtons: { filters: { label: 'Süz', className: 'btn btn-light' }, columns: { iconOnly: true } },
+    });
+    await dt.ready;
+    const button = document.querySelector<HTMLButtonElement>('.adt-filter-open')!;
+    expect(button.querySelector('.adt-summary-text')!.textContent).toBe('Süz');
+    expect(button.classList).toContain('btn-light');
+    expect(document.querySelector('.adt-feature--columns summary')!.classList).toContain('adt-icon-only');
+    button.click();
+    expect(document.querySelector<HTMLDialogElement>('.adt-filter-dialog--modal')!.open).toBe(true);
+  });
+
+  it('renderFilterPanel puts the fields into your own element, in the table language', async () => {
+    const own = document.createElement('aside');
+    document.body.append(own);
+    const dt = new AcunDataTable('#orders', { data: orders, language: 'tr', columns, layout: { topEnd: ['columns'] } });
+    await dt.ready;
+    expect(document.querySelector('.adt-filters')).toBeNull(); // the built-in button left out
+    const remove = dt.renderFilterPanel(own);
+    expect(own.querySelector('.adt-filter-clear')!.textContent).toBe('Filtreleri temizle');
+    own.querySelector<HTMLInputElement>('.adt-filter--range input')!.value = '250';
+    own.querySelector('.adt-filter--range input')!.dispatchEvent(new Event('change'));
+    expect(info()).toContain('6'); // 250..300
+    remove();
+    expect(own.children).toHaveLength(0);
+    expect(() => dt.renderFilterPanel('#missing')).toThrow('no element matches #missing');
+  });
+});

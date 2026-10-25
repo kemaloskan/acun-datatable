@@ -1,4 +1,4 @@
-export { el, ICONS, placeMenu, type RenderedComponent } from './dom';
+export { el, ICONS, placeMenu, type RenderedComponent, type ToolbarButton, type ToolbarButtons } from './dom';
 export { checkFixedColumns, pinColumns, type FixedColumns } from './pin';
 export { columnTools, type ColumnToolsOptions } from './column-tools';
 export { autoResponsive } from './auto-responsive';
@@ -29,8 +29,8 @@ export {
 } from './actions';
 export { columnsChanged, renderColumnToggle, resetColumns, type RenderColumnToggleOptions } from './columns';
 export {
-  describeFilter, filterControls, filterRules, readFilter, renderFilterChips, renderFilters, replaceFilter,
-  type FilterControl, type FilterKind, type FilterValues, type RenderFiltersOptions,
+  describeFilter, filterControls, filterRules, readFilter, renderFilterChips, renderFilterPanel, renderFilters, replaceFilter,
+  type FilterControl, type FilterKind, type FilterPanelMode, type FilterValues, type RenderFilterPanelOptions, type RenderFiltersOptions,
 } from './filters';
 export { downloadFile } from './download';
 export { cellValue, createCellText, nextSorting, rowName, type CellTextOptions } from './cells';

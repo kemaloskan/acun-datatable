@@ -322,6 +322,7 @@ const API = [
   ['@acunsoft/datatable', [
     ["new AcunDataTable(target, options)", {tr:"DataTables gibi tek çağrıda tablo: mevcut <table>, data, bir kez yüklenen ajax JSON'u veya serverSide. fixedHeader, processing, pagination, sorting, searching, language, responsive, size; <script> ile de kullanılır.", en:"A table in one call, like DataTables: an existing <table>, data, an ajax JSON loaded once, or serverSide. fixedHeader, processing, pagination, sorting, searching, language, responsive, size; also as a <script>."}],
     ["ready · reload() · setData() · search() · page() · pageSize() · order() · selectedRows() · on() · destroy()", {tr:"Tabloyu yöneten metotlar; table özelliği headless çekirdek tablosudur.", en:"Methods that control the table; the table property is the headless core table."}],
+    ["filterPanel · toolbarButtons · renderFilterPanel(target)", {tr:"Filtreler menüde, yan panelde ya da modalda; düğmelerin yazısı, simgesi ve sınıfları; filtre alanlarını kendi bileşeninize koyma.", en:"Filters in a dropdown, a drawer or a modal; the buttons' text, icon and classes; the filter fields in a component of your own."}],
   ]],
   ['@acunsoft/datatable-http', [
     ["createHttpDataSource({ url, method?, headers?, parseResponse? })", {tr:"fetch ile salt okunur veri kaynağı; GET veya POST (form gövdesi), sayfa boyutu sınırı, HttpError, yanıt doğrulama.", en:"Read-only fetch data source; GET or POST (form body), page-size limit, HttpError, response validation."}],
@@ -341,6 +342,8 @@ const API = [
     ["renderSearch(container, table, options?)", {tr:"İkonlu, gecikmeli arama kutusu; Enter hemen uygular.", en:"Debounced search box with an icon; Enter applies at once."}],
     ["renderMenu({ items }) · printRows() · cells + el()", {tr:"Araçlar menüsü (dışa aktarma, kopyalama, yazdırma, kendi işleminiz); printRows() yalnızca tabloyu yazdırır, sayfayı değil; DOM öğesi döndüren güvenli özel hücreler.", en:"A tools menu (export, copy, print, your own action); printRows() prints only the table, not the page; safe custom cells that return DOM nodes."}],
     ["renderFilters · renderFilterChips", {tr:"Filtreler menüsü (kolon türüne göre kontrol, options ile onay kutuları) ve kaldırılabilir etkin filtre etiketleri.", en:"The filters menu (a control per column type, ticks with options) and removable chips of the active filters."}],
+    ["renderFilters({ panel: 'dropdown' | 'drawer' | 'modal' }) · renderFilterPanel(container, table)", {tr:"Filtrelerin açıldığı yer: menü, yan panel ya da modal (<dialog>); renderFilterPanel yalnızca alanları kendi modalınıza, offcanvas'ınıza ya da kenar çubuğunuza koyar.", en:"Where the filters open: a dropdown, a drawer or a modal (<dialog>); renderFilterPanel puts only the fields into your own modal, offcanvas or sidebar."}],
+    ["toolbarButtons: { columns?, filters?, tools? } · button: { label?, icon?, iconOnly?, className? }", {tr:"Kolonlar, Filtreler ve Araçlar düğmelerinin yazısı, simgesi (hazır ad, { path } ya da false), yalnızca simge ve sizin sınıflarınız (ör. Bootstrap btn).", en:"Text, icon (a built-in name, { path } or false), icon-only and your own classes (e.g. Bootstrap btn) of the Columns, Filters and Tools buttons."}],
     ["resolveLabels(locale, overrides?) · labelsEn/Tr/De/Fr/Es", {tr:"Yerleşik metinler (i18n kütüphanesi gerekmez): en, tr, de, fr, es; tekil/çoğul ve basamak ayırıcı dile göre.", en:"Built-in texts (no i18n library needed): en, tr, de, fr, es; singular/plural and digit grouping per language."}],
   ]],
   ['@acunsoft/datatable-vue', [
@@ -1622,6 +1625,84 @@ const GUIDES = {
       "protected function tableLayout(): array\n{\n    return [\n        'topStart' => ['pageSize', 'search', 'orders.filters'],   // your own Blade view\n        'topEnd' => ['columns', 'tools'],                         // tools: export, print, import\n    ];\n}"
      ]
     ]
+   },
+   {
+    "id": "buttons",
+    "title": {
+     "tr": "Araç çubuğu düğmeleri",
+     "en": "Toolbar buttons"
+    },
+    "desc": {
+     "tr": "Kolonlar, Filtreler ve Araçlar düğmelerinin yazısı, simgesi ve sınıfları. className kendi CSS çatınızın sınıflarını ekler (Bootstrap, Tailwind…); paketin kendi stilleri :where() ile yazıldığından sizin sınıflarınız kazanır. iconOnly yalnızca simgeyi gösterir, yazı ekran okuyucular ve ipucu için kalır. Telefonda (640px altı) bu düğmeler zaten yalnızca simgedir.",
+     "en": "Text, icon and classes of the Columns, Filters and Tools buttons. className adds your CSS framework's classes (Bootstrap, Tailwind…); the package's own styles use :where(), so your classes win. iconOnly shows only the icon; the text stays for screen readers and as the tooltip. On phones (below 640px) these buttons show only their icon anyway."
+    },
+    "table": [
+     [
+      {
+       "tr": "Alan",
+       "en": "Field"
+      },
+      {
+       "tr": "Değer",
+       "en": "Value"
+      }
+     ],
+     [
+      "label",
+      {
+       "tr": "Yazı (ve ekran okuyucu adı)",
+       "en": "Text (and the screen-reader name)"
+      }
+     ],
+     [
+      "icon",
+      {
+       "tr": "Hazır ad ('filter', 'columns', 'download', 'view', 'edit', …), kendi SVG yolunuz { path: 'M3 5h18…' } (Livewire: yalnızca yol metni) ya da false",
+       "en": "A built-in name ('filter', 'columns', 'download', 'view', 'edit', …), your own SVG path { path: 'M3 5h18…' } (Livewire: just the path text) or false"
+      }
+     ],
+     [
+      "iconOnly",
+      {
+       "tr": "Yalnızca simge",
+       "en": "Only the icon"
+      }
+     ],
+     [
+      "className (Livewire: class)",
+      {
+       "tr": "Eklenecek sınıflar, ör. 'btn btn-outline-secondary'",
+       "en": "Classes to add, e.g. 'btn btn-outline-secondary'"
+      }
+     ]
+    ],
+    "tabs": [
+     [
+      "AcunDataTable",
+      "typescript",
+      "new AcunDataTable('#orders', {\n  data: orders,\n  toolbarButtons: {\n    filters: { label: 'Süz', className: 'btn btn-outline-secondary' },\n    columns: { iconOnly: true },\n    tools: { label: 'Dışa aktar', icon: { path: 'M12 3v12M7 10l5 5 5-5M5 21h14' } },\n  },\n});"
+     ],
+     [
+      "Livewire",
+      "php",
+      "protected function toolbarButtons(): array\n{\n    return [\n        'filters' => ['label' => 'Süz', 'class' => 'btn btn-outline-secondary'],\n        'columns' => ['iconOnly' => true],\n        'tools' => ['label' => 'Dışa aktar', 'icon' => 'M12 3v12M7 10l5 5 5-5M5 21h14'],\n    ];\n}"
+     ],
+     [
+      "Vue",
+      "xml",
+      "\u003cAcunDataTableLayout :table=\"table\" :toolbar-buttons=\"{\n  filters: { label: 'Süz', className: 'btn btn-outline-secondary' },\n  columns: { iconOnly: true },\n}\" />\n\u003c!-- each on its own: \u003cAcunColumnToggle :button=\"{ iconOnly: true }\" /> -->"
+     ],
+     [
+      "React",
+      "typescript",
+      "\u003cDataTableLayout table={table} toolbarButtons={{\n  filters: { label: 'Süz', className: 'btn btn-outline-secondary' },\n  columns: { iconOnly: true },\n}} />\n// each on its own: \u003cColumnToggle table={table} button={{ iconOnly: true }} />"
+     ],
+     [
+      "HTML (parçalar)",
+      "typescript",
+      "renderDataTable(el, table, { toolbarButtons: { columns: { iconOnly: true } } });\nrenderColumnToggle(el, table, { button: { label: 'Sütunlar', className: 'btn' } });"
+     ]
+    ]
    }
   ]
  },
@@ -1914,6 +1995,115 @@ const GUIDES = {
       "HTML (parçalar)",
       "typescript",
       "// renderDataTable adds the menu (layout feature 'filters') and the chips itself.\nrenderDataTable(el, table, { locale: 'tr' });\n// Or on their own:\nrenderFilters(document.querySelector('#filters'), table, { locale: 'tr' });\nrenderFilterChips(document.querySelector('#chips'), table, { locale: 'tr' });"
+     ]
+    ]
+   },
+   {
+    "id": "panel",
+    "title": {
+     "tr": "Filtreler nerede açılsın: menü, yan panel, modal",
+     "en": "Where the filters open: dropdown, drawer, modal"
+    },
+    "desc": {
+     "tr": "filterPanel üç hazır yerden birini seçer. Yan panel ve modal tarayıcının kendi \u003cdialog> öğesidir: Esc ve arka plana tıklama kapatır, odak içeride kalır, kapanınca düğmeye döner; ek kütüphane yoktur. Filtreler seçildiği anda uygulanır, “Kapat” yalnızca paneli kapatır.",
+     "en": "filterPanel picks one of three built-in places. The drawer and the modal are the browser's own \u003cdialog>: Escape and a click on the backdrop close it, focus stays inside and returns to the button; no extra library. Filters apply as soon as they are chosen; “Close” only closes the panel."
+    },
+    "table": [
+     [
+      {
+       "tr": "Değer",
+       "en": "Value"
+      },
+      {
+       "tr": "Görünüm",
+       "en": "Looks like"
+      }
+     ],
+     [
+      "'dropdown'",
+      {
+       "tr": "Düğmenin altında açılan menü (varsayılan); ekrana sığmazsa kayar.",
+       "en": "A menu under the button (default); shifted to stay inside the window."
+      }
+     ],
+     [
+      "'drawer'",
+      {
+       "tr": "Sağdan kayan tam yükseklikte panel; telefonda tam genişlik.",
+       "en": "A full-height panel sliding in from the right; full width on phones."
+      }
+     ],
+     [
+      "'modal'",
+      {
+       "tr": "Ortada bir pencere.",
+       "en": "A centred dialog."
+      }
+     ]
+    ],
+    "tabs": [
+     [
+      "AcunDataTable",
+      "typescript",
+      "new AcunDataTable('#orders', {\n  data: orders,\n  filterPanel: 'drawer',            // 'dropdown' | 'drawer' | 'modal'\n  columns: [ /* … filter: true … */ ],\n});\n// \u003cacun-datatable filter-panel=\"modal\" …>\u003c/acun-datatable>"
+     ],
+     [
+      "Livewire",
+      "php",
+      "protected function filterPanel(): string\n{\n    return 'drawer';                // 'dropdown' | 'drawer' | 'modal'\n}"
+     ],
+     [
+      "Vue",
+      "xml",
+      "\u003cAcunDataTableLayout :table=\"table\" filter-panel=\"modal\" />\n\u003c!-- or on its own -->\n\u003cAcunFilters :table=\"table\" panel=\"drawer\" />"
+     ],
+     [
+      "React",
+      "typescript",
+      "\u003cDataTableLayout table={table} filterPanel=\"modal\" />\n// or on its own\n\u003cFilters table={table} panel=\"drawer\" />"
+     ],
+     [
+      "HTML (parçalar)",
+      "typescript",
+      "renderDataTable(el, table, { filterPanel: 'drawer' });\nrenderFilters(document.querySelector('#filters'), table, { panel: 'modal' });"
+     ]
+    ]
+   },
+   {
+    "id": "own-panel",
+    "title": {
+     "tr": "Kendi modalınız, offcanvas ya da kenar çubuğunuz",
+     "en": "Your own modal, offcanvas or sidebar"
+    },
+    "desc": {
+     "tr": "Kendi bileşeninizi kullanmak için hazır “Filtreler” düğmesini yerleşimden çıkarın ve yalnızca filtre alanlarını (ve “Filtreleri temizle”yi) kendi bileşeninizin içine koyun. Alanlar tabloyla ve etiketlerle eşit kalır; açma, kapatma ve görünüm tamamen sizindir (Bootstrap offcanvas, Acun UI drawer, Headless UI Dialog…).",
+     "en": "For a component of your own, leave the built-in “Filters” button out of the layout and put only the filter fields (and “Clear filters”) inside your component. The fields stay in step with the table and the chips; opening, closing and the look are entirely yours (Bootstrap offcanvas, an Acun UI drawer, a Headless UI Dialog…)."
+    },
+    "tabs": [
+     [
+      "AcunDataTable",
+      "typescript",
+      "const dt = new AcunDataTable('#orders', {\n  data: orders,\n  columns: [ /* … filter: true … */ ],\n  layout: { topEnd: [slot => { slot.append(myFilterButton); }, 'columns', 'tools'] },\n});\nawait dt.ready;\n// The fields go into your offcanvas body; the returned function removes them.\nconst removeFields = dt.renderFilterPanel('#filters-offcanvas .offcanvas-body');"
+     ],
+     [
+      "Livewire",
+      "php",
+      "// The component: your own view in place of 'filters'\nprotected function tableLayout(): array\n{\n    return ['topEnd' => ['orders.filter-modal', 'columns', 'tools']];\n}\n\n{{-- resources/views/orders/filter-modal.blade.php --}}\n\u003cdiv x-data>\n    \u003cbutton type=\"button\" class=\"btn btn-light\" x-on:click=\"$refs.modal.showModal()\">Filtrele\u003c/button>\n    \u003cdialog class=\"my-modal\" x-ref=\"modal\" wire:ignore.self>\n        @include('acun-datatable::livewire.filter-panel')\n    \u003c/dialog>\n\u003c/div>"
+     ],
+     [
+      "Vue",
+      "xml",
+      "\u003cAcunDataTableLayout :table=\"table\" :filters=\"false\">\n  \u003ctemplate #top-end>\u003cMyDrawerButton @click=\"open = true\" />\u003c/template>\n\u003c/AcunDataTableLayout>\n\u003cMyDrawer v-model:open=\"open\">\n  \u003cAcunFilterPanel :table=\"table\" locale=\"tr\" :labels=\"labelsTr\" />\n\u003c/MyDrawer>"
+     ],
+     [
+      "React",
+      "typescript",
+      "\u003cDataTableLayout table={table} filters={false} topEnd={\u003cbutton onClick={() => setOpen(true)}>Filtrele\u003c/button>} />\n\u003cMyDrawer open={open} onClose={() => setOpen(false)}>\n  \u003cFilterPanel table={table} locale=\"tr\" labels={labelsTr} />\n\u003c/MyDrawer>"
+     ],
+     [
+      "HTML (parçalar)",
+      "typescript",
+      "renderDataTable(el, table, { layout: { topEnd: ['columns', 'tools'] } });\nrenderFilterPanel(document.querySelector('#my-modal .body'), table, { locale: 'tr' });"
      ]
     ]
    }

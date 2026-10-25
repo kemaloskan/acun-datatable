@@ -1,5 +1,5 @@
 import type { ColumnDef, ColumnType, DataTable, FilterOption, FilterRule } from '@acunsoft/datatable-core';
-import { checkTarget, element, icon, placeMenu, type RenderedComponent } from './dom';
+import { checkTarget, element, fillButton, icon, placeMenu, type RenderedComponent, type ToolbarButton } from './dom';
 import { labelsEn, type DataTableLabels } from './labels';
 
 /** The kind of control a filter-panel column gets. */
@@ -131,7 +131,11 @@ export function describeFilter(control: FilterControl, values: FilterValues, lab
   return `${control.label}: ${summary}`;
 }
 
-export interface RenderFiltersOptions {
+/** Where the filter fields open: under the button (default), from the side, or centred. */
+export type FilterPanelMode = 'dropdown' | 'drawer' | 'modal';
+const PANEL_MODES: readonly FilterPanelMode[] = ['dropdown', 'drawer', 'modal'];
+
+export interface RenderFilterPanelOptions {
   readonly labels?: Partial<DataTableLabels>;
   /** For dates and numbers in the chips. Default `'en'`. */
   readonly locale?: string;
@@ -139,38 +143,32 @@ export interface RenderFiltersOptions {
   readonly debounceMs?: number;
 }
 
+export interface RenderFiltersOptions extends RenderFilterPanelOptions {
+  /**
+   * Where the fields open: `'dropdown'` under the button (default), `'drawer'`
+   * from the side of the window, `'modal'` in a centred dialog. For your own
+   * drawer, modal or sidebar, put `renderFilterPanel()` in it instead.
+   */
+  readonly panel?: FilterPanelMode;
+  /** The button's text, icon and classes. */
+  readonly button?: ToolbarButton;
+}
+
 let panels = 0;
 
-/**
- * Render a "Filters" menu with one control per column that has `filter`:
- * text (contains), min–max for numbers, from–to for dates, yes/no, or a list
- * of `options`. Changes apply at once (typing after `debounceMs`); the
- * button shows how many filters are active. Renders nothing without filter
- * columns. Controls follow external changes (a URL, chips, `setFilters`).
- */
-export function renderFilters<TData>(container: HTMLElement, table: DataTable<TData>, options: RenderFiltersOptions = {}): RenderedComponent {
-  checkTarget(container, table);
-  const doc = container.ownerDocument;
-  const labels: DataTableLabels = { ...labelsEn, ...options.labels };
-  const delay = options.debounceMs ?? 300;
-  const controls = filterControls(table.getColumns());
-  if (controls.length === 0) {
-    container.replaceChildren();
-    return { destroy: () => undefined };
-  }
-  const uid = `adt-filters-${++panels}`;
-  const root = element(doc, 'details', { class: 'adt-columns adt-menu adt-filters' });
-  const summary = element(doc, 'summary');
-  summary.append(icon(doc, 'filter'), element(doc, 'span', { class: 'adt-summary-text' }, labels.filters));
-  const badge = element(doc, 'span', { class: 'adt-badge', 'aria-hidden': 'true' });
-  summary.append(badge);
-  const count = element(doc, 'span', { class: 'adt-sr-only' });
-  summary.append(count);
-  const panel = element(doc, 'div', { class: 'adt-filter-panel', role: 'group', 'aria-label': labels.filters });
-  root.append(summary, panel);
-  root.addEventListener('toggle', () => placeMenu(root));
-  container.replaceChildren(root);
+interface FilterPanel {
+  readonly node: HTMLElement;
+  /** How many columns of the panel are filtered. */
+  active(): number;
+  destroy(): void;
+}
 
+/** The fields and "Clear filters", following the table's filters (also set from outside). */
+function buildFilterPanel<TData>(
+  doc: Document, table: DataTable<TData>, controls: readonly FilterControl[], labels: DataTableLabels, delay: number, changed: (active: number) => void,
+): FilterPanel {
+  const uid = `adt-filters-${++panels}`;
+  const panel = element(doc, 'div', { class: 'adt-filter-panel', role: 'group', 'aria-label': labels.filters });
   const timers = new Set<ReturnType<typeof setTimeout>>();
   const apply = (control: FilterControl, values: FilterValues): void => {
     table.setFilters(replaceFilter(table.getState().filters, control.field, filterRules(control, values)));
@@ -255,31 +253,132 @@ export function renderFilters<TData>(container: HTMLElement, table: DataTable<TD
   foot.append(clear);
   panel.append(foot);
 
-  // Close like a menu: Escape (focus back on the summary) or a click outside.
-  root.addEventListener('keydown', event => {
-    if (event.key === 'Escape' && root.open) { root.open = false; summary.focus(); }
-  });
-  const outside = (event: Event): void => {
-    // The path at the time of the click: a control that re-rendered away still counts as inside.
-    if (root.open && !event.composedPath().includes(root)) root.open = false;
-  };
-  doc.addEventListener('click', outside);
-
+  const active = (): number => controls.filter(control => filterRules(control, readFilter(control, table.getState().filters)).length > 0).length;
   const update = (): void => {
     syncers.forEach(sync => sync());
-    const active = controls.filter(control => filterRules(control, readFilter(control, table.getState().filters)).length > 0).length;
-    badge.textContent = active > 0 ? String(active) : '';
-    badge.hidden = active === 0;
-    count.textContent = active > 0 ? labels.activeFilters(active) : '';
-    clear.disabled = active === 0;
+    const count = active();
+    clear.disabled = count === 0;
+    changed(count);
   };
   update();
   const unsubscribe = table.subscribe((_, event) => { if (event.type === 'filters') update(); });
   return {
+    node: panel,
+    active,
     destroy: () => {
       timers.forEach(timer => clearTimeout(timer));
       unsubscribe();
-      doc.removeEventListener('click', outside);
+      panel.remove();
+    },
+  };
+}
+
+/**
+ * Render only the filter fields and "Clear filters" — no button, no menu —
+ * into any element: your own drawer, modal, offcanvas or sidebar. The fields
+ * follow the table's filters, so the chips and `setFilters` stay in step.
+ * Renders nothing without filter columns.
+ */
+export function renderFilterPanel<TData>(container: HTMLElement, table: DataTable<TData>, options: RenderFilterPanelOptions = {}): RenderedComponent {
+  checkTarget(container, table);
+  const doc = container.ownerDocument;
+  const labels: DataTableLabels = { ...labelsEn, ...options.labels };
+  const controls = filterControls(table.getColumns());
+  if (controls.length === 0) {
+    container.replaceChildren();
+    return { destroy: () => undefined };
+  }
+  const panel = buildFilterPanel(doc, table, controls, labels, options.debounceMs ?? 300, () => undefined);
+  container.replaceChildren(panel.node);
+  return { destroy: () => panel.destroy() };
+}
+
+/**
+ * Render a "Filters" button with one control per column that has `filter`:
+ * text (contains), min–max for numbers, from–to for dates, yes/no, or a list
+ * of `options`. Changes apply at once (typing after `debounceMs`); the
+ * button shows how many filters are active. `panel` opens the fields under
+ * the button, in a drawer or in a modal. Renders nothing without filter
+ * columns. Controls follow external changes (a URL, chips, `setFilters`).
+ */
+export function renderFilters<TData>(container: HTMLElement, table: DataTable<TData>, options: RenderFiltersOptions = {}): RenderedComponent {
+  checkTarget(container, table);
+  const mode = options.panel ?? 'dropdown';
+  if (!PANEL_MODES.includes(mode)) throw new RangeError(`panel must be one of ${PANEL_MODES.join(', ')}`);
+  const doc = container.ownerDocument;
+  const labels: DataTableLabels = { ...labelsEn, ...options.labels };
+  const controls = filterControls(table.getColumns());
+  if (controls.length === 0) {
+    container.replaceChildren();
+    return { destroy: () => undefined };
+  }
+  const dropdown = mode === 'dropdown';
+  const root = element(doc, dropdown ? 'details' : 'div', { class: `adt-columns adt-menu adt-filters${dropdown ? '' : ` adt-filters--${mode}`}` });
+  const button = element(doc, dropdown ? 'summary' : 'button', dropdown ? {} : { type: 'button', class: 'adt-filter-open', 'aria-haspopup': 'dialog' });
+  const badge = element(doc, 'span', { class: 'adt-badge', 'aria-hidden': 'true' });
+  const count = element(doc, 'span', { class: 'adt-sr-only' });
+  button.append(badge, count);
+  fillButton(doc, button, { label: labels.filters, icon: 'filter' }, options.button);
+  const panel = buildFilterPanel(doc, table, controls, labels, options.debounceMs ?? 300, active => {
+    badge.textContent = active > 0 ? String(active) : '';
+    badge.hidden = active === 0;
+    count.textContent = active > 0 ? labels.activeFilters(active) : '';
+  });
+  root.append(button);
+  container.replaceChildren(root);
+  const cleanups: (() => void)[] = [];
+
+  if (dropdown) {
+    const menu = root as HTMLDetailsElement;
+    menu.append(panel.node);
+    menu.addEventListener('toggle', () => placeMenu(menu));
+    // Close like a menu: Escape (focus back on the button) or a click outside.
+    menu.addEventListener('keydown', event => {
+      if (event.key === 'Escape' && menu.open) { menu.open = false; button.focus(); }
+    });
+    const outside = (event: Event): void => {
+      // The path at the time of the click: a control that re-rendered away still counts as inside.
+      if (menu.open && !event.composedPath().includes(menu)) menu.open = false;
+    };
+    doc.addEventListener('click', outside);
+    cleanups.push(() => doc.removeEventListener('click', outside));
+  } else {
+    // A drawer or a modal: a <dialog> (Escape closes it, focus stays inside, the page behind is inert).
+    const title = `adt-filters-title-${++panels}`;
+    const dialog = element(doc, 'dialog', { class: `adt-dialog adt-filter-dialog adt-filter-dialog--${mode}`, 'aria-labelledby': title });
+    const head = element(doc, 'div', { class: 'adt-dialog-head' });
+    const close = element(doc, 'button', { type: 'button', class: 'adt-dialog-close', 'aria-label': labels.close });
+    close.append(icon(doc, 'close'));
+    head.append(element(doc, 'h2', { class: 'adt-dialog-title', id: title }, labels.filters), close);
+    const done = element(doc, 'button', { type: 'button', class: 'adt-button adt-button--primary adt-filter-done' }, labels.close);
+    panel.node.querySelector('.adt-filter-foot')!.append(done);
+    dialog.append(head, panel.node);
+    root.append(dialog);
+    button.addEventListener('click', () => {
+      if (dialog.open) return;
+      if (typeof dialog.showModal === 'function') dialog.showModal();
+      else dialog.setAttribute('open', '');
+    });
+    const shut = (): void => {
+      if (typeof dialog.close === 'function') dialog.close();
+      else { dialog.removeAttribute('open'); dialog.dispatchEvent(new Event('close')); }
+    };
+    for (const node of [close, done]) node.addEventListener('click', shut);
+    // A click on the backdrop (the dialog element itself, outside its content box) closes it.
+    dialog.addEventListener('click', event => {
+      if (event.target !== dialog) return;
+      const box = dialog.getBoundingClientRect();
+      const inside = event.clientX >= box.left && event.clientX <= box.right && event.clientY >= box.top && event.clientY <= box.bottom;
+      if (!inside) shut();
+    });
+    dialog.addEventListener('close', () => button.focus());
+    cleanups.push(() => { if (dialog.open) shut(); });
+  }
+
+  return {
+    destroy: () => {
+      cleanups.forEach(cleanup => cleanup());
+      panel.destroy();
       root.remove();
     },
   };

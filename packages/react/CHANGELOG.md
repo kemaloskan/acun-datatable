@@ -4,6 +4,8 @@
 
 ### Minor Changes
 
+- `filterPanel` and `toolbarButtons` on `DataTableLayout`; `panel` and `button` on
+  `Filters`, `button` on `ColumnToggle` and `Tools`; new `FilterPanel` (only the fields).
 - The layout shows the selection bar for every selectable table, also without bulk
   actions; on phones it stays at the bottom of the window, its choices in one select.
 - On phones the column menu button shows its icon only and the column and row menus

@@ -3,7 +3,7 @@ import { createApp, createSSRApp, defineComponent, h, nextTick, ref, shallowRef,
 import { renderToString } from 'vue/server-renderer';
 import { createDataTable, type ColumnDef, type Row } from '@acunsoft/datatable-core';
 import {
-  AcunBulkActions, AcunColumnToggle, AcunDataTable, AcunDataTableLayout, AcunFilterChips, AcunFilters, AcunPageInfo, AcunPageSize, AcunPagination, AcunSearch, AcunTools, labelsTr, useDataTable, type BulkSelection,
+  AcunBulkActions, AcunColumnToggle, AcunDataTable, AcunDataTableLayout, AcunFilterChips, AcunFilterPanel, AcunFilters, AcunPageInfo, AcunPageSize, AcunPagination, AcunSearch, AcunTools, labelsTr, useDataTable, type BulkSelection,
 } from '../src/index';
 
 type Order = { id: number; customer: string; total: string; locked?: boolean };
@@ -661,5 +661,33 @@ describe('server rendering', () => {
     const first = await html();
     expect(ids(first)).toHaveLength(3);
     expect(ids(await html())).toEqual(ids(first));
+  });
+});
+
+describe('filter panel modes and toolbar buttons', () => {
+  const filtered = () => createDataTable<Order>({ data: orders, columns: [
+    { id: 'customer', header: 'Müşteri', accessorKey: 'customer', enableFiltering: true, filter: true },
+    { id: 'total', header: 'Tutar', accessorKey: 'total', type: 'decimal', enableFiltering: true, filter: true },
+  ] });
+
+  it('AcunDataTableLayout: filterPanel and toolbarButtons', async () => {
+    await mount(() => h(AcunDataTableLayout, {
+      table: filtered(), labels: labelsTr, filterPanel: 'drawer',
+      toolbarButtons: { filters: { label: 'Süz', className: 'btn' }, columns: { iconOnly: true, icon: false } },
+    }));
+    expect(host.querySelector('.adt-filter-dialog--drawer')).not.toBeNull();
+    expect(host.querySelector('.adt-filter-open .adt-summary-text')!.textContent).toBe('Süz');
+    expect(host.querySelector('.adt-filter-open')!.classList).toContain('btn');
+    const columns = host.querySelector('.adt-columns:not(.adt-filters) > summary')!;
+    expect(columns.classList).toContain('adt-icon-only');
+    expect(columns.getAttribute('title')).toBe('Kolonlar');
+    expect(columns.querySelector('svg')).toBeNull();
+  });
+
+  it('AcunFilterPanel: only the fields, for your own drawer or modal', async () => {
+    const table = filtered();
+    await mount(() => h(AcunFilterPanel, { table, labels: labelsTr }));
+    expect(host.querySelector('summary, .adt-filter-open')).toBeNull();
+    expect([...host.querySelectorAll('.adt-filter legend')].map(node => node.textContent)).toEqual(['Müşteri', 'Tutar']);
   });
 });

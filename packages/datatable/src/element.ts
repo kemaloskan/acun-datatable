@@ -5,7 +5,7 @@ type Data = Record<string, unknown>;
 
 /** Attributes the element reads; the rest of the options are the `options` property. */
 const ATTRIBUTES = [
-  'src', 'server-side', 'method', 'language', 'page-size', 'responsive', 'size', 'fixed-header', 'scroll-y', 'virtual', 'cursor', 'state-save',
+  'src', 'server-side', 'method', 'language', 'page-size', 'responsive', 'size', 'fixed-header', 'scroll-y', 'virtual', 'cursor', 'state-save', 'filter-panel',
 ] as const;
 
 const flag = (value: string | null): boolean | undefined => (value === null ? undefined : value !== 'false');
@@ -18,7 +18,7 @@ const Base = (globalThis.HTMLElement ?? class {}) as typeof HTMLElement;
  * Svelte, Astro, Alpine, plain HTML or any framework that renders HTML.
  * Attributes cover the common options (`src`, `server-side`, `method`,
  * `language`, `page-size`, `responsive`, `size`, `fixed-header`, `scroll-y`,
- * `virtual`, `cursor`, `state-save`); the `options`, `columns` and `data`
+ * `virtual`, `cursor`, `state-save`, `filter-panel`); the `options`, `columns` and `data`
  * properties take everything else. A `<table>` inside it is the source when
  * there is no `src` or `data`. Light DOM, so `styles.css` applies; it fires
  * `adt-change` (detail: `{ state, event }`) on every table change and
@@ -103,6 +103,7 @@ export class AcunDataTableElement extends Base {
       } : {}),
       ...(attr('responsive') ? { responsive: attr('responsive') as AcunDataTableOptions['responsive'] } : {}),
       ...(attr('size') ? { size: attr('size') as AcunDataTableOptions['size'] } : {}),
+      ...(attr('filter-panel') ? { filterPanel: attr('filter-panel') as AcunDataTableOptions['filterPanel'] } : {}),
       ...(flag(attr('fixed-header')) !== undefined ? { fixedHeader: flag(attr('fixed-header'))! } : {}),
       ...(attr('scroll-y') ? { scrollY: attr('scroll-y')! } : {}),
       ...(flag(attr('virtual')) !== undefined ? { virtual: flag(attr('virtual'))! } : {}),

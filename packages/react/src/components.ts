@@ -5,8 +5,8 @@ import {
 import { COLUMN_WIDTH_LIMITS, getPageItems, type ColumnDef, type DataTable, type Row } from '@acunsoft/datatable-core';
 import {
   cellValue, checkPageSizes, checkResponsive, checkSize, confirmed, filterControls, splitActions, createCellText, ICONS, labelsEn, knownPageCount, nextSorting, pageInfoText,
-  afterPointerRelease, autoResponsive, cellEditor, checkVirtual, virtualWindow, columnsChanged, columnTools, isEditable, numeric, pageSizeChoices, pinColumns, placeMenu, resetColumns, priorityOf, rangeOf, renderBulkActions, renderFilterChips, renderFilters, renderMenu, rowName, scrollHeight,
-  checkFixedColumns, type CellEditor, type EditHandler, type FixedColumns, type MenuItem, type RenderedComponent, type ResponsiveMode, type TableSize,
+  afterPointerRelease, autoResponsive, cellEditor, checkVirtual, virtualWindow, columnsChanged, columnTools, isEditable, numeric, pageSizeChoices, pinColumns, placeMenu, resetColumns, priorityOf, rangeOf, renderBulkActions, renderFilterChips, renderFilterPanel, renderFilters, renderMenu, rowName, scrollHeight,
+  checkFixedColumns, type FilterPanelMode, type ToolbarButton, type ToolbarButtons, type CellEditor, type EditHandler, type FixedColumns, type MenuItem, type RenderedComponent, type ResponsiveMode, type TableSize,
   type BulkAction, type BulkSelection, type CellFormatter, type DataTableLabels, type RowAction, type StatusSource,
 } from '@acunsoft/datatable-dom';
 import { useTable } from './hooks.js';
@@ -663,6 +663,20 @@ export interface ColumnToggleProps {
   readonly labels?: Partial<DataTableLabels>;
   /** Up/down buttons per column to change the order with the keyboard. */
   readonly reorderable?: boolean;
+  /** The button's text, icon and classes. */
+  readonly button?: ToolbarButton;
+}
+
+/** A toolbar button's classes, tooltip and content, as `fillButton` builds them in the DOM. */
+function toolbarButton(custom: ToolbarButton | undefined, label: string, fallback: keyof typeof ICONS): { className?: string; title?: string; children: ReactNode[] } {
+  const text = custom?.label ?? label;
+  const chosen = custom?.icon ?? fallback;
+  const className = [custom?.iconOnly ? 'adt-icon-only' : '', custom?.className ?? ''].filter(Boolean).join(' ');
+  return {
+    ...(className ? { className } : {}),
+    ...(custom?.iconOnly ? { title: text } : {}),
+    children: [chosen === false ? null : icon(chosen), h('span', { className: 'adt-summary-text' }, text)], // spread as arguments, so no keys
+  };
 }
 
 /**
@@ -670,14 +684,14 @@ export interface ColumnToggleProps {
  * display order; with `reorderable`, up/down buttons, and "Reset columns"
  * once the order or widths changed.
  */
-export function ColumnToggle({ table, labels: custom, reorderable = false }: ColumnToggleProps): ReactElement {
+export function ColumnToggle({ table, labels: custom, reorderable = false, button }: ColumnToggleProps): ReactElement {
   const { state } = useTable(table);
   const labels = withLabels(custom);
   const columns = table.getColumns();
   const byId = new Map(columns.map(column => [column.id, column]));
   const lastVisible = columns.length - state.hiddenColumns.length === 1;
   return h('details', { className: 'adt-columns', onToggle: (event: SyntheticEvent<HTMLDetailsElement>) => placeMenu(event.currentTarget) },
-    h('summary', null, icon('columns'), h('span', { className: 'adt-summary-text' }, labels.columns)),
+    (({ children, ...summary }) => h('summary', summary, ...children))(toolbarButton(button, labels.columns, 'columns')),
     h('fieldset', null, h('legend', null, labels.showColumns), state.columnOrder.map((id, index) => {
       const column = byId.get(id)!;
       const shown = !state.hiddenColumns.includes(id);
@@ -728,6 +742,13 @@ export interface FiltersProps {
   readonly locale?: string;
 }
 
+export interface FiltersMenuProps extends FiltersProps {
+  /** Where the fields open: `'dropdown'` (default), `'drawer'` or `'modal'`. For your own, use `FilterPanel`. */
+  readonly panel?: FilterPanelMode;
+  /** The button's text, icon and classes. */
+  readonly button?: ToolbarButton;
+}
+
 /**
  * Actions or items for a mounted control: `shape` is everything but the
  * callbacks (a new array of the same entries is no change), and `entries()`
@@ -756,10 +777,19 @@ function useDomControl(render: (el: HTMLElement) => RenderedComponent, deps: rea
   return host;
 }
 
-/** The "Filters" menu: a control per column with `filter` (see `renderFilters`). */
-export function Filters({ table, labels, locale = 'en' }: FiltersProps): ReactElement {
-  const host = useDomControl(el => renderFilters(el, table, { labels: withLabels(labels), locale }), [table, locale, JSON.stringify(labels ?? {})]);
+/** The "Filters" button: a control per column with `filter`, under the button, in a drawer or a modal (see `renderFilters`). */
+export function Filters({ table, labels, locale = 'en', panel, button }: FiltersMenuProps): ReactElement {
+  const host = useDomControl(
+    el => renderFilters(el, table, { labels: withLabels(labels), locale, ...(panel ? { panel } : {}), ...(button ? { button } : {}) }),
+    [table, locale, panel, JSON.stringify(labels ?? {}), JSON.stringify(button ?? {})],
+  );
   return h('div', { ref: host, className: 'adt-feature' });
+}
+
+/** Only the filter fields and "Clear filters", for your own drawer, modal or sidebar (see `renderFilterPanel`). */
+export function FilterPanel({ table, labels, locale = 'en' }: FiltersProps): ReactElement {
+  const host = useDomControl(el => renderFilterPanel(el, table, { labels: withLabels(labels), locale }), [table, locale, JSON.stringify(labels ?? {})]);
+  return h('div', { ref: host, className: 'adt-filter-host' });
 }
 
 /** The active filters as removable chips (see `renderFilterChips`). */
@@ -772,14 +802,19 @@ export interface ToolsProps {
   readonly items: readonly MenuItem[];
   /** The button text. Default: the `tools` label. */
   readonly label?: string;
+  /** The button's text, icon and classes. */
+  readonly button?: ToolbarButton;
   readonly labels?: Partial<DataTableLabels>;
 }
 
 /** A tools menu (export, copy, print, your own actions) with `items` (see `renderMenu`). */
-export function Tools({ items, label, labels }: ToolsProps): ReactElement {
+export function Tools({ items, label, button, labels }: ToolsProps): ReactElement {
   // Mounted once per items, label and labels: a parent re-render keeps the menu open.
   const latest = useLatest(items);
-  const host = useDomControl(el => renderMenu(el, { items: latest.entries(), labels: withLabels(labels), ...(label ? { label } : {}) }), [latest.shape, label, JSON.stringify(labels ?? {})]);
+  const host = useDomControl(
+    el => renderMenu(el, { items: latest.entries(), labels: withLabels(labels), ...(label ? { label } : {}), ...(button ? { button } : {}) }),
+    [latest.shape, label, JSON.stringify(labels ?? {}), JSON.stringify(button ?? {})],
+  );
   return h('div', { ref: host, className: 'adt-feature' });
 }
 
@@ -796,6 +831,10 @@ export interface DataTableLayoutProps<TData> extends DataTableProps<TData> {
   readonly columnToggle?: boolean;
   /** The tools menu items (export, copy, print, your own). */
   readonly tools?: readonly MenuItem[];
+  /** Where the filter fields open: `'dropdown'` (default), `'drawer'` or `'modal'`. */
+  readonly filterPanel?: FilterPanelMode;
+  /** Text, icon and classes of the columns, filters and tools buttons. */
+  readonly toolbarButtons?: ToolbarButtons;
   readonly bulkActions?: readonly BulkAction<TData>[];
   readonly paging?: { readonly siblings?: number; readonly boundaries?: number; readonly firstLast?: boolean };
   /** Your own controls in the bars. */
@@ -812,7 +851,7 @@ export interface DataTableLayoutProps<TData> extends DataTableProps<TData> {
  */
 export function DataTableLayout<TData>(props: DataTableLayoutProps<TData>): ReactElement {
   const {
-    pageSizes, search = true, searchPlaceholder, debounceMs, filters = true, columnToggle = true, tools = [], bulkActions = [],
+    pageSizes, search = true, searchPlaceholder, debounceMs, filters = true, columnToggle = true, tools = [], bulkActions = [], filterPanel, toolbarButtons,
     paging = {}, topStart, topEnd, bottomStart, bottomEnd, size = 'md', ...tableProps
   } = props;
   const { table, labels, locale = 'en' } = props;
@@ -827,9 +866,9 @@ export function DataTableLayout<TData>(props: DataTableLayoutProps<TData>): Reac
       topStart ?? null,
     ], [
       topEnd ?? null,
-      hasFilters ? h(Filters, { key: 'filters', table, locale, ...(labels ? { labels } : {}) }) : null,
-      columnToggle ? h(ColumnToggle, { key: 'columns', table, reorderable: props.reorderableColumns === true, ...(labels ? { labels } : {}) }) : null,
-      tools.length > 0 ? h(Tools, { key: 'tools', items: tools, ...(labels ? { labels } : {}) }) : null,
+      hasFilters ? h(Filters, { key: 'filters', table, locale, ...(labels ? { labels } : {}), ...(filterPanel ? { panel: filterPanel } : {}), ...(toolbarButtons?.filters ? { button: toolbarButtons.filters } : {}) }) : null,
+      columnToggle ? h(ColumnToggle, { key: 'columns', table, reorderable: props.reorderableColumns === true, ...(labels ? { labels } : {}), ...(toolbarButtons?.columns ? { button: toolbarButtons.columns } : {}) }) : null,
+      tools.length > 0 ? h(Tools, { key: 'tools', items: tools, ...(labels ? { labels } : {}), ...(toolbarButtons?.tools ? { button: toolbarButtons.tools } : {}) }) : null,
     ]),
     hasFilters ? h(FilterChips, { table, locale, ...(labels ? { labels } : {}) }) : null,
     // The selection bar (count, "select all N matching", clear, bulk actions) with any selectable table.

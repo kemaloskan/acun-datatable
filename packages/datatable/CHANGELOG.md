@@ -4,6 +4,9 @@
 
 ### Minor Changes
 
+- `filterPanel: 'dropdown' | 'drawer' | 'modal'` (`filter-panel` on the element),
+  `toolbarButtons`, and `renderFilterPanel(target)` for the filter fields in your own
+  drawer or modal.
 - With `selectable`, the selection bar (count, "Select all N matching", "Clear selection")
   appears also without `bulkActions`; on phones it stays at the bottom of the window, its
   choices in one select.

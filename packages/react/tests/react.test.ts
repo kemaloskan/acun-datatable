@@ -3,7 +3,7 @@ import { act, createElement as h, StrictMode, useState, type ReactElement } from
 import { createRoot, type Root } from 'react-dom/client';
 import { createDataTable, type ColumnDef, type Row } from '@acunsoft/datatable-core';
 import {
-  BulkActions, ColumnToggle, DataTable, DataTableLayout, FilterChips, Filters, PageInfo, PageSize, Pagination, Search, Tools, labelsTr, useDataTable, type BulkSelection,
+  BulkActions, ColumnToggle, DataTable, DataTableLayout, FilterChips, FilterPanel, Filters, PageInfo, PageSize, Pagination, Search, Tools, labelsTr, useDataTable, type BulkSelection,
 } from '../src/index';
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
@@ -547,5 +547,32 @@ describe('changing props', () => {
     click(host.querySelector('.adt-bulk-action'));
     click(host.querySelector('[data-action="print"]'));
     expect(calls).toEqual([1, -1]);
+  });
+});
+
+describe('filter panel modes and toolbar buttons', () => {
+  const filtered = () => createDataTable<Order>({ data: orders, columns: [
+    { id: 'customer', header: 'Müşteri', accessorKey: 'customer', enableFiltering: true, filter: true },
+    { id: 'total', header: 'Tutar', accessorKey: 'total', type: 'decimal', enableFiltering: true, filter: true },
+  ] });
+
+  it('DataTableLayout: filterPanel and toolbarButtons', () => {
+    render(h(DataTableLayout<Order>, {
+      table: filtered(), labels: labelsTr, filterPanel: 'modal',
+      toolbarButtons: { filters: { label: 'Süz', className: 'btn' }, columns: { iconOnly: true, icon: { path: 'M1 1h22' } } },
+    }));
+    expect(host.querySelector('.adt-filter-dialog--modal')).not.toBeNull();
+    expect(host.querySelector('.adt-filter-open .adt-summary-text')!.textContent).toBe('Süz');
+    expect(host.querySelector('.adt-filter-open')!.classList).toContain('btn');
+    const columns = host.querySelector('.adt-columns:not(.adt-filters) > summary')!;
+    expect(columns.className).toBe('adt-icon-only');
+    expect(columns.getAttribute('title')).toBe('Kolonlar');
+    expect(columns.querySelector('path')!.getAttribute('d')).toBe('M1 1h22');
+  });
+
+  it('FilterPanel: only the fields, for your own drawer or modal', () => {
+    render(h(FilterPanel, { table: filtered(), labels: labelsTr }));
+    expect(host.querySelector('summary, .adt-filter-open')).toBeNull();
+    expect([...host.querySelectorAll('.adt-filter legend')].map(node => node.textContent)).toEqual(['Müşteri', 'Tutar']);
   });
 });

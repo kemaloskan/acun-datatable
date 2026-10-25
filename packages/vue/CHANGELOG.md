@@ -4,6 +4,8 @@
 
 ### Minor Changes
 
+- `filter-panel` and `toolbar-buttons` on `AcunDataTableLayout`; `panel` and `button`
+  on `AcunFilters`, `button` on `AcunColumnToggle` and `AcunTools`; new `AcunFilterPanel`.
 - The layout shows the selection bar for every selectable table, also without bulk
   actions; on phones it stays at the bottom of the window, its choices in one select.
 - On phones the column menu button shows its icon only and the column and row menus

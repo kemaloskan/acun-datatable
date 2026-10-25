@@ -86,6 +86,49 @@ export function icon(doc: Document, name: keyof typeof ICONS | { readonly path: 
 }
 
 /**
+ * How a toolbar button (columns, filters, tools) looks: your text, icon and
+ * classes. `{ label: 'Süz', icon: { path: 'M3 5h18…' }, className: 'btn btn-outline-primary' }`.
+ */
+export interface ToolbarButton {
+  /** The text; also the button's name for screen readers. */
+  readonly label?: string;
+  /** A built-in icon (`'filter'`, `'columns'`, …), your own 24×24 SVG `{ path }`, or `false` for none. */
+  readonly icon?: keyof typeof ICONS | { readonly path: string } | false;
+  /** Only the icon; the text stays for screen readers and as the tooltip. */
+  readonly iconOnly?: boolean;
+  /** Classes added to the button, e.g. your CSS framework's (`'btn btn-light'`). */
+  readonly className?: string;
+}
+
+/** The toolbar buttons of `renderDataTable` and the framework layouts, by feature. */
+export interface ToolbarButtons {
+  readonly columns?: ToolbarButton;
+  readonly filters?: ToolbarButton;
+  readonly tools?: ToolbarButton;
+}
+
+/** Fill a toolbar button: icon, then the text in `.adt-summary-text` (hidden, not removed, with `iconOnly`). */
+export function fillButton(
+  doc: Document, button: HTMLElement, defaults: { readonly label: string; readonly icon: keyof typeof ICONS }, custom: ToolbarButton = {},
+): void {
+  if (custom.icon !== undefined && custom.icon !== false && typeof custom.icon !== 'string' && typeof custom.icon?.path !== 'string') {
+    throw new TypeError('toolbar button icon must be an icon name, { path } or false');
+  }
+  if (typeof custom.icon === 'string' && !(custom.icon in ICONS)) throw new RangeError(`Unknown icon "${custom.icon}"`);
+  const label = custom.label ?? defaults.label;
+  const chosen = custom.icon ?? defaults.icon;
+  button.prepend(...[
+    ...(chosen === false ? [] : [icon(doc, chosen)]),
+    element(doc, 'span', { class: 'adt-summary-text' }, label),
+  ]);
+  if (custom.iconOnly) {
+    button.classList.add('adt-icon-only');
+    button.title = label;
+  }
+  if (custom.className) button.classList.add(...custom.className.split(/\s+/).filter(Boolean));
+}
+
+/**
  * Keep an open dropdown (`<details>` with its panel after the `<summary>`) inside the
  * window: the panel opens towards the end of its button and is shifted sideways
  * (`--adt-menu-shift`) when it would stick out, e.g. on a phone where the button

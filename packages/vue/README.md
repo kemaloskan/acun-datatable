@@ -73,14 +73,15 @@ const bulk = [{ id: 'archive', label: 'Arşivle', onSelect: ({ ids }) => archive
 
 | Component | Props |
 |---|---|
-| `AcunDataTableLayout` | `table`, `labels`, `locale`, `pageSizes`, `search`, `searchPlaceholder`, `debounceMs`, `filters`, `columnToggle`, `tools`, `bulkActions`, `paging`, `size`; other attributes and the cell slots go to `AcunDataTable`; slots `top-start`, `top-end`, `bottom-start`, `bottom-end` |
-| `AcunFilters` · `AcunFilterChips` · `AcunTools` | `table`, `labels`, `locale` · `items` |
+| `AcunDataTableLayout` | `table`, `labels`, `locale`, `pageSizes`, `search`, `searchPlaceholder`, `debounceMs`, `filters`, `filter-panel` (`'dropdown'`, `'drawer'`, `'modal'`), `toolbar-buttons` (`{ columns, filters, tools }`), `columnToggle`, `tools`, `bulkActions`, `paging`, `size`; other attributes and the cell slots go to `AcunDataTable`; slots `top-start`, `top-end`, `bottom-start`, `bottom-end` |
+| `AcunFilters` · `AcunFilterChips` · `AcunTools` | `table`, `labels`, `locale` · `AcunFilters`: `panel`, `button` · `AcunTools`: `items`, `button` |
+| `AcunFilterPanel` | `table`, `labels`, `locale`: only the filter fields, for your own drawer, modal or sidebar |
+| `AcunColumnToggle` | `table`, `labels`, `reorderable`, `button` (`{ label, icon, iconOnly, className }`) |
 | `AcunDataTable` | `table`, `caption`, `selectable`, `locale`, `labels`, `format`, `rowLabel`, `rowActions`, `maxInlineActions`, `status`, `skeleton`, `onEdit`, `virtual`, `fixedColumns`, `resizableColumns`, `reorderableColumns`, `responsive`, `size`, `stickyHeader`, `scrollY`, `multiSort` |
 | `AcunPagination` | `table`, `siblings`, `boundaries`, `firstLast`, `locale`, `labels` |
 | `AcunPageSize` | `table`, `pageSizes`, `labels` |
 | `AcunPageInfo` | `table`, `labels` |
 | `AcunSearch` | `table`, `placeholder`, `debounceMs`, `labels` |
-| `AcunColumnToggle` | `table`, `labels` |
 | `AcunBulkActions` | `table`, `actions`, `labels` |
 
 The markup, `adt-*` class names, keyboard behaviour and accessibility match

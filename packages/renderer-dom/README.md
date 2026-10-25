@@ -311,6 +311,43 @@ adds both by itself (layout feature `filters`). The pure helpers
 `filterControls`, `readFilter`, `filterRules` and `describeFilter` are
 exported for your own controls.
 
+**Where the fields open.** `panel: 'dropdown'` (default) opens them under the
+button, `'drawer'` in a full-height panel from the right (full width on
+phones), `'modal'` in a centred dialog (`renderDataTable(…, { filterPanel })`).
+The drawer and the modal are a native `<dialog>`: Escape or a click on the
+backdrop closes it, focus stays inside and returns to the button, and
+"Close" only closes it (filters apply as they are chosen).
+
+**Your own drawer, modal or sidebar.** `renderFilterPanel(container, table,
+options?)` renders only the fields and "Clear filters" into any element, in
+step with the table and the chips; opening, closing and the look are yours.
+Leave `filters` out of the layout and add your own button:
+
+```js
+renderDataTable(el, table, { layout: { topEnd: [slot => { slot.append(myButton); }, 'columns', 'tools'] } });
+renderFilterPanel(document.querySelector('#my-offcanvas .body'), table, { locale: 'tr' });
+```
+
+## Toolbar buttons
+
+`renderColumnToggle`, `renderFilters` and `renderMenu` take `button: { label,
+icon, iconOnly, className }`, and `renderDataTable` takes them per feature as
+`toolbarButtons: { columns, filters, tools }`. `icon` is a built-in name
+(`ICONS`), your own 24×24 SVG `{ path }` or `false`; `iconOnly` shows only the
+icon (the text stays for screen readers and as the tooltip); `className` adds
+your CSS framework's classes, which win over the package's `:where()` styles.
+Below 640px these buttons show only their icon anyway.
+
+```js
+renderDataTable(el, table, {
+  filterPanel: 'drawer',
+  toolbarButtons: {
+    filters: { label: 'Süz', className: 'btn btn-outline-secondary' },
+    columns: { iconOnly: true },
+  },
+});
+```
+
 ## `renderPagination(container, table, options?)`
 
 Numbered pages in a `<nav>`: `‹ 1 … 4 5 6 … 20 ›`. While there are more pages

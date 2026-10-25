@@ -66,14 +66,15 @@ on every table event through `useSyncExternalStore`.
 
 | Component | Props |
 |---|---|
-| `DataTableLayout` | every `DataTable` prop plus `pageSizes`, `search`, `searchPlaceholder`, `debounceMs`, `filters`, `columnToggle`, `tools`, `bulkActions`, `paging`, `topStart`, `topEnd`, `bottomStart`, `bottomEnd` |
-| `Filters` · `FilterChips` · `Tools` | `table`, `labels`, `locale` · `items` |
+| `DataTableLayout` | every `DataTable` prop plus `pageSizes`, `search`, `searchPlaceholder`, `debounceMs`, `filters`, `filterPanel` (`'dropdown'`, `'drawer'`, `'modal'`), `toolbarButtons` (`{ columns, filters, tools }`), `columnToggle`, `tools`, `bulkActions`, `paging`, `topStart`, `topEnd`, `bottomStart`, `bottomEnd` |
+| `Filters` · `FilterChips` · `Tools` | `table`, `labels`, `locale` · `Filters`: `panel`, `button` · `Tools`: `items`, `button` |
+| `FilterPanel` | `table`, `labels`, `locale`: only the filter fields, for your own drawer, modal or sidebar |
+| `ColumnToggle` | `table`, `labels`, `reorderable`, `button` (`{ label, icon, iconOnly, className }`) |
 | `DataTable` | `table`, `caption`, `selectable`, `locale`, `labels`, `format`, `cells`, `detail`, `empty`, `rowLabel`, `rowActions`, `maxInlineActions`, `status`, `skeleton`, `onEdit`, `virtual`, `fixedColumns`, `resizableColumns`, `reorderableColumns`, `responsive`, `size`, `stickyHeader`, `scrollY`, `multiSort` |
 | `Pagination` | `table`, `siblings`, `boundaries`, `firstLast`, `locale`, `labels` |
 | `PageSize` | `table`, `pageSizes`, `labels` |
 | `PageInfo` | `table`, `labels` |
 | `Search` | `table`, `placeholder`, `debounceMs`, `labels` |
-| `ColumnToggle` | `table`, `labels` |
 | `BulkActions` | `table`, `actions`, `labels` |
 
 The markup, `adt-*` class names, keyboard behaviour and accessibility match

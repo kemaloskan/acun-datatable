@@ -21,6 +21,16 @@ test.describe('accessibility (axe)', () => {
     });
   }
 
+  for (const mode of ['drawer', 'modal']) {
+    test(`the filter fields in a ${mode}`, async ({ page }) => {
+      await page.goto(`/e2e/fixtures/table.html?filterPanel=${mode}`);
+      await expect(page.locator('body[data-ready=true]')).toBeAttached();
+      await page.locator('.adt-filter-open').click();
+      await expect(page.getByRole('dialog', { name: 'Filters' })).toBeVisible();
+      await check(page, `filters ${mode}`);
+    });
+  }
+
   test('open menus, an open detail row, an editor and a dialog', async ({ page }) => {
     await page.goto('/e2e/fixtures/table.html?detail&edit');
     await expect(page.locator('body[data-ready=true]')).toBeAttached();

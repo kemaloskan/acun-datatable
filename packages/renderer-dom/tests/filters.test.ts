@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createDataTable, type ColumnDef } from '@acunsoft/datatable-core';
 import {
-  describeFilter, filterControls, filterRules, labelsTr, readFilter, renderDataTable, renderFilterChips, renderFilters,
+  describeFilter, filterControls, filterRules, labelsTr, readFilter, renderDataTable, renderFilterChips, renderFilterPanel, renderFilters,
 } from '../src/index';
 
 type Order = { id: number; customer: string; total: number; city: string; active: boolean; at: string };
@@ -110,5 +110,68 @@ describe('renderFilterChips', () => {
     renderDataTable(host, make(), { locale: 'tr' });
     expect(host.querySelector('.adt-top .adt-bar-end .adt-filters')).not.toBeNull();
     expect(host.querySelector('.adt > .adt-feature--chips .adt-filter-chips')).not.toBeNull();
+  });
+});
+
+describe('filter panel modes and your own place for the fields', () => {
+  it('renderFilterPanel: only the fields and "Clear filters", in step with the table', () => {
+    const table = make();
+    const panel = renderFilterPanel(host, table, { labels: labelsTr });
+    expect(host.querySelector('summary, .adt-filter-open, dialog')).toBeNull(); // no button, no menu
+    expect([...host.querySelectorAll('.adt-filter legend')].map(node => node.textContent)).toEqual(['Müşteri', 'Tutar', 'Şehir', 'Aktif', 'Tarih']);
+    const clear = host.querySelector<HTMLButtonElement>('.adt-filter-clear')!;
+    expect(clear.disabled).toBe(true);
+    table.setFilters([{ field: 'city', operator: 'in', value: ['İzmir'] }]);
+    expect(host.querySelector<HTMLInputElement>('input[value="İzmir"]')!.checked).toBe(true);
+    expect(clear.disabled).toBe(false);
+    clear.click();
+    expect(table.getState().filters).toEqual([]);
+    panel.destroy();
+    expect(host.querySelector('.adt-filter-panel')).toBeNull();
+  });
+
+  it.each(['drawer', 'modal'] as const)('panel: %s opens the fields in a dialog; close buttons and the badge work', mode => {
+    HTMLDialogElement.prototype.showModal ??= function (this: HTMLDialogElement) { this.setAttribute('open', ''); };
+    const table = make();
+    renderFilters(host, table, { labels: labelsTr, panel: mode });
+    const button = host.querySelector<HTMLButtonElement>('button.adt-filter-open')!;
+    const dialog = host.querySelector('dialog')!;
+    expect(button.getAttribute('aria-haspopup')).toBe('dialog');
+    expect(dialog.classList).toContain(`adt-filter-dialog--${mode}`);
+    expect(dialog.open).toBe(false);
+    button.click();
+    expect(dialog.open).toBe(true);
+    expect(dialog.querySelector('.adt-dialog-title')!.textContent).toBe('Filtreler');
+    table.setFilters([{ field: 'customer', operator: 'contains', value: 'a' }]);
+    expect(button.querySelector('.adt-badge')!.textContent).toBe('1');
+    dialog.querySelector<HTMLButtonElement>('.adt-filter-done')!.click();
+    expect(dialog.open).toBe(false);
+    button.click();
+    dialog.querySelector<HTMLButtonElement>('.adt-dialog-close')!.click();
+    expect(dialog.open).toBe(false);
+  });
+
+  it('refuses an unknown panel, and the toolbar button takes your text, icon and classes', () => {
+    expect(() => renderFilters(host, make(), { panel: 'sheet' as never })).toThrow('panel must be one of dropdown, drawer, modal');
+    renderFilters(host, make(), { button: { label: 'Süz', icon: { path: 'M1 1h22' }, iconOnly: true, className: 'btn btn-light' } });
+    const summary = host.querySelector('summary')!;
+    expect(summary.querySelector('.adt-summary-text')!.textContent).toBe('Süz');
+    expect(summary.querySelector('path')!.getAttribute('d')).toBe('M1 1h22');
+    expect([...summary.classList]).toEqual(['adt-icon-only', 'btn', 'btn-light']);
+    expect(summary.title).toBe('Süz');
+    renderFilters(host, make(), { button: { icon: false } });
+    expect(host.querySelector('summary svg')).toBeNull();
+    expect(() => renderFilters(host, make(), { button: { icon: 'nope' as never } })).toThrow('Unknown icon "nope"');
+  });
+
+  it('renderDataTable passes filterPanel and toolbarButtons to the buttons', () => {
+    renderDataTable(host, make(), {
+      filterPanel: 'drawer', tools: [{ id: 'csv', label: 'CSV', onSelect: () => undefined }],
+      toolbarButtons: { columns: { iconOnly: true }, tools: { label: 'Dışa aktar', className: 'btn' } },
+    });
+    expect(host.querySelector('.adt-filter-dialog--drawer')).not.toBeNull();
+    expect(host.querySelector('.adt-feature--columns summary')!.classList).toContain('adt-icon-only');
+    expect(host.querySelector('.adt-feature--tools summary .adt-summary-text')!.textContent).toBe('Dışa aktar');
+    expect(host.querySelector('.adt-feature--tools summary')!.classList).toContain('btn');
   });
 });

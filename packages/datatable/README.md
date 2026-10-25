@@ -83,7 +83,13 @@ cell as a DOM node (`el` is exported, and `AcunDataTable.el` in the
 tools menu; exports take the selected rows, else every matching row (server
 side: fetched page by page up to `exportLimit`, default 10,000).
 `filter: true` (or a list of `{ value, label }`) puts a column in the
-"Filters" menu; active filters show as removable chips.
+"Filters" menu; active filters show as removable chips. `filterPanel: 'drawer'`
+or `'modal'` opens the fields in a drawer or a dialog instead of a dropdown
+(`filter-panel` on the element); for a drawer or modal of your own, leave
+`'filters'` out of `layout` and call `dt.renderFilterPanel('#my-offcanvas .body')`
+after `ready`. `toolbarButtons: { columns, filters, tools }` sets each button's
+`label`, `icon` (a built-in name, `{ path }` or `false`), `iconOnly` and
+`className` (e.g. `'btn btn-light'`).
 `editable: true` (or a list of `{ value, label }`) with the table's
 `onEdit: async ({ row, field, value }) => …` edits cells in place; once it
 resolves the row shows the new value (a `serverSide` table reloads its page).
@@ -147,6 +153,8 @@ Route::match(['get', 'post'], '/api/products', fn () => TableResponse::for(Produ
 | `columnResize` | `false`: drag a header's edge, or ←/→ on it | ColResize |
 | `columnReorder` | `false`: drag headers; ↑/↓ buttons in the column menu | `colReorder` |
 | `layout` | page size and search above, info and pages below | `layout` |
+| `filterPanel` | `'dropdown'`; also `'drawer'`, `'modal'` | |
+| `toolbarButtons` | `{ columns?, filters?, tools? }`, each `{ label, icon, iconOnly, className }` | |
 | `stateSave` | `false`; `true` or `{ key, storage: 'session' }`; keeps page, sorting, search, filters, hidden columns, order and widths | `stateSave` |
 | `buttons` | | `buttons` |
 | `rowId` | `'id'` when rows have one | `rowId` |
@@ -160,7 +168,9 @@ and the sort buttons.
 `ready` (a promise for the first rows), `reload()`, `setData(rows)` (new rows
 for a table in the browser; page, sorting, search and selection stay), `search(text)`,
 `page(n)`, `pageSize(n)`, `order([{ field, direction }])`, `selectedRows()`,
-`on(listener)` and `destroy()` (an original `<table>` is put back). `table` is
+`on(listener)`, `renderFilterPanel(target)` (the filter fields in your own
+element; returns a function that removes them) and `destroy()` (an original
+`<table>` is put back). `table` is
 the headless `@acunsoft/datatable-core` table for everything else.
 
 ## License

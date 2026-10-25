@@ -2,8 +2,8 @@ import {
   createDataTable, persistState, type Aggregate, type ColumnDef, type PageResult, type TableQuery, type ColumnType, type DataTable, type DataTableListener, type FilterOption, type Row, type SortRule,
 } from '@acunsoft/datatable-core';
 import {
-  DEFAULT_LAYOUT, cellValue, createCellText, downloadFile, el, numeric, printRows, renderDataTable, resolveLabels,
-  type BulkAction, type CellFormatter, type CellRenderer, type DataTableLabels, type DataTableLayout, type LayoutSlot,
+  DEFAULT_LAYOUT, cellValue, createCellText, downloadFile, el, numeric, printRows, renderDataTable, renderFilterPanel, resolveLabels,
+  type BulkAction, type FilterPanelMode, type ToolbarButtons, type CellFormatter, type CellRenderer, type DataTableLabels, type DataTableLayout, type LayoutSlot,
   type CellEdit, type FixedColumns, type MenuItem, type RenderedComponent, type ResponsiveMode, type RowAction, type StatusSource, type TableSize,
 } from '@acunsoft/datatable-dom';
 import { tableToSheet, toCsv, toXlsx, type Sheet } from '@acunsoft/datatable-export';
@@ -216,6 +216,17 @@ export interface AcunDataTableOptions {
   readonly stateSave?: boolean | { readonly key?: string; readonly storage?: 'local' | 'session' };
   /** Place the controls yourself; merged over the layout the options above give. */
   readonly layout?: DataTableLayout;
+  /**
+   * Where the filter fields open: `'dropdown'` under the button (default),
+   * `'drawer'` from the side, `'modal'` centred. For your own drawer or modal,
+   * take `'filters'` out of `layout` and call `renderFilterPanel(element)`.
+   */
+  readonly filterPanel?: FilterPanelMode;
+  /**
+   * Text, icon and classes of the columns, filters and tools buttons:
+   * `{ filters: { label: 'Süz', iconOnly: true, className: 'btn btn-light' } }`.
+   */
+  readonly toolbarButtons?: ToolbarButtons;
 }
 
 /**
@@ -480,6 +491,8 @@ export class AcunDataTable {
       labels,
       layout,
       tools: this.#tools(labels),
+      ...(options.filterPanel ? { filterPanel: options.filterPanel } : {}),
+      ...(options.toolbarButtons ? { toolbarButtons: options.toolbarButtons } : {}),
       ...(Object.keys(cells).length > 0 ? { cells } : {}),
       ...(pagination.pageSizes ? { pageSizes: pagination.pageSizes } : {}),
       paging: {
@@ -648,6 +661,23 @@ export class AcunDataTable {
       this.#loader?.fail(error);
       throw error;
     }
+  }
+
+  /**
+   * Put the filter fields (and "Clear filters") into your own element — a
+   * drawer, modal, offcanvas or sidebar — in the table's language; they stay
+   * in step with the table and its chips. Returns a function that removes them.
+   * Call it after `ready` when the columns come from the server.
+   */
+  renderFilterPanel(target: string | HTMLElement): () => void {
+    const node = typeof target === 'string' ? document.querySelector<HTMLElement>(target) : target;
+    if (!node) throw new Error(`renderFilterPanel: no element matches ${String(target)}`);
+    if (!this.table) throw new Error('renderFilterPanel: the table is not ready yet (await ready)');
+    const options = this.#options;
+    const rendered = renderFilterPanel(node, this.table, {
+      labels: resolveLabels(options.language, options.labels), locale: options.language ?? 'en',
+    });
+    return () => rendered.destroy();
   }
 
   /** Replace the rows of a table in the browser; page, sorting, search and selection stay. */

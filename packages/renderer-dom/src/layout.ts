@@ -1,11 +1,11 @@
 import type { DataTable } from '@acunsoft/datatable-core';
 import { renderBulkActions, type BulkAction } from './actions';
 import { renderColumnToggle } from './columns';
-import { filterControls, renderFilterChips, renderFilters } from './filters';
+import { filterControls, renderFilterChips, renderFilters, type FilterPanelMode } from './filters';
 import {
   renderPageInfo, renderPageSize, renderPagination, renderSearch, type RenderPaginationOptions, type RenderSearchOptions,
 } from './controls';
-import { checkTarget, element, type RenderedComponent } from './dom';
+import { checkTarget, element, type RenderedComponent, type ToolbarButtons } from './dom';
 import { renderMenu, type MenuItem } from './menu';
 import { resolveLabels, type DataTableLabels } from './labels';
 import { checkSize, renderTable, type RenderTableOptions } from './table';
@@ -47,6 +47,14 @@ export interface RenderDataTableOptions<TData> extends RenderTableOptions<TData>
   readonly bulkActions?: readonly BulkAction<TData>[];
   /** The tools menu (layout feature `tools`): export, copy, print or your own actions. */
   readonly tools?: readonly MenuItem[];
+  /**
+   * Where the filter fields open: `'dropdown'` under the button (default),
+   * `'drawer'` from the side, `'modal'` centred. For your own drawer or modal,
+   * leave `filters` out of the layout and use `renderFilterPanel()`.
+   */
+  readonly filterPanel?: FilterPanelMode;
+  /** Text, icon and classes of the columns, filters and tools buttons. */
+  readonly toolbarButtons?: ToolbarButtons;
 }
 
 const FEATURES = new Set(['pageSize', 'search', 'filters', 'columns', 'tools', 'info', 'paging']);
@@ -92,13 +100,16 @@ export function renderDataTable<TData>(
         part = renderSearch(node, table, { labels, ...options.search });
         break;
       case 'columns':
-        part = renderColumnToggle(node, table, { labels, reorderable: options.reorderableColumns === true });
+        part = renderColumnToggle(node, table, { labels, reorderable: options.reorderableColumns === true, ...(options.toolbarButtons?.columns ? { button: options.toolbarButtons.columns } : {}) });
         break;
       case 'filters':
-        part = renderFilters(node, table, { labels, locale });
+        part = renderFilters(node, table, {
+          labels, locale, ...(options.filterPanel ? { panel: options.filterPanel } : {}),
+          ...(options.toolbarButtons?.filters ? { button: options.toolbarButtons.filters } : {}),
+        });
         break;
       case 'tools':
-        part = renderMenu(node, { items: options.tools ?? [], labels });
+        part = renderMenu(node, { items: options.tools ?? [], labels, ...(options.toolbarButtons?.tools ? { button: options.toolbarButtons.tools } : {}) });
         break;
       case 'info':
         part = renderPageInfo(node, table, { labels, all: Boolean(options.virtual) });
@@ -140,7 +151,10 @@ export function renderDataTable<TData>(
   const body = element(doc, 'div', { class: 'adt-body' });
   root.append(body);
   // The size class sits on .adt, so the bars and the table share it.
-  const { layout: _layout, pageSizes: _sizes, paging: _paging, search: _search, bulkActions: _bulk, size: _size, tools: _tools, ...tableOptions } = options;
+  const {
+    layout: _layout, pageSizes: _sizes, paging: _paging, search: _search, bulkActions: _bulk, size: _size, tools: _tools,
+    filterPanel: _panel, toolbarButtons: _buttons, ...tableOptions
+  } = options;
   parts.push(renderTable(body, table, { ...tableOptions, labels }));
   const bottom = bar('bottom', layout.bottomStart, layout.bottomEnd);
   if (bottom) root.append(bottom);

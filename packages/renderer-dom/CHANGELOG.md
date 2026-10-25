@@ -4,6 +4,12 @@
 
 ### Minor Changes
 
+- `renderFilters({ panel })` opens the filter fields under the button (`'dropdown'`,
+  default), in a drawer (`'drawer'`) or in a modal (`'modal'`), both a native `<dialog>`;
+  `renderDataTable({ filterPanel })`. `renderFilterPanel()` renders only the fields, for
+  your own drawer, modal or sidebar.
+- Toolbar buttons: `button: { label, icon, iconOnly, className }` on `renderColumnToggle`,
+  `renderFilters` and `renderMenu`, and `renderDataTable({ toolbarButtons })` per feature.
 - `styles.css` turns dark under `data-bs-theme="dark"` too (Bootstrap 5.3 and the themes
   built on it), besides `class="dark"` and `data-theme="dark"`.
 - `printRows(document, { title, subtitle, headers, rows, numeric })` prints only a

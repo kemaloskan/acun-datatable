@@ -1,11 +1,13 @@
 import type { DataTable } from '@acunsoft/datatable-core';
-import { checkTarget, element, icon, keepFocus, placeMenu, type RenderedComponent } from './dom';
+import { checkTarget, element, fillButton, icon, keepFocus, placeMenu, type RenderedComponent, type ToolbarButton } from './dom';
 import { labelsEn, type DataTableLabels } from './labels';
 
 export interface RenderColumnToggleOptions {
   readonly labels?: Partial<DataTableLabels>;
   /** Up/down buttons per column to change the order with the keyboard (`columnOrder`). */
   readonly reorderable?: boolean;
+  /** The button's text, icon and classes. */
+  readonly button?: ToolbarButton;
 }
 
 /** Whether the column order or widths differ from the defaults (the menu then offers "Reset columns"). */
@@ -38,7 +40,7 @@ export function renderColumnToggle<TData>(
   const root = element(doc, 'details', { class: 'adt-columns' });
   const fieldset = element(doc, 'fieldset');
   const summary = element(doc, 'summary');
-  summary.append(icon(doc, 'columns'), element(doc, 'span', { class: 'adt-summary-text' }, labels.columns));
+  fillButton(doc, summary, { label: labels.columns, icon: 'columns' }, options.button);
   root.append(summary, fieldset);
   root.addEventListener('toggle', () => placeMenu(root));
   container.replaceChildren(root);
