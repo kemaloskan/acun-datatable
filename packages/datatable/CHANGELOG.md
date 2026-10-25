@@ -4,6 +4,8 @@
 
 ### Minor Changes
 
+- Exports cover every matching row once "select all N matching" is chosen in the selection
+  bar (before, only the rows of the page were exported).
 - Reads `totalRowsAtLeast` (a server that stopped counting) and shows "10,000+".
 - 30c5883: Child rows (DataTables `row().child()`): DOM `detail` (a node, text or a
   promise, with loading and error states), Vue `#detail="{ row }"` slot, React

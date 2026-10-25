@@ -537,12 +537,16 @@ export class AcunDataTable {
     });
   }
 
-  /** The rows to export: the selection, else every matching row (server side: fetched page by page). */
+  /**
+   * The rows to export: the selected rows, else every matching row (server side: fetched page
+   * by page). "Every matching row" chosen in the selection bar counts as no choice of rows.
+   */
   async #sheet(): Promise<Sheet> {
     const table = this.table;
     if (!table) throw new Error('AcunDataTable: not ready');
-    if (table.getState().selectedIds.length > 0 || !this.#source) {
-      return tableToSheet(table, { rows: table.getState().selectedIds.length > 0 ? 'selected' : 'all' });
+    const selected = table.getState().selectedIds.length > 0 && !table.isAllMatchingSelected();
+    if (selected || !this.#source) {
+      return tableToSheet(table, { rows: selected ? 'selected' : 'all' });
     }
     const limit = this.#options.exportLimit ?? 10_000;
     const labels = resolveLabels(this.#options.language, this.#options.labels);

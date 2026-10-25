@@ -4,6 +4,9 @@
 
 ### Minor Changes
 
+- Virtual scrolling keeps the column widths while rows scroll by (measured once the first
+  rows are drawn; again when the columns or the width change).
+- The selection bar's "select all N matching" uses the table's `selectAllMatching()`.
 - The page info shows the server's count as it was sent: exact ("of 35 rows"),
   a lower bound ("of 10,000+ rows", new label `pageInfoMore`) or none; the
   pager numbers the pages known to exist (`knownPageCount`).

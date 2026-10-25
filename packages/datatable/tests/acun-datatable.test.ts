@@ -339,6 +339,31 @@ describe('review fixes', () => {
     expect([lines[1], lines[1500]]).toEqual(['C1', 'C1500']);
   });
 
+  it('exports every matching row once they are all selected in the selection bar, else the selected ones', async () => {
+    const fetch = vi.fn(async (url: string) => {
+      const query = new URL(url, 'http://x').searchParams;
+      const page = Number(query.get('page'));
+      const size = Number(query.get('pageSize'));
+      return new Response(JSON.stringify({ rows: orders.slice((page - 1) * size, page * size), totalRows: 30 }));
+    });
+    vi.stubGlobal('fetch', fetch);
+    const writeText = vi.fn(async (_text: string) => undefined);
+    Object.defineProperty(navigator, 'clipboard', { value: { writeText }, configurable: true });
+    const dt = new AcunDataTable('#orders', { serverSide: true, ajax: '/api/orders', buttons: ['copy'], selectable: true, bulkActions: [{ id: 'x', label: 'X', onSelect: () => undefined }], pagination: { pageSize: 10 }, columns: [{ data: 'customer' }] });
+    await dt.ready;
+    const copy = async () => {
+      writeText.mockClear();
+      document.querySelector<HTMLButtonElement>('.adt-menu-item[data-action="copy"]')!.click();
+      await vi.waitFor(() => expect(writeText).toHaveBeenCalled());
+      return writeText.mock.calls[0]![0].trim().split('\n').length - 1; // rows, without the header
+    };
+    document.querySelector<HTMLInputElement>('thead .adt-select input')!.click(); // this page
+    expect(await copy()).toBe(10);
+    document.querySelector<HTMLButtonElement>('.adt-select-matching')!.click(); // "select all 30 matching"
+    expect(dt.table!.isAllMatchingSelected()).toBe(true);
+    expect(await copy()).toBe(30);
+  });
+
   it('shows a DataTables error answer as an error and refuses cursor paging with that protocol', async () => {
     vi.stubGlobal('fetch', json({ draw: 1, error: 'unknown column "secret"', data: [] }));
     const dt = new AcunDataTable('#orders', { serverSide: true, ajax: { url: '/dt', protocol: 'datatables' }, columns: [{ data: 'customer' }] });

@@ -148,3 +148,31 @@ describe('the three ways a server can count', () => {
     expect(() => t.setPageResult({ rows: rows(1, 2), totalRowsAtLeast: '9' as never })).toThrow('totalRowsAtLeast');
   });
 });
+
+describe('selectAllMatching', () => {
+  it('server: selects the rows on hand and flags every match, until the selection or the query changes', () => {
+    const t = serverTable();
+    const events: DataTableEvent[] = [];
+    t.subscribe((_, event) => events.push(event));
+    t.setPageResult({ rows: rows(1, 2), totalRows: 50 });
+    t.selectAllMatching();
+    expect(t.isAllMatchingSelected()).toBe(true);
+    expect(t.getState().selectedIds).toEqual(['1', '2']);
+    expect(events.at(-1)).toMatchObject({ type: 'selection', change: { action: 'selectAll' } });
+    t.setPageResult({ rows: rows(3, 4), totalRows: 50 }); // another page: still every match
+    expect(t.isAllMatchingSelected()).toBe(true);
+    t.toggleRow('3');
+    expect(t.isAllMatchingSelected()).toBe(false); // a choice of rows replaces it
+    t.selectAllMatching();
+    t.setGlobalSearch('ay');
+    expect(t.isAllMatchingSelected()).toBe(false); // other rows match now
+  });
+
+  it('local: selects every matching row by ID', () => {
+    const t = createDataTable<Order>({ data: rows(1, 2, 3, 4), columns, initialState: { pageSize: 2 } });
+    t.setGlobalSearch('C');
+    t.selectAllMatching();
+    expect(t.getState().selectedIds).toEqual(['1', '2', '3', '4']);
+    expect(t.isAllMatchingSelected()).toBe(false); // every ID is known: no flag needed
+  });
+});

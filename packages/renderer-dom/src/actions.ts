@@ -115,23 +115,14 @@ export function renderBulkActions<TData>(
 
   const root = element(doc, 'div', { class: 'adt-selection', role: 'group', 'aria-label': labels.bulkActions });
   const count = element(doc, 'span', { class: 'adt-selection-count', role: 'status', 'aria-live': 'polite' });
-  // Server mode: "every matching row" is a flag, not a list of IDs the browser cannot know.
-  let allMatching = false;
-  const server = table.getMode() === 'server';
+  // Server mode: "every matching row" is a flag of the table (selectAllMatching), not a list of IDs.
   const selection = (): BulkSelection<TData> => ({
     ids: table.getState().selectedIds,
     rows: table.getSelectedRows(),
-    ...(allMatching ? { allMatching: true, query: table.getQuery() } : {}),
+    ...(table.isAllMatchingSelected() ? { allMatching: true, query: table.getQuery() } : {}),
   });
   const matching = element(doc, 'button', { type: 'button', class: 'adt-select-matching', 'data-adt-focus': 'bulk:matching' });
-  matching.addEventListener('click', () => {
-    if (server) {
-      allMatching = true;
-      update();
-    } else {
-      table.selectRows(table.getFilteredRows().map(row => row.id));
-    }
-  });
+  matching.addEventListener('click', () => table.selectAllMatching());
   const buttons = actions.map(action => {
     const button = element(doc, 'button', {
       type: 'button', class: 'adt-bulk-action', 'data-action': action.id, 'data-adt-focus': `bulk:${action.id}`,
@@ -149,6 +140,7 @@ export function renderBulkActions<TData>(
   function update(): void {
     const current = selection();
     const total = table.getTotalRows();
+    const allMatching = table.isAllMatchingSelected();
     root.hidden = current.ids.length === 0;
     count.textContent = current.ids.length === 0 ? ''
       : allMatching && total !== undefined ? labels.allMatchingSelected(total) : labels.selectedCount(current.ids.length);
@@ -164,11 +156,7 @@ export function renderBulkActions<TData>(
     }
   }
   update();
-  const unsubscribe = table.subscribe((_, event) => {
-    // A new query or a changed selection ends "every matching row".
-    if (event.type === 'filters' || event.type === 'globalSearch' || event.type === 'selection') allMatching = false;
-    update();
-  });
+  const unsubscribe = table.subscribe(() => update());
   return {
     destroy: () => {
       unsubscribe();

@@ -4,6 +4,9 @@
 
 ### Minor Changes
 
+- `selectAllMatching()` and `isAllMatchingSelected()`: "every matching row" as part of the
+  table's selection (server mode: a flag, since the browser has one page), so exports and
+  bulk actions cover every match. Any other change of the selection, search or filters ends it.
 - The server's lower bound: a page result may carry `totalRowsAtLeast` when the
   server stopped counting (the Laravel adapter past `countLimit()`);
   `getTotalRowsAtLeast()` returns it and `getPage().pageCount` counts the pages

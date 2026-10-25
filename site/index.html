@@ -294,6 +294,7 @@ const FEATURES = {
 const API = [
   ['@acunsoft/datatable-core', [
     ["createDataTable({ data, columns, mode? })", {tr:"Hepsi bir arada tablo: yerel veya sunucu modu; sıralama, filtre, arama, sayfa, seçim; işlem başına bir olay.", en:"All-in-one table, local or server mode: sorting, filters, search, pages, selection; one event per action."}],
+    ["table.selectAllMatching() · isAllMatchingSelected()", {tr:"Aramaya ve filtrelere uyan tüm satırları seçer; sunucu modunda bir işarettir (tarayıcıda yalnızca bir sayfa vardır), dışa aktarma ve toplu işlemler tüm eşleşenleri kapsar.", en:"Selects every row matching the search and filters; in server mode a flag (the browser has one page), so exports and bulk actions cover every match."}],
     ["table.setColumnVisibility(id, visible) · getVisibleColumns()", {tr:"Kolon gizleme; gizli kolonlar sıralama, filtre ve aramada kalır, sorgu değişmez.", en:"Column hiding; hidden columns still sort, filter and search, the query is unchanged."}],
     ["createColumns(definitions)", {tr:"Kolon tanımlarını doğrular, kopyalar ve dondurur; type: text, number, decimal, date, datetime, boolean; priority: 1 | 2 | 3 (dar ekranda hangi kolon kalır).", en:"Validates, copies and freezes column definitions; type: text, number, decimal, date, datetime, boolean; priority: 1 | 2 | 3 (which columns stay on narrow screens)."}],
     ["createRows(data, { getRowId? })", {tr:"Kararlı satır kimlikleri üretir; veriyi klonlamaz.", en:"Builds stable row identities; never clones caller data."}],

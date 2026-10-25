@@ -174,6 +174,15 @@ export interface DataTable<TData> {
   selectRows(ids: readonly RowId[]): void;
   setSelectedRows(ids: readonly RowId[]): void;
   clearSelection(): void;
+  /**
+   * Select every row that matches the search and filters. Local mode: their IDs. Server mode:
+   * the rows on hand plus a flag (`isAllMatchingSelected()`), since the browser does not know
+   * the other rows; exports and bulk actions then cover every match. Any other change of the
+   * selection, the search or the filters ends it.
+   */
+  selectAllMatching(): void;
+  /** Server mode: every matching row is selected (`selectAllMatching`), not only those listed. */
+  isAllMatchingSelected(): boolean;
   subscribe(listener: DataTableListener): () => void;
   destroy(): void;
 }
@@ -384,15 +393,21 @@ export function createDataTable<TData>(options: DataTableOptions<TData>): DataTa
   };
   const viewChanged = (apply: () => void, event: () => DataTableEvent): void => {
     apply();
+    allMatching = false; // other rows match now
     cursors = [undefined]; // other rows: the cursors no longer apply
     inner.setPage(1);
     emit(event());
   };
+  // Server mode: "every matching row" is a flag; the browser only has the rows of a page.
+  let allMatching = false;
   const selecting = (action: () => void): void => {
     if (destroyed) return;
     const before = selection.getState();
     action();
-    if (selection.getState() !== before) emit({ type: 'selection', change: lastChange! });
+    if (selection.getState() !== before) {
+      allMatching = false; // a choice of rows replaces "every matching row"
+      emit({ type: 'selection', change: lastChange! });
+    }
   };
 
   const table: DataTable<TData> = {
@@ -579,6 +594,19 @@ export function createDataTable<TData>(options: DataTableOptions<TData>): DataTa
     selectRows: (ids) => selecting(() => { selection.getStatus(ids); checkKnown(ids); selection.selectAll(ids); }),
     setSelectedRows: (ids) => selecting(() => { selection.getStatus(ids); checkKnown(ids); selection.setSelected(ids); }),
     clearSelection: () => selecting(() => selection.clear()),
+    selectAllMatching: () => {
+      if (destroyed || selection.getState().mode !== 'multiple') return;
+      if (!server) {
+        table.selectRows(getFilteredRows().map(row => row.id));
+        return;
+      }
+      const ids = coreRows.map(row => row.id);
+      const added = ids.filter(id => !selection.isSelected(id));
+      selection.selectAll(ids);
+      allMatching = true;
+      emit({ type: 'selection', change: Object.freeze({ action: 'selectAll', added: Object.freeze(added), removed: Object.freeze([]) }) });
+    },
+    isAllMatchingSelected: () => allMatching,
 
     subscribe: (listener) => {
       if (destroyed) return () => undefined;

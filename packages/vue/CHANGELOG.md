@@ -4,6 +4,7 @@
 
 ### Minor Changes
 
+- Virtual scrolling keeps the column widths while rows scroll by.
 - `AcunPageInfo` and `AcunPagination` show a server's lower bound ("10,000+") and
   number the pages known to exist.
 - 8d10fdf: Row actions with `icon`, `iconOnly`, `danger` and `confirm`, and a "⋮" menu
