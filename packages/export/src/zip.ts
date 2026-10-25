@@ -102,6 +102,18 @@ export interface ZipReader {
   has(name: string): boolean;
   /** The entry's bytes, or `undefined` when it does not exist. */
   read(name: string): Promise<Uint8Array | undefined>;
+  /**
+   * The entry as stored (checked, not inflated) and the size limit its
+   * inflated bytes must keep, or `undefined` when it does not exist.
+   */
+  stored(name: string): StoredEntry | undefined;
+}
+
+export interface StoredEntry {
+  /** 0 stored, 8 deflated. */
+  readonly method: 0 | 8;
+  readonly data: Uint8Array;
+  readonly maxBytes: number;
 }
 
 async function inflate(data: Uint8Array, limit: number): Promise<Uint8Array> {
@@ -167,23 +179,27 @@ export function openZip(bytes: Uint8Array, limits: ZipLimits = {}): ZipReader {
     });
     at += 46 + nameLength + extraLength + commentLength;
   }
+  const stored = (name: string): StoredEntry | undefined => {
+    const entry = entries.get(name);
+    if (!entry) return undefined;
+    if (entry.flags & 1) throw new ImportError('encrypted files are not supported');
+    if (entry.size > maxEntryBytes) throw new ImportError(`an archive entry is larger than ${maxEntryBytes} bytes`);
+    const header = entry.offset;
+    if (header + 30 > bytes.length || view.getUint32(header, true) !== 0x04034b50) {
+      throw new ImportError('the file is damaged (bad local header)');
+    }
+    const start = header + 30 + view.getUint16(header + 26, true) + view.getUint16(header + 28, true);
+    if (start + entry.compressedSize > bytes.length) throw new ImportError('the file is damaged (entry outside the file)');
+    if (entry.method !== 0 && entry.method !== 8) throw new ImportError(`unsupported ZIP compression method ${entry.method}`);
+    return { method: entry.method, data: bytes.subarray(start, start + entry.compressedSize), maxBytes: maxEntryBytes };
+  };
   return {
     has: name => entries.has(name),
     read: async name => {
-      const entry = entries.get(name);
-      if (!entry) return undefined;
-      if (entry.flags & 1) throw new ImportError('encrypted files are not supported');
-      if (entry.size > maxEntryBytes) throw new ImportError(`an archive entry is larger than ${maxEntryBytes} bytes`);
-      const header = entry.offset;
-      if (header + 30 > bytes.length || view.getUint32(header, true) !== 0x04034b50) {
-        throw new ImportError('the file is damaged (bad local header)');
-      }
-      const start = header + 30 + view.getUint16(header + 26, true) + view.getUint16(header + 28, true);
-      if (start + entry.compressedSize > bytes.length) throw new ImportError('the file is damaged (entry outside the file)');
-      const data = bytes.subarray(start, start + entry.compressedSize);
-      if (entry.method === 0) return data;
-      if (entry.method === 8) return inflate(data, maxEntryBytes);
-      throw new ImportError(`unsupported ZIP compression method ${entry.method}`);
+      const found = stored(name);
+      if (!found) return undefined;
+      return found.method === 0 ? found.data : inflate(found.data, maxEntryBytes);
     },
+    stored,
   };
 }

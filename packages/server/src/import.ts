@@ -4,11 +4,13 @@
  * `(Request) => Promise<Response>` — Next.js route handlers, Hono, Bun and
  * Deno take it as is; Express, Fastify and `node:http` through
  * `toNodeListener()`. Reading files needs `@acunsoft/datatable-export`
- * (an optional peer dependency); saving is your own function. No database
- * driver, framework, queue or Redis is a dependency.
+ * (an optional peer dependency); files are read in chunks, never as a whole
+ * table. Saving is your own function. No database driver, framework, queue
+ * or Redis is a dependency.
  */
 import type { ColumnDef, ColumnType } from '@acunsoft/datatable-core';
-import { importRows, parseCsv, readXlsx, type ImportIssue, type Sheet } from '@acunsoft/datatable-export';
+import { importRows, type ImportIssue } from '@acunsoft/datatable-export';
+import { streamCsv, streamXlsx, type SheetStream } from '@acunsoft/datatable-export/stream';
 
 export const IMPORT_PROTOCOL = 'acun-import/1';
 export type ImportMode = 'insert' | 'update' | 'upsert';
@@ -260,12 +262,16 @@ const cellText = (cell: unknown): string | null => {
   return String(cell);
 };
 
-/** Text of a CSV: UTF-8 (a byte order mark removed), else Windows-1254 as Turkish Excel writes it. */
-function decode(bytes: Uint8Array): string {
+/** The encoding of a CSV: UTF-8 when it is valid UTF-8, else Windows-1254 as Turkish Excel writes it. */
+function encodingOf(bytes: Uint8Array): 'utf-8' | 'windows-1254' {
+  const decoder = new TextDecoder('utf-8', { fatal: true });
   try {
-    return new TextDecoder('utf-8', { fatal: true, ignoreBOM: false }).decode(bytes);
+    // In pieces, so no text as large as the file is made.
+    for (let at = 0; at < bytes.length; at += 1 << 20) decoder.decode(bytes.subarray(at, at + (1 << 20)), { stream: true });
+    decoder.decode();
+    return 'utf-8';
   } catch {
-    return new TextDecoder('windows-1254').decode(bytes);
+    return 'windows-1254';
   }
 }
 
@@ -293,9 +299,9 @@ export function createImportHandler(options: ImportHandlerOptions): ImportHandle
   const titles = new Map(options.columns.map(column => [column.id, column.title ?? column.id]));
   const required = options.columns.filter(column => column.required).map(column => column.id);
 
-  const read = async (bytes: Uint8Array, extension: string): Promise<Sheet> => (extension === '.xlsx'
-    ? readXlsx(bytes, { maxRows })
-    : parseCsv(decode(bytes), { maxRows }));
+  const read = (bytes: Uint8Array, extension: string, size: number): Promise<SheetStream> => (extension === '.xlsx'
+    ? streamXlsx(bytes, { maxRows, chunkSize: size })
+    : streamCsv(bytes, { maxRows, chunkSize: size, encoding: encodingOf(bytes) }));
 
   const view = (state: StoredImport): Record<string, unknown> => ({
     protocol: IMPORT_PROTOCOL, id: state.id, status: state.status,
@@ -371,12 +377,12 @@ export function createImportHandler(options: ImportHandlerOptions): ImportHandle
     try {
       const bytes = await store.getFile(id, 'source');
       if (!bytes) throw new Error('The uploaded file is gone.');
-      const sheet = await read(bytes, state.extension);
+      const sheet = await read(bytes, state.extension, chunkSize);
       // The user's mapping as headers the reader knows (column IDs); file columns left out get none.
       const headers = state.mapping.map(column => column ?? '');
-      for (let start = 0; start < sheet.rows.length; start += chunkSize) {
+      let start = 0;
+      for await (const rows of sheet.chunks) {
         if (cancelled.has(id) || (await store.get(id))?.status === 'cancelled') { cancelled.add(id); break; }
-        const rows = sheet.rows.slice(start, start + chunkSize);
         const result = importRows({ headers, rows }, definitions, { required, maxErrors: Number.MAX_SAFE_INTEGER, ...options.read });
         rejected = [];
         await options.save(result.rows.map(row => ({ line: row.line + start, values: row.values })), context);
@@ -395,6 +401,7 @@ export function createImportHandler(options: ImportHandlerOptions): ImportHandle
         state.errorsTruncated ||= problems.length > room;
         if (state.status !== 'cancelled') state.status = 'running';
         await store.put(state, keepMs);
+        start += rows.length;
       }
       state = (await store.get(id)) ?? state;
       state.status = cancelled.has(id) || state.status === 'cancelled' ? 'cancelled' : 'done';
@@ -447,20 +454,27 @@ export function createImportHandler(options: ImportHandlerOptions): ImportHandle
       const bytes = new Uint8Array(await file.arrayBuffer());
       const signature = extension === '.xlsx' ? bytes[0] === 0x50 && bytes[1] === 0x4b && bytes[2] === 0x03 && bytes[3] === 0x04 : !bytes.subarray(0, 8192).includes(0);
       if (!(accept as readonly string[]).includes(extension) || !signature) return problem(415, text.fileType, 'file');
-      let sheet: Sheet;
+      // Read once through: the headers, a preview and the row count; checked as a whole before anything is kept.
+      let sheet: SheetStream;
+      let count = 0;
+      const previewRows: (readonly unknown[])[] = [];
       try {
-        sheet = await read(bytes, extension);
+        sheet = await read(bytes, extension, 1_000);
+        for await (const rows of sheet.chunks) {
+          previewRows.push(...rows.slice(0, 5 - previewRows.length));
+          count += rows.length;
+        }
       } catch (error) {
         const message = error instanceof Error && /rows/i.test(error.message) ? text.tooManyRows(maxRows) : text.unreadable;
         return problem(422, message, 'file');
       }
       if (sheet.headers.length === 0) return problem(422, text.noHeaders, 'file');
-      if (sheet.rows.length > maxRows) return problem(422, text.tooManyRows(maxRows), 'file');
+      if (count > maxRows) return problem(422, text.tooManyRows(maxRows), 'file');
       const id = randomId();
       await store.putFile(id, 'source', bytes, keepMs);
       const state: StoredImport = {
-        id, owner, tenant, name: name.slice(0, 200), extension, headers: sheet.headers.map(String), rows: sheet.rows.length,
-        preview: sheet.rows.slice(0, 5).map((cells, index) => ({ line: index + 2, cells: sheet.headers.map((_, i) => cellText(cells[i])) })),
+        id, owner, tenant, name: name.slice(0, 200), extension, headers: sheet.headers.map(String), rows: count,
+        preview: previewRows.map((cells, index) => ({ line: index + 2, cells: sheet.headers.map((_, i) => cellText(cells[i])) })),
         status: 'mapping', mapping: suggest(sheet.headers), mode: null, processed: 0, inserted: 0, updated: 0, skipped: 0, failed: 0,
         errors: [], errorsTruncated: false, report: false, message: null, expiresAt: new Date(Date.now() + keepMs).toISOString(),
       };

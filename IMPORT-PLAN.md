@@ -256,9 +256,10 @@ report downloads through the client, so APIs that authorize by header work.
 SQLite (results in `bench/results/import.md`: Node 1,000,000 CSV rows in 9.3 s,
 1.27 GB; Laravel 90 s, 746 MB). PostgreSQL, MySQL and MariaDB write at their own
 speed with your own `save()`; `bench/import-bench.mjs` and `ImportBenchTest`
-measure it on your setup. Finding: memory grows with the file because both
-back ends read it whole before saving in chunks — a streaming reader is the
-next improvement.
+measure it on your setup. Finding: memory grew with the file because both
+back ends read it whole before saving in chunks. Since then (2026-10-25) both
+read files in chunks (`@acunsoft/datatable-export/stream`,
+`SheetReader::stream()`); the before and after numbers are in the same file.
 
 - Unit: protocol shapes, mapping validation, chunking, idempotency, tenant
   isolation, error CSV (PHPUnit, Vitest).

@@ -182,7 +182,7 @@ jobs:
         working-directory: packages/server
         env: { ADT_TEST_MSSQL: 'mssql://sa:Secret-12345@127.0.0.1:1433/master' }
       # The benchmark script itself, on a small table (real sizes run by hand: bench/README.md).
-      - run: npm run build -w @acunsoft/datatable-core -w @acunsoft/datatable-server
+      - run: npm run build -w @acunsoft/datatable-core -w @acunsoft/datatable-export -w @acunsoft/datatable-server
       - name: Benchmark smoke run (PostgreSQL, MySQL, MariaDB)
         run: |
           node bench/sql-bench.mjs --db postgres://postgres:secret@127.0.0.1:5432/adt_test --rows 20000 --runs 1

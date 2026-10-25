@@ -1,0 +1,14 @@
+{
+    "rows": 100000,
+    "php": "8.5.12",
+    "mode": "upsert",
+    "uploadSeconds": 0.141,
+    "importSeconds": 8.142,
+    "rowsPerSecond": 12282,
+    "peakMemoryMB": 116,
+    "aboveBaselineMB": 70,
+    "status": "done",
+    "inserted": 99900,
+    "failed": 100,
+    "stored": 99900
+}

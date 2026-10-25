@@ -2531,8 +2531,8 @@ const GUIDES = {
      "en": "Measured"
     },
     "desc": {
-     "tr": "Apple M2, SQLite; birer çalıştırma. Hız, veritabanınıza ve save() fonksiyonunuza bağlıdır; kendi ortamınızda ölçün (bench/import-bench.mjs, ImportBenchTest).",
-     "en": "Apple M2, SQLite; one run each. Speed depends on your database and your save(); measure on your own setup (bench/import-bench.mjs, ImportBenchTest)."
+     "tr": "Apple M2, SQLite; Node üç çalıştırmanın ortancası, Laravel bir çalıştırma. Hız, veritabanınıza ve save() fonksiyonunuza bağlıdır; kendi ortamınızda ölçün (bench/import-bench.mjs, ImportBenchTest).",
+     "en": "Apple M2, SQLite; Node the median of three runs, Laravel one run. Speed depends on your database and your save(); measure on your own setup (bench/import-bench.mjs, ImportBenchTest)."
     },
     "table": [
      [
@@ -2551,8 +2551,8 @@ const GUIDES = {
        "en": "Node, your own upsert"
       },
       {
-       "tr": "100.000 CSV: 0,7 sn, 371 MB · 1.000.000 CSV: 9,3 sn, 1,27 GB",
-       "en": "100,000 CSV: 0.7 s, 371 MB · 1,000,000 CSV: 9.3 s, 1.27 GB"
+       "tr": "100.000 CSV: 0,36 sn, 255 MB · 1.000.000 CSV: 3,7 sn, 798 MB",
+       "en": "100,000 CSV: 0.36 s, 255 MB · 1,000,000 CSV: 3.7 s, 798 MB"
       }
      ],
      [
@@ -2561,14 +2561,14 @@ const GUIDES = {
        "en": "Laravel, the default save() (Eloquent)"
       },
       {
-       "tr": "100.000 CSV: 9,2 sn, 116 MB · 1.000.000 CSV: 90 sn, 746 MB",
-       "en": "100,000 CSV: 9.2 s, 116 MB · 1,000,000 CSV: 90 s, 746 MB"
+       "tr": "100.000 CSV: 8,2 sn, 55 MB · 1.000.000 CSV: 85 sn, 123 MB",
+       "en": "100,000 CSV: 8.2 s, 55 MB · 1,000,000 CSV: 85 s, 123 MB"
       }
      ]
     ],
     "note": {
-     "tr": "Bellek dosyanın satır sayısıyla büyür: iki backend de dosyayı okuyup sonra parça parça kaydeder. Çok büyük dosyalarda işçiye bellek ayırın ya da satır sınırını düşük tutun. Ayrıntı: \u003ca href=\"https://github.com/kemaloskan/acun-datatable/blob/main/bench/results/import.md\">bench/results/import.md\u003c/a>.",
-     "en": "Memory grows with the rows of the file: both back ends read the file, then save it in chunks. For very large files give the worker memory or keep the row limit lower. Details: \u003ca href=\"https://github.com/kemaloskan/acun-datatable/blob/main/bench/results/import.md\">bench/results/import.md\u003c/a>."
+     "tr": "İki backend de dosyayı parça parça okur ve kaydeder: okuma belleği satır sayısıyla büyümez (Laravel'de başlangıcın üstünde 100.000 satırda 8 MB, 1.000.000 satırda 10 MB). Yüklenen dosyanın kendisi bellekte durabilir; boyutunu sınırlayın. Ayrıntı: \u003ca href=\"https://github.com/kemaloskan/acun-datatable/blob/main/bench/results/import.md\">bench/results/import.md\u003c/a>.",
+     "en": "Both back ends read and save the file in chunks: reading memory does not grow with the rows (Laravel, above its start: 8 MB for 100,000 rows, 10 MB for 1,000,000). The uploaded file itself may be held in memory; limit its size. Details: \u003ca href=\"https://github.com/kemaloskan/acun-datatable/blob/main/bench/results/import.md\">bench/results/import.md\u003c/a>."
     }
    }
   ]

@@ -6,6 +6,7 @@
     "paths": {
       "@acunsoft/datatable-core": ["../core/src/index.ts"],
       "@acunsoft/datatable-export": ["../export/src/index.ts"],
+      "@acunsoft/datatable-export/stream": ["../export/src/stream.ts"],
       "@acunsoft/datatable-import/testing": ["../import/src/testing.ts"]
     }
   },

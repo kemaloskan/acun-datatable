@@ -1,8 +1,9 @@
 // Measures an import through the Node helper of @acunsoft/datatable-server
 // (createImportHandler) into SQLite (node:sqlite): the upload (read the file,
 // header and preview) and the import itself (read again, type every value,
-// save in chunks), with the peak memory of the process. No speed is claimed
-// without a measurement; run it on your own machine.
+// save in chunks), with the peak memory of the process, the peak of its
+// JavaScript heap (sampled every 20 ms) and the size of the SQLite table it
+// fills. No speed is claimed without a measurement; run it on your own machine.
 //
 //   npm run build
 //   node --expose-gc bench/import-bench.mjs --rows 100000 [--format csv|xlsx] [--chunk 1000] [--json FILE]
@@ -25,7 +26,12 @@ const format = args.format === 'xlsx' ? 'xlsx' : 'csv';
 const chunkSize = Number(args.chunk);
 
 let peak = 0;
-const sample = () => { peak = Math.max(peak, process.memoryUsage().rss); };
+let peakHeap = 0;
+const sample = () => {
+  const memory = process.memoryUsage();
+  peak = Math.max(peak, memory.rss);
+  peakHeap = Math.max(peakHeap, memory.heapUsed);
+};
 const sampler = setInterval(sample, 20);
 const mb = bytes => Math.round(bytes / 1048576);
 const seconds = ms => Math.round(ms) / 1000;
@@ -35,9 +41,16 @@ const names = ['Ayşe Yılmaz', 'Ali Kaya', 'İrem Şahin', 'Çağrı Öztürk',
 let generated = performance.now();
 let bytes;
 if (format === 'csv') {
-  const lines = ['E-posta,Ad Soyad,Tutar,Tarih'];
-  for (let i = 0; i < rows; i++) lines.push(`user${i}@example.com,${names[i % names.length]} ${i},${i % 1000 === 999 ? 'abc' : `${(i * 7919) % 100000}.${String(i % 100).padStart(2, '0')}`},2026-${String(1 + (i % 12)).padStart(2, '0')}-${String(1 + (i % 28)).padStart(2, '0')}`);
-  bytes = new TextEncoder().encode(lines.join('\n'));
+  // Encoded in parts of 10,000 lines, so the generator's own strings do not inflate the baseline.
+  const encoder = new TextEncoder();
+  const parts = [encoder.encode('E-posta,Ad Soyad,Tutar,Tarih')];
+  for (let from = 0; from < rows; from += 10_000) {
+    let text = '';
+    for (let i = from; i < Math.min(rows, from + 10_000); i++) text += `\nuser${i}@example.com,${names[i % names.length]} ${i},${i % 1000 === 999 ? 'abc' : `${(i * 7919) % 100000}.${String(i % 100).padStart(2, '0')}`},2026-${String(1 + (i % 12)).padStart(2, '0')}-${String(1 + (i % 28)).padStart(2, '0')}`;
+    parts.push(encoder.encode(text));
+  }
+  bytes = new Uint8Array(parts.reduce((sum, part) => sum + part.length, 0));
+  parts.reduce((at, part) => { bytes.set(part, at); return at + part.length; }, 0);
 } else {
   const sheetRows = [];
   for (let i = 0; i < rows; i++) sheetRows.push([`user${i}@example.com`, `${names[i % names.length]} ${i}`, i % 1000 === 999 ? 'abc' : (i * 7919) % 100000 + (i % 100) / 100, new Date(Date.UTC(2026, i % 12, 1 + (i % 28)))]);
@@ -47,6 +60,7 @@ generated = performance.now() - generated;
 globalThis.gc?.();
 const baseline = process.memoryUsage().rss;
 peak = baseline;
+peakHeap = process.memoryUsage().heapUsed;
 
 const db = new DatabaseSync(':memory:');
 db.exec('CREATE TABLE customers (email TEXT PRIMARY KEY, name TEXT, total TEXT, joined TEXT)');
@@ -97,7 +111,8 @@ const result = {
   node: process.version, platform: `${process.platform} ${process.arch}`,
   uploadSeconds: seconds(uploadMs), importSeconds: seconds(importMs), saveSeconds: seconds(saveMs),
   rowsPerSecond: Math.round(rows / (importMs / 1000)),
-  peakMemoryMB: mb(peak), aboveBaselineMB: mb(peak - baseline),
+  peakMemoryMB: mb(peak), aboveBaselineMB: mb(peak - baseline), peakHeapMB: mb(peakHeap),
+  databaseMB: mb(db.prepare('PRAGMA page_count').get().page_count * db.prepare('PRAGMA page_size').get().page_size),
   status: done.status, inserted: done.inserted, failed: done.failed, stored: db.prepare('SELECT COUNT(*) AS n FROM customers').get().n,
   generateSeconds: seconds(generated),
 };

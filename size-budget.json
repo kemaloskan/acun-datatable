@@ -7,6 +7,7 @@
   "packages/renderer-dom/dist/index.js": 30400,
   "packages/renderer-dom/dist/styles.css": 9700,
   "packages/export/dist/index.js": 12400,
+  "packages/export/dist/stream.js": 7200,
   "packages/import/dist/index.js": 13000,
   "packages/import/dist/acun-datatable-import.min.js": 10600,
   "packages/import/dist/styles.css": 1600,

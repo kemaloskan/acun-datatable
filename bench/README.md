@@ -96,7 +96,8 @@ Server, where nothing has been measured yet:
 (`createImportHandler`) into SQLite; `ImportBenchTest` in the Laravel package
 does the same through `TableImport` with the default `save()`. Both report the
 upload (read, preview) and the import (read, type, save in chunks) and the
-peak memory. Results: [results/import.md](results/import.md).
+peak memory (the Node script also the peak of its JavaScript heap and the size
+of the SQLite table it fills). Results: [results/import.md](results/import.md).
 
 ```bash
 npm run build

@@ -10,9 +10,9 @@
   "workspaces": [
     "packages/core",
     "packages/datasource-http",
+    "packages/export",
     "packages/server",
     "packages/renderer-dom",
-    "packages/export",
     "packages/import",
     "packages/datatable",
     "packages/vue",

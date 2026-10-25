@@ -95,6 +95,31 @@ that lies about its size cannot exhaust memory), 2,000 archive entries;
 ZIP64 and encrypted files are refused. XML is scanned without a DTD or entity
 expansion. Errors are `ImportError`s with a readable message.
 
+### Large files on a server: `@acunsoft/datatable-export/stream`
+
+`parseCsv` and `readXlsx` return the whole sheet, which suits the browser. On a
+server, `streamCsv` and `streamXlsx` read the same rows with the same limits
+but give the headers at once and the rows in chunks, decoding, inflating and
+scanning the file piece by piece, so memory follows the chunk instead of the
+file (the file's bytes and, for xlsx, its shared strings are still held):
+
+```ts
+import { importRows } from '@acunsoft/datatable-export';
+import { streamCsv, streamXlsx } from '@acunsoft/datatable-export/stream';
+
+const sheet = await streamCsv(bytes, { maxRows: 1_000_000, chunkSize: 1_000, encoding: 'utf-8' });
+let before = 0;
+for await (const rows of sheet.chunks) {
+  const result = importRows({ headers: sheet.headers, rows }, columns); // lines start at 2 in every chunk
+  // add `before` to each line, then save result.rows
+  before += rows.length;
+}
+```
+
+`encoding` is any `TextDecoder` label (a UTF-8 byte order mark is removed).
+The rows can be read once; stopping early (`break`) releases the file.
+`@acunsoft/datatable-server/import` reads uploads this way.
+
 ## License
 
 [MIT](LICENSE). Provided “as is”, without warranty of any kind; the authors and Acunsoft accept no liability for any damage or data loss arising from its use (see LICENSE).

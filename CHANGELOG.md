@@ -28,6 +28,15 @@ All notable changes to this repository. Each npm package also has its own
   Hono, Bun, Deno, and Express / Fastify / `node:http` through
   `toNodeListener()`) implements the import protocol with your own `save()`;
   memory and folder stores; background work on your own queue.
+- **Import back ends read files in chunks (not released yet):** the Node
+  handler and Laravel's `TableImport` no longer hold a file as a whole table:
+  CSV is decoded and parsed, xlsx inflated and scanned piece by piece (the
+  inflated-size limit still counted while inflating), the same rows, limits
+  and protocol answers. `@acunsoft/datatable-export/stream` (`streamCsv`,
+  `streamXlsx`) and `SheetReader::stream()` give the headers at once and the
+  rows in chunks. Laravel's xlsx reader no longer refuses worksheets larger
+  than about 1 MB of XML as having no header row (a regular-expression limit).
+  Measurements: `bench/results/import.md`.
   `@acunsoft/datatable-export` is an optional peer dependency.
 - **Import, measured and hardened (not released yet):** measurements of 100,000
   and 1,000,000 rows on Node and Laravel (`bench/results/import.md`); the

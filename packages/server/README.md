@@ -182,8 +182,10 @@ export const GET = ordersImport.handle, POST = ordersImport.handle, DELETE = ord
 - **The mapping is checked again on start** (one entry per file column, known
   columns once, every required column, an offered mode); uploads with the same
   `Idempotency-Key` give the same import; a second start answers 409.
-- **Rows** are read and typed by `@acunsoft/datatable-export` (`importRows`)
-  and handed to `save()` in chunks of `chunkSize` (1,000) with their line;
+- **Rows** are read in chunks (`@acunsoft/datatable-export/stream`: the file
+  is decoded, inflated and scanned piece by piece, never held as a whole
+  table), typed by `importRows` and handed to `save()` in chunks of
+  `chunkSize` (1,000) with their line;
   `context.reject(line, message, column, value)` refuses a row. A `save()` that
   throws fails the import with a general message (`onError` gets the error).
 - **At once or in the background:** `background: ({ rows }) => rows > 5000`

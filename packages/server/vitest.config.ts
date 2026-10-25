@@ -6,6 +6,8 @@ export default defineConfig({
   resolve: {
     alias: {
       '@acunsoft/datatable-core': fileURLToPath(new URL('../core/src/index.ts', import.meta.url)),
+      // The subpath first: an alias also matches the paths below it.
+      '@acunsoft/datatable-export/stream': fileURLToPath(new URL('../export/src/stream.ts', import.meta.url)),
       '@acunsoft/datatable-export': fileURLToPath(new URL('../export/src/index.ts', import.meta.url)),
       '@acunsoft/datatable-import/testing': fileURLToPath(new URL('../import/src/testing.ts', import.meta.url)),
     },

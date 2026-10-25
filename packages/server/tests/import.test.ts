@@ -109,6 +109,19 @@ describe('createImportHandler', () => {
     expect([orders.get('t1:Deniz')?.['total'], orders.get('t1:Ece')?.['total']]).toEqual(['12.5', '1234.50']);
   });
 
+  it('reads a file in chunks: Turkish Excel CSV, and lines across pieces of more than a megabyte', async () => {
+    const { fetch, orders } = setup({ limits: { maxBytes: 4 * 1024 * 1024, maxRows: 100_000 }, chunkSize: 1_000 });
+    const windows1254 = new Uint8Array([...new TextEncoder().encode('Customer,City\nA,'), 0xdd, 0x7a, 0x6d, 0x69, 0x72]); // İzmir
+    const turkish = await (await upload(fetch, new File([windows1254], 'orders.csv'))).json() as { id: string; preview: unknown };
+    expect(turkish.preview).toEqual([{ line: 2, cells: ['A', 'İzmir'] }]);
+    const lines = Array.from({ length: 60_000 }, (_, i) => `Müşteri ${i},"Şehir\n${i}",${i % 1_000 === 999 ? 'x' : i}`);
+    const big = await (await upload(fetch, csv(`﻿Customer,City,Total\n${lines.join('\r\n')}`))).json() as { id: string; file: unknown };
+    expect(big.file).toEqual({ name: 'orders.csv', rows: 60_000 });
+    expect(await (await start(fetch, big.id, { mapping: ['customer', 'city', 'total'], mode: 'insert' })).json())
+      .toMatchObject({ status: 'done', processed: 60_000, inserted: 59_940, failed: 60, errors: expect.arrayContaining([expect.objectContaining({ line: 1_001, column: 'total' })]) });
+    expect(orders.get('t1:Müşteri 59998')).toEqual({ customer: 'Müşteri 59998', city: 'Şehir\n59998', total: '59998' });
+  });
+
   it('checks its limits and the file signature on every upload', async () => {
     const { fetch } = setup();
     expect((await upload(fetch, csv('a'.repeat(70 * 1024)))).status).toBe(413);

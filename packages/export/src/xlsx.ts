@@ -1,7 +1,7 @@
 import { isDecimal } from '@acunsoft/datatable-core';
 import { ImportError, cellText } from './csv';
 import { checkSheet, type Sheet, type SheetCell } from './sheet';
-import { openZip, writeZip, type ZipLimits } from './zip';
+import { openZip, writeZip, type ZipLimits, type ZipReader } from './zip';
 
 const MAIN = 'http://schemas.openxmlformats.org/spreadsheetml/2006/main';
 const REL = 'http://schemas.openxmlformats.org/officeDocument/2006/relationships';
@@ -207,17 +207,16 @@ export interface ReadXlsxOptions extends ZipLimits {
   readonly maxColumns?: number;
 }
 
-/**
- * Read one worksheet of an `.xlsx` file into a sheet: the first non-empty
- * row is the header, empty rows are skipped. Cached values are read; formulas
- * are never evaluated. Numbers formatted as dates become `Date`s (local
- * time). Archive sizes, rows and columns are limited (zip-bomb safe).
- */
-export async function readXlsx(input: Uint8Array | ArrayBuffer, options: ReadXlsxOptions = {}): Promise<Sheet> {
-  const bytes = input instanceof Uint8Array ? input : new Uint8Array(input);
-  const maxRows = options.maxRows ?? 10_000;
-  const maxColumns = options.maxColumns ?? 1_000;
-  const zip = openZip(bytes, options);
+/** What reading any worksheet of a workbook needs: where it is, its strings and date styles. */
+export interface WorkbookParts {
+  readonly sheetPath: string;
+  readonly sharedPath: string;
+  readonly date1904: boolean;
+  readonly dateStyles: ReadonlySet<number>;
+}
+
+/** Read the workbook, its relations and styles (small parts) and find the wanted worksheet. */
+export async function workbookParts(zip: ZipReader, wanted: string | number = 0): Promise<WorkbookParts> {
   const decoder = new TextDecoder();
   const text = async (name: string): Promise<string | undefined> => {
     const data = await zip.read(name);
@@ -231,7 +230,6 @@ export async function readXlsx(input: Uint8Array | ArrayBuffer, options: ReadXls
     const relation = Object.entries(attrs).find(([key]) => /(^|:)id$/.test(key) && key !== 'sheetId')?.[1];
     return { name: attrs['name'] ?? '', relation };
   });
-  const wanted = options.sheet ?? 0;
   const chosen = typeof wanted === 'number' ? sheets[wanted] : sheets.find(sheet => sheet.name === wanted);
   if (!chosen) throw new ImportError(`worksheet ${JSON.stringify(wanted)} not found`);
 
@@ -257,12 +255,6 @@ export async function readXlsx(input: Uint8Array | ArrayBuffer, options: ReadXls
     return found ? resolve(found.target) : fallback;
   };
 
-  const shared: string[] = [];
-  const sharedXml = await text(byType('/sharedStrings', 'xl/sharedStrings.xml'));
-  for (const match of (sharedXml ?? '').matchAll(/<(?:\w+:)?si\b[^>]*?(?:\/>|>([\s\S]*?)<\/(?:\w+:)?si>)/g)) {
-    shared.push(runs(match[1] ?? ''));
-  }
-
   const dateStyles = new Set<number>();
   const stylesXml = (await text(byType('/styles', 'xl/styles.xml'))) ?? '';
   const custom = new Map<number, string>();
@@ -275,48 +267,88 @@ export async function readXlsx(input: Uint8Array | ArrayBuffer, options: ReadXls
     const id = Number(attributes(match[1]!)['numFmtId'] ?? 0);
     if (BUILTIN_DATES.has(id) || (custom.has(id) && isDateFormat(custom.get(id)!))) dateStyles.add(index);
   });
+  return { sheetPath, sharedPath: byType('/sharedStrings', 'xl/sharedStrings.xml'), date1904, dateStyles };
+}
 
-  const worksheet = await text(sheetPath);
+/** The text of one shared string (`<si>` inner XML). */
+export const sharedString = (inner: string): string => runs(inner);
+
+/** The cells of one `<row>` (its inner XML), placed by their references. */
+export function rowCells(xml: string, shared: readonly string[], parts: WorkbookParts, maxColumns: number): SheetCell[] {
+  const cells: SheetCell[] = [];
+  let next = 0;
+  for (const cellMatch of xml.matchAll(/<(?:\w+:)?c\b([^>]*?)(?:\/>|>([\s\S]*?)<\/(?:\w+:)?c>)/g)) {
+    const attrs = attributes(cellMatch[1]!);
+    const index = attrs['r'] !== undefined ? columnIndex(attrs['r']) ?? next : next;
+    next = index + 1;
+    if (index >= maxColumns) throw new ImportError(`more than ${maxColumns} columns`);
+    const inner = cellMatch[2] ?? '';
+    const raw = /<(?:\w+:)?v\b[^>]*>([\s\S]*?)<\/(?:\w+:)?v>/.exec(inner)?.[1];
+    const value = raw === undefined ? undefined : decode(raw);
+    let cell: SheetCell = null;
+    switch (attrs['t']) {
+      case 's': cell = value === undefined ? null : shared[Number(value)] ?? null; break;
+      case 'inlineStr': cell = runs(/<(?:\w+:)?is\b[^>]*>([\s\S]*?)<\/(?:\w+:)?is>/.exec(inner)?.[1] ?? ''); break;
+      case 'str': cell = value ?? null; break;
+      case 'b': cell = value === undefined ? null : value === '1' || value === 'true'; break;
+      case 'e': cell = null; break; // #N/A, #DIV/0!: no value
+      case 'd': cell = value === undefined || Number.isNaN(Date.parse(value)) ? null : new Date(value); break;
+      default: {
+        if (value === undefined || value.trim() === '') break;
+        const number = Number(value);
+        if (!Number.isFinite(number)) { cell = value; break; }
+        cell = parts.dateStyles.has(Number(attrs['s'] ?? 0)) ? fromSerial(number, parts.date1904) : number;
+      }
+    }
+    while (cells.length < index) cells.push(null);
+    cells[index] = cell;
+  }
+  return cells;
+}
+
+/** The header texts of the first non-empty row, without trailing empty ones. */
+export function headerTexts(headerRow: readonly SheetCell[]): string[] {
+  const headers = headerRow.map(cell => (cell === null ? '' : cellText(cell).trim()));
+  while (headers.length > 0 && headers[headers.length - 1] === '') headers.pop();
+  return headers;
+}
+
+/**
+ * Read one worksheet of an `.xlsx` file into a sheet: the first non-empty
+ * row is the header, empty rows are skipped. Cached values are read; formulas
+ * are never evaluated. Numbers formatted as dates become `Date`s (local
+ * time). Archive sizes, rows and columns are limited (zip-bomb safe).
+ */
+export async function readXlsx(input: Uint8Array | ArrayBuffer, options: ReadXlsxOptions = {}): Promise<Sheet> {
+  const bytes = input instanceof Uint8Array ? input : new Uint8Array(input);
+  const maxRows = options.maxRows ?? 10_000;
+  const maxColumns = options.maxColumns ?? 1_000;
+  const zip = openZip(bytes, options);
+  const decoder = new TextDecoder();
+  const text = async (name: string): Promise<string | undefined> => {
+    const data = await zip.read(name);
+    return data === undefined ? undefined : decoder.decode(data);
+  };
+  const parts = await workbookParts(zip, options.sheet);
+
+  const shared: string[] = [];
+  for (const match of ((await text(parts.sharedPath)) ?? '').matchAll(/<(?:\w+:)?si\b[^>]*?(?:\/>|>([\s\S]*?)<\/(?:\w+:)?si>)/g)) {
+    shared.push(runs(match[1] ?? ''));
+  }
+
+  const worksheet = await text(parts.sheetPath);
   if (worksheet === undefined) throw new ImportError('the worksheet is missing from the file');
   const data = /<(?:\w+:)?sheetData\b[^>]*?(?:\/>|>([\s\S]*?)<\/(?:\w+:)?sheetData>)/.exec(worksheet)?.[1] ?? '';
   const table: SheetCell[][] = [];
   for (const rowMatch of data.matchAll(/<(?:\w+:)?row\b[^>]*?(?:\/>|>([\s\S]*?)<\/(?:\w+:)?row>)/g)) {
-    const cells: SheetCell[] = [];
-    let next = 0;
-    for (const cellMatch of (rowMatch[1] ?? '').matchAll(/<(?:\w+:)?c\b([^>]*?)(?:\/>|>([\s\S]*?)<\/(?:\w+:)?c>)/g)) {
-      const attrs = attributes(cellMatch[1]!);
-      const index = attrs['r'] !== undefined ? columnIndex(attrs['r']) ?? next : next;
-      next = index + 1;
-      if (index >= maxColumns) throw new ImportError(`more than ${maxColumns} columns`);
-      const inner = cellMatch[2] ?? '';
-      const raw = /<(?:\w+:)?v\b[^>]*>([\s\S]*?)<\/(?:\w+:)?v>/.exec(inner)?.[1];
-      const value = raw === undefined ? undefined : decode(raw);
-      let cell: SheetCell = null;
-      switch (attrs['t']) {
-        case 's': cell = value === undefined ? null : shared[Number(value)] ?? null; break;
-        case 'inlineStr': cell = runs(/<(?:\w+:)?is\b[^>]*>([\s\S]*?)<\/(?:\w+:)?is>/.exec(inner)?.[1] ?? ''); break;
-        case 'str': cell = value ?? null; break;
-        case 'b': cell = value === undefined ? null : value === '1' || value === 'true'; break;
-        case 'e': cell = null; break; // #N/A, #DIV/0!: no value
-        case 'd': cell = value === undefined || Number.isNaN(Date.parse(value)) ? null : new Date(value); break;
-        default: {
-          if (value === undefined || value.trim() === '') break;
-          const number = Number(value);
-          if (!Number.isFinite(number)) { cell = value; break; }
-          cell = dateStyles.has(Number(attrs['s'] ?? 0)) ? fromSerial(number, date1904) : number;
-        }
-      }
-      while (cells.length < index) cells.push(null);
-      cells[index] = cell;
-    }
+    const cells = rowCells(rowMatch[1] ?? '', shared, parts, maxColumns);
     if (cells.every(cell => cell === null || cell === '')) continue;
     table.push(cells);
     if (table.length > maxRows + 1) throw new ImportError(`more than ${maxRows} rows`);
   }
 
   const [headerRow = [], ...rows] = table;
-  const headers = headerRow.map(cell => (cell === null ? '' : cellText(cell).trim()));
-  while (headers.length > 0 && headers[headers.length - 1] === '') headers.pop();
+  const headers = headerTexts(headerRow);
   const width = headers.length;
   return Object.freeze({
     headers: Object.freeze(headers),
