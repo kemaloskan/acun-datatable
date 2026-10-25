@@ -9,8 +9,9 @@
  * add adt-size--sm or adt-size--lg (on .adt or an ancestor).
  * Selectors use :where() where possible, so your own rules win easily.
  *
- * Light by default. Dark when an ancestor has data-theme="dark" or the class
- * "dark" (Tailwind); follow the system setting with data-theme="auto". The
+ * Light by default. Dark when an ancestor has data-theme="dark",
+ * data-bs-theme="dark" (Bootstrap 5.3) or the class "dark" (Tailwind); follow
+ * the system setting with data-theme="auto". The
  * component cannot see the page background, so it never turns dark on its own.
  */
 :where(.adt, .adt-table-wrap, .adt-paging, .adt-info, .adt-length, .adt-search, .adt-selection, .adt-columns, .adt-toolbar, .adt-import):not(:where(.adt, .adt-table-wrap, .adt-paging, .adt-info, .adt-length, .adt-search, .adt-selection, .adt-columns, .adt-toolbar, .adt-import) *) {
@@ -43,7 +44,7 @@
   font-size: var(--adt-font-size);
   color: var(--adt-fg);
 }
-:where([data-theme="dark"], .dark) :where(.adt, .adt-table-wrap, .adt-paging, .adt-info, .adt-length, .adt-search, .adt-selection, .adt-columns, .adt-toolbar, .adt-import):not(:where(.adt, .adt-table-wrap, .adt-paging, .adt-info, .adt-length, .adt-search, .adt-selection, .adt-columns, .adt-toolbar, .adt-import) *) {
+:where([data-theme="dark"], [data-bs-theme="dark"], .dark) :where(.adt, .adt-table-wrap, .adt-paging, .adt-info, .adt-length, .adt-search, .adt-selection, .adt-columns, .adt-toolbar, .adt-import):not(:where(.adt, .adt-table-wrap, .adt-paging, .adt-info, .adt-length, .adt-search, .adt-selection, .adt-columns, .adt-toolbar, .adt-import) *) {
   --adt-bg: #0f1218; --adt-surface: #151922; --adt-fg: #e6e8ec; --adt-muted: #98a2b3; --adt-line: #262c38;
   --adt-head-fg: #98a2b3; --adt-hover: #1b202b; --adt-selected: #221c3d; --adt-accent: #8f75ff; --adt-danger: #ff6b61;
   --adt-shadow: none; color-scheme: dark;

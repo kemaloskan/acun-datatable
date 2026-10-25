@@ -471,6 +471,21 @@ test('styles stay light on a light page even when the system is dark', async ({ 
   expect(await label.evaluate(el => getComputedStyle(el).color)).toBe('rgb(230, 232, 236)'); // dark on request
 });
 
+test('dark with the site\'s own theme switch: class="dark" (Tailwind) or data-bs-theme="dark" (Bootstrap 5.3)', async ({ page }) => {
+  await expect(page.locator('body[data-ready=true]')).toBeAttached();
+  const label = page.locator('#orders tbody td').nth(1);
+  const color = () => label.evaluate(el => getComputedStyle(el).color);
+  expect(await color()).toBe('rgb(31, 36, 48)');
+  for (const [name, value] of [['class', 'dark'], ['data-bs-theme', 'dark']]) {
+    await page.evaluate(([n, v]) => document.documentElement.setAttribute(n!, v!), [name, value]);
+    expect(await color()).toBe('rgb(230, 232, 236)');
+    await page.evaluate(n => document.documentElement.removeAttribute(n), name);
+    expect(await color()).toBe('rgb(31, 36, 48)');
+  }
+  await page.evaluate(() => document.documentElement.setAttribute('data-bs-theme', 'light'));
+  expect(await color()).toBe('rgb(31, 36, 48)'); // Bootstrap's light stays light
+});
+
 test.describe('new AcunDataTable(...) from a <script> tag', () => {
   test('server side over POST with a fixed header, as in DataTables', async ({ page }) => {
     const requests: string[] = [];

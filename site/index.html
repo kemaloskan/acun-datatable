@@ -1590,12 +1590,12 @@ const GUIDES = {
      "en": "Theme and colours"
     },
     "desc": {
-     "tr": "Koyu tema bir üst öğedeki data-theme ile; renkler CSS değişkenleriyle.",
-     "en": "Dark mode through data-theme on an ancestor; colours through CSS custom properties."
+     "tr": "Koyu tema sitenizin tema düğmesini izler: bir üst öğede data-theme=\"dark\", data-bs-theme=\"dark\" (Bootstrap 5.3) ya da class=\"dark\" (Tailwind); renkler CSS değişkenleriyle.",
+     "en": "Dark mode follows your site's theme switch: data-theme=\"dark\", data-bs-theme=\"dark\" (Bootstrap 5.3) or class=\"dark\" (Tailwind) on an ancestor; colours through CSS custom properties."
     },
     "code": [
      "css",
-     "/* \u003chtml data-theme=\"dark\"> or class=\"dark\"; data-theme=\"auto\" follows the system */\n.adt {\n  --adt-accent: #0f766e;         /* current page, focus, sort marks */\n  --adt-radius: 12px;            /* panels */\n  --adt-control-radius: 8px;     /* inputs, buttons, page numbers */\n  --adt-cell-padding: .6rem .75rem;\n  --adt-head-transform: none;    /* normal-case headers */\n}"
+     "/* \u003chtml data-theme=\"dark\">, data-bs-theme=\"dark\" or class=\"dark\"; data-theme=\"auto\" follows the system */\n.adt {\n  --adt-accent: #0f766e;         /* current page, focus, sort marks */\n  --adt-radius: 12px;            /* panels */\n  --adt-control-radius: 8px;     /* inputs, buttons, page numbers */\n  --adt-cell-padding: .6rem .75rem;\n  --adt-head-transform: none;    /* normal-case headers */\n}"
     ]
    },
    {

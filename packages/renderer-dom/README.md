@@ -384,7 +384,8 @@ the controls) and a responsive layout: below 860px the bottom bar centres and
 stacks, below 640px the controls go full width, the pager shows only the ends
 and the current page (`‹ 1 … 7 … 48 ›`) and every row becomes a card (each cell
 shows its header). It is light by default; it turns dark under an ancestor with
-`data-theme="dark"` or the class `dark`, and follows the system setting under
+`data-theme="dark"`, `data-bs-theme="dark"` (Bootstrap 5.3) or the class `dark`
+(Tailwind), so it follows your site's own theme switch; it follows the system setting under
 `data-theme="auto"` (it cannot see your page background, so it never turns dark
 on its own).
 

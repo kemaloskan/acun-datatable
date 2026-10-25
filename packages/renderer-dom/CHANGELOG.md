@@ -4,6 +4,8 @@
 
 ### Minor Changes
 
+- `styles.css` turns dark under `data-bs-theme="dark"` too (Bootstrap 5.3 and the themes
+  built on it), besides `class="dark"` and `data-theme="dark"`.
 - `printRows(document, { title, subtitle, headers, rows, numeric })` prints only a
   table — the rows given, not the page — through a hidden frame with the page's
   stylesheets.

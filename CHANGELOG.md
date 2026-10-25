@@ -31,6 +31,8 @@ npm package's `CHANGELOG.md` has its own notes.
 - **Columns:** pinned columns stay put when columns can also be resized; virtual
   scrolling keeps the column widths; `responsive: 'auto'` keeps every column once the
   user sized one.
+- **Dark mode** also follows Bootstrap 5.3's `data-bs-theme="dark"`, besides
+  `class="dark"` (Tailwind) and `data-theme="dark"`.
 - **Print** prints only the table (every matching row in `@acunsoft/datatable`,
   `printRows()` in `@acunsoft/datatable-dom`), not the page around it.
 - **Phones:** the menu buttons show their icon only, on a row under the search, and
