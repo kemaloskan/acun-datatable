@@ -11,6 +11,12 @@ const csv = (rows: number, bad: readonly number[] = []): { name: string; mimeTyp
   buffer: Buffer.from(['E-mail,Name,Total,Note', ...Array.from({ length: rows }, (_, i) => `${bad.includes(i) ? '' : `u${i}@example.com`},User ${i},${i}.50,`)].join('\n')),
 });
 
+// The built test kit (as published), typed from its source: `npm run check` runs before the build.
+const importKit = (): Promise<typeof import('../packages/import/src/testing')> => {
+  const built = '../packages/import/dist/testing.js';
+  return import(built);
+};
+
 let user = '';
 const open = async (page: Page, query = '', texts = { tools: 'Tools', item: 'Import…', title: 'Import' }) => {
   // Each test is its own user (the back end keeps imports and records per user), so parallel tests do not mix.
@@ -107,7 +113,7 @@ test('accessible in every step, in the table language, and full screen on phones
 
 test('the back end passes the conformance run over real HTTP', async ({ baseURL }) => {
   // The test kit checks any back end; here the reference one behind the e2e server.
-  const { runImportConformance } = await import('../packages/import/dist/testing.js');
+  const { runImportConformance } = await importKit();
   const result = await runImportConformance({
     url: `${baseURL}/e2e/api/import`,
     headers: { 'X-User': 'conformance' },
@@ -119,7 +125,7 @@ test('the back end passes the conformance run over real HTTP', async ({ baseURL 
 
 test.describe('the Node helper of @acunsoft/datatable-server (createImportHandler over SQLite)', () => {
   test('passes the conformance run over real HTTP', async ({ baseURL }) => {
-    const { runImportConformance } = await import('../packages/import/dist/testing.js');
+    const { runImportConformance } = await importKit();
     const result = await runImportConformance({
       url: `${baseURL}/e2e/api/node-import`, headers: { 'X-User': `conformance-${Math.random()}` },
       file: new File(['E-mail,Name,Total\nn1@example.com,Nur,1\n,Missing,2\n'], 'orders.csv', { type: 'text/csv' }),
