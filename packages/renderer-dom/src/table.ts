@@ -437,7 +437,8 @@ export function renderTable<TData>(
     const widths = state.columnWidths;
     const layoutKey = virtual ? `${columns.map(column => column.id).join('|')}#${selectable}#${rowActions.length > 0}#${expandable}` : '';
     const lock = virtual && locked?.key === layoutKey && locked.width === scroller.clientWidth ? locked : undefined;
-    const tableEl = element(doc, 'table', { class: Object.keys(widths).length > 0 || lock ? 'adt-table adt-fixed-layout' : 'adt-table' });
+    const userWidths = Object.keys(widths).length > 0;
+    const tableEl = element(doc, 'table', { class: `adt-table${userWidths || lock ? ' adt-fixed-layout' : ''}${userWidths ? ' adt-user-widths' : ''}` });
     if (page.all) tableEl.setAttribute('aria-rowcount', String(page.all.length + 1));
     if (options.caption !== undefined) tableEl.append(element(doc, 'caption', {}, options.caption));
 

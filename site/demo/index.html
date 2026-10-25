@@ -261,7 +261,7 @@
     size: document.getElementById('size').value,
     language: languageSelect.value,
   });
-  const money = value => (value == null ? '' : Number(value).toLocaleString(T().locale, { style: 'currency', currency: 'TRY' }));
+  const money = value => (value == null ? '' : Number(value).toLocaleString(T().locale, { style: 'currency', currency: 'TRY', currencyDisplay: 'narrowSymbol' }));
   const badge = value => el('span', { class: `badge badge--${value}` }, T().status[value] ?? String(value));
   const category = value => T().category[value] ?? String(value);
 

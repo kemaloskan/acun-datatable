@@ -5,7 +5,9 @@
  * stays. Hidden cells get `adt-auto-hidden`, their values in the details
  * (`[data-column-id]` items) `adt-auto-shown`, and the table
  * `adt-auto-collapsed` while anything is hidden, which shows the ⊕ buttons.
- * Works on the markup of every renderer and follows re-renders and resizes.
+ * Columns the user sized (the table has `adt-user-widths`) are a choice: then
+ * nothing is hidden and the table scrolls sideways. Works on the markup of
+ * every renderer and follows re-renders and resizes.
  * Returns `stop`.
  */
 export function autoResponsive(container: HTMLElement): () => void {
@@ -21,6 +23,8 @@ export function autoResponsive(container: HTMLElement): () => void {
     const scroller = table?.parentElement;
     if (table && head && scroller) {
       const cells = [...head.cells];
+      // Widths the user set are a choice: keep every column and let the table scroll sideways.
+      const userWidths = table.classList.contains('adt-user-widths');
       const idOf = (cell: HTMLTableCellElement): string | undefined =>
         cell.dataset['columnId'] ?? (cell.classList.contains('adt-actions') ? '__actions' : undefined);
       const level = (cell: HTMLTableCellElement): number => Number(/adt-col--p(\d)/.exec(cell.className)?.[1] ?? 1);
@@ -39,7 +43,7 @@ export function autoResponsive(container: HTMLElement): () => void {
       const hidden = new Set<number>();
       setHidden(hidden);
       const overflows = (): boolean => table.scrollWidth > scroller.clientWidth + 1;
-      for (const candidate of candidates) {
+      for (const candidate of userWidths ? [] : candidates) {
         if (!overflows()) break;
         hidden.add(candidate.index);
         setHidden(hidden);

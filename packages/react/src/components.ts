@@ -499,7 +499,7 @@ export function DataTable<TData>(props: DataTableProps<TData>): ReactElement {
   const wrapClass = ['adt-table-wrap', `adt-responsive--${responsive}`, size === 'md' ? '' : `adt-size--${size}`,
     props.stickyHeader === true ? 'adt-sticky-header' : '', height ? 'adt-scroll-y' : '', busy ? 'adt-loading' : '', skeleton ? 'adt-skeleton-on' : '', virtual ? 'adt-virtual' : ''].filter(Boolean).join(' ');
   const tableClass = ['adt-table', collapsible && levels.has(2) ? 'adt-has-p2' : '', collapsible && levels.has(3) ? 'adt-has-p3' : '', detail ? 'adt-has-detail' : '',
-    Object.keys(state.columnWidths).length > 0 || lock ? 'adt-fixed-layout' : '']
+    Object.keys(state.columnWidths).length > 0 || lock ? 'adt-fixed-layout' : '', Object.keys(state.columnWidths).length > 0 ? 'adt-user-widths' : '']
     .filter(Boolean).join(' ');
   return h('div', {
     className: wrapClass, ref: wrap, 'aria-busy': props.status ? busy : undefined,

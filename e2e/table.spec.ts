@@ -217,6 +217,42 @@ test.describe('responsive modes on a phone', () => {
   });
 });
 
+test('responsive auto keeps every column once the user sizes one; reset brings it back', async ({ page }) => {
+  await page.setViewportSize({ width: 330, height: 800 });
+  await page.goto('/e2e/fixtures/table.html?columns&responsive=auto');
+  await expect(page.locator('body[data-ready=true]')).toBeAttached();
+  await expect(page.getByRole('columnheader', { name: 'City' })).toBeHidden(); // does not fit: hidden
+  await page.getByRole('separator', { name: 'Resize Customer' }).focus();
+  await page.keyboard.press('Shift+ArrowRight');
+  await expect(page.getByRole('columnheader', { name: 'City' })).toBeVisible(); // a sized table scrolls instead
+  expect(await page.locator('.adt-scroll').evaluate(node => node.scrollWidth > node.clientWidth)).toBe(true);
+  await page.evaluate(() => (window as unknown as { __table: { setColumnWidths(widths: object): void } }).__table.setColumnWidths({}));
+  await expect(page.getByRole('columnheader', { name: 'City' })).toBeHidden();
+});
+
+test('headers stay over their columns with fixed and resizable columns together', async ({ page }) => {
+  const aligned = () => page.evaluate(() => {
+    const head = [...document.querySelectorAll<HTMLElement>('thead tr:first-child > *')];
+    const body = [...document.querySelectorAll<HTMLElement>('tbody tr.adt-row:first-child > *')];
+    return head.flatMap((cell, index) => {
+      const a = cell.getBoundingClientRect();
+      const b = body[index]?.getBoundingClientRect();
+      return a.width > 0 && b && (Math.abs(a.left - b.left) > 1 || Math.abs(a.width - b.width) > 1) ? [`${index}: ${Math.round(a.left)}/${Math.round(b.left)}`] : [];
+    });
+  });
+  for (const [width, responsive] of [[1100, 'auto'], [700, 'auto'], [700, 'scroll'], [700, 'collapse']] as const) {
+    await page.setViewportSize({ width, height: 800 });
+    await page.goto(`/e2e/fixtures/table.html?fixed&columns&responsive=${responsive}`);
+    await expect(page.locator('body[data-ready=true]')).toBeAttached();
+    expect(await aligned()).toEqual([]);
+    await page.getByRole('separator', { name: 'Resize Total' }).focus();
+    for (let step = 0; step < 12; step++) await page.keyboard.press('Shift+ArrowRight'); // wider than the page
+    expect(await aligned()).toEqual([]);
+    await page.locator('.adt-scroll').evaluate(node => { node.scrollLeft = 300; });
+    expect(await aligned()).toEqual([]);
+  }
+});
+
 test('fixed columns stay in place while the table scrolls sideways', async ({ page }) => {
   await page.setViewportSize({ width: 600, height: 800 });
   await page.goto('/e2e/fixtures/table.html?fixed&responsive=scroll');

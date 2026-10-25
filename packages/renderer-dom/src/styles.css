@@ -497,7 +497,8 @@
 }
 
 /* Fixed columns (fixedColumns): cells stay in place while the table scrolls sideways */
-.adt-table .adt-pin { position: sticky; z-index: 1; background: var(--adt-surface); }
+/* As strong as the resize handle's and the editor's position: relative (th[data-column-id], td.adt-editable), and after them, so a pinned cell stays sticky. */
+.adt-table :is(th, td).adt-pin { position: sticky; z-index: 1; background: var(--adt-surface); }
 .adt-table thead .adt-pin { z-index: 4; }
 .adt-table tfoot .adt-pin { background: var(--adt-surface); }
 .adt-row:hover > .adt-pin { background: var(--adt-hover); }

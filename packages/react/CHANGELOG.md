@@ -4,6 +4,7 @@
 
 ### Minor Changes
 
+- `responsive="auto"` keeps every column once the user sized one.
 - Virtual scrolling keeps the column widths while rows scroll by.
 - `PageInfo` and `Pagination` show a server's lower bound ("10,000+") and number
   the pages known to exist.

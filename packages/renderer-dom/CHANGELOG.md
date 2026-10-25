@@ -4,6 +4,10 @@
 
 ### Minor Changes
 
+- Pinned columns stay in place when columns can also be resized (or edited): the header
+  cells were shifted instead of sticking, covering their neighbours.
+- `responsive: 'auto'` keeps every column once the user sized one; the table scrolls
+  sideways (Reset columns brings the measuring back).
 - Virtual scrolling keeps the column widths while rows scroll by (measured once the first
   rows are drawn; again when the columns or the width change).
 - The selection bar's "select all N matching" uses the table's `selectAllMatching()`.
