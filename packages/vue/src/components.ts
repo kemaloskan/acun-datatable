@@ -6,7 +6,7 @@ import {
 import { COLUMN_WIDTH_LIMITS, getPageItems, type ColumnDef, type DataTable, type Row } from '@acunsoft/datatable-core';
 import {
   cellValue, checkPageSizes, checkResponsive, checkSize, confirmed, filterControls, splitActions, createCellText, ICONS, labelsEn, knownPageCount, nextSorting, pageInfoText,
-  afterPointerRelease, autoResponsive, cellEditor, checkVirtual, virtualWindow, columnsChanged, columnTools, isEditable, numeric, pageSizeChoices, pinColumns, resetColumns, priorityOf, rangeOf, renderBulkActions, renderFilterChips, renderFilters, renderMenu, rowName, scrollHeight,
+  afterPointerRelease, autoResponsive, cellEditor, checkVirtual, virtualWindow, columnsChanged, columnTools, isEditable, numeric, pageSizeChoices, pinColumns, placeMenu, resetColumns, priorityOf, rangeOf, renderBulkActions, renderFilterChips, renderFilters, renderMenu, rowName, scrollHeight,
   checkFixedColumns, type CellEditor, type EditHandler, type FixedColumns, type MenuItem, type RenderedComponent, type ResponsiveMode, type TableSize,
   type BulkAction, type BulkSelection, type CellFormatter, type DataTableLabels, type RowAction, type StatusSource,
 } from '@acunsoft/datatable-dom';
@@ -400,7 +400,7 @@ export const AcunDataTable = defineComponent({
         });
         if (menu.length > 0) {
           buttons.push(h('details', {
-            class: 'adt-row-menu', key: '__menu',
+            class: 'adt-row-menu', key: '__menu', onToggle: (event: Event) => placeMenu(event.currentTarget as HTMLDetailsElement),
             onKeydown: (event: KeyboardEvent) => {
               const details = event.currentTarget as HTMLDetailsElement;
               if (event.key === 'Escape' && details.open) { details.open = false; details.querySelector('summary')?.focus(); }
@@ -755,8 +755,8 @@ export const AcunColumnToggle = defineComponent({
       const columns = props.table.getColumns();
       const byId = new Map(columns.map(column => [column.id, column]));
       const lastVisible = columns.length - hidden.length === 1;
-      return h('details', { class: 'adt-columns' }, [
-        h('summary', [iconNode('columns'), label.columns]),
+      return h('details', { class: 'adt-columns', onToggle: (event: Event) => placeMenu(event.currentTarget as HTMLDetailsElement) }, [
+        h('summary', [iconNode('columns'), h('span', { class: 'adt-summary-text' }, label.columns)]),
         h('fieldset', [h('legend', label.showColumns), ...columnOrder.map((id, index) => {
           const column = byId.get(id)!;
           const shown = !hidden.includes(id);

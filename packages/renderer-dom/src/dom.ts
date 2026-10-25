@@ -85,6 +85,24 @@ export function icon(doc: Document, name: keyof typeof ICONS | { readonly path: 
   return svg;
 }
 
+/**
+ * Keep an open dropdown (`<details>` with its panel after the `<summary>`) inside the
+ * window: the panel opens towards the end of its button and is shifted sideways
+ * (`--adt-menu-shift`) when it would stick out, e.g. on a phone where the button
+ * sits at the start of the row. Call it from the `toggle` event.
+ */
+export function placeMenu(menu: HTMLDetailsElement): void {
+  menu.style.removeProperty('--adt-menu-shift');
+  const panel = menu.querySelector<HTMLElement>(':scope > :not(summary)');
+  if (!menu.open || !panel) return;
+  const margin = 8;
+  const view = menu.ownerDocument.documentElement.clientWidth;
+  const box = panel.getBoundingClientRect();
+  let shift = box.right > view - margin ? view - margin - box.right : 0;
+  if (box.left + shift < margin) shift = margin - box.left;
+  if (shift !== 0) menu.style.setProperty('--adt-menu-shift', `${Math.round(shift)}px`);
+}
+
 /** Set or clear `aria-disabled`; unlike `disabled`, a focused control keeps focus. */
 export function ariaDisabled(node: HTMLElement, value: boolean): void {
   if (value) node.setAttribute('aria-disabled', 'true');

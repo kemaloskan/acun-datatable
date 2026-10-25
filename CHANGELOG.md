@@ -31,6 +31,11 @@ npm package's `CHANGELOG.md` has its own notes.
 - **Columns:** pinned columns stay put when columns can also be resized; virtual
   scrolling keeps the column widths; `responsive: 'auto'` keeps every column once the
   user sized one.
+- **Print** prints only the table (every matching row in `@acunsoft/datatable`,
+  `printRows()` in `@acunsoft/datatable-dom`), not the page around it.
+- **Phones:** the menu buttons show their icon only, on a row under the search, and
+  an open menu stays inside the window; cards no longer repeat the column names
+  above them.
 - **Fixes from review:** NULL-aware cursor paging, cursor exports, editor
   clicks, modal focus, large selections, column widths on phones, Vue table
   props, SSR ids, and more (see each package's changelog).
@@ -45,6 +50,9 @@ npm package's `CHANGELOG.md` has its own notes.
   `TableResponse`.
 - **Changed:** the user's sort comes before an `orderBy()` in `query()`;
   MariaDB gets its count time limit; see UPGRADING.md.
+- **Print** (`printable()`) prints only the table with the rows on screen, not the
+  page around it; on phones the menu buttons show their icon only and open inside
+  the window.
 
 #### Fixed (review before release)
 

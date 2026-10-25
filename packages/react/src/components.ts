@@ -1,11 +1,11 @@
 import {
   createElement as h, useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore,
-  type ChangeEvent, type CSSProperties, type KeyboardEvent, type RefObject, type MouseEvent, type ReactElement, type ReactNode,
+  type ChangeEvent, type CSSProperties, type KeyboardEvent, type RefObject, type MouseEvent, type ReactElement, type ReactNode, type SyntheticEvent,
 } from 'react';
 import { COLUMN_WIDTH_LIMITS, getPageItems, type ColumnDef, type DataTable, type Row } from '@acunsoft/datatable-core';
 import {
   cellValue, checkPageSizes, checkResponsive, checkSize, confirmed, filterControls, splitActions, createCellText, ICONS, labelsEn, knownPageCount, nextSorting, pageInfoText,
-  afterPointerRelease, autoResponsive, cellEditor, checkVirtual, virtualWindow, columnsChanged, columnTools, isEditable, numeric, pageSizeChoices, pinColumns, resetColumns, priorityOf, rangeOf, renderBulkActions, renderFilterChips, renderFilters, renderMenu, rowName, scrollHeight,
+  afterPointerRelease, autoResponsive, cellEditor, checkVirtual, virtualWindow, columnsChanged, columnTools, isEditable, numeric, pageSizeChoices, pinColumns, placeMenu, resetColumns, priorityOf, rangeOf, renderBulkActions, renderFilterChips, renderFilters, renderMenu, rowName, scrollHeight,
   checkFixedColumns, type CellEditor, type EditHandler, type FixedColumns, type MenuItem, type RenderedComponent, type ResponsiveMode, type TableSize,
   type BulkAction, type BulkSelection, type CellFormatter, type DataTableLabels, type RowAction, type StatusSource,
 } from '@acunsoft/datatable-dom';
@@ -300,7 +300,7 @@ export function DataTable<TData>(props: DataTableProps<TData>): ReactElement {
     });
     if (menu.length > 0) {
       buttons.push(h('details', {
-        className: 'adt-row-menu', key: '__menu',
+        className: 'adt-row-menu', key: '__menu', onToggle: (event: SyntheticEvent<HTMLDetailsElement>) => placeMenu(event.currentTarget),
         onKeyDown: (event: KeyboardEvent<HTMLDetailsElement>) => {
           if (event.key === 'Escape' && event.currentTarget.open) { event.currentTarget.open = false; event.currentTarget.querySelector('summary')?.focus(); }
         },
@@ -676,8 +676,8 @@ export function ColumnToggle({ table, labels: custom, reorderable = false }: Col
   const columns = table.getColumns();
   const byId = new Map(columns.map(column => [column.id, column]));
   const lastVisible = columns.length - state.hiddenColumns.length === 1;
-  return h('details', { className: 'adt-columns' },
-    h('summary', null, icon('columns'), labels.columns),
+  return h('details', { className: 'adt-columns', onToggle: (event: SyntheticEvent<HTMLDetailsElement>) => placeMenu(event.currentTarget) },
+    h('summary', null, icon('columns'), h('span', { className: 'adt-summary-text' }, labels.columns)),
     h('fieldset', null, h('legend', null, labels.showColumns), state.columnOrder.map((id, index) => {
       const column = byId.get(id)!;
       const shown = !state.hiddenColumns.includes(id);

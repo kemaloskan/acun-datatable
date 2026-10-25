@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { createDataTable, type ColumnDef } from '@acunsoft/datatable-core';
-import { labelsTr, renderColumnToggle, renderTable } from '../src/index';
+import { labelsTr, placeMenu, renderColumnToggle, renderTable } from '../src/index';
 
 type Order = { id: number; customer: string; city: string; total: number };
 const columns: readonly ColumnDef<Order>[] = [
@@ -61,5 +61,41 @@ describe('column visibility in the DOM', () => {
     expect(menu.children).toHaveLength(0);
     table.setColumnVisibility('city', false);
     expect(menu.children).toHaveLength(0);
+  });
+});
+
+describe('placeMenu', () => {
+  const open = (box: { left: number; right: number }, view = 375): HTMLDetailsElement => {
+    const menu = document.createElement('details');
+    const panel = document.createElement('fieldset');
+    menu.append(document.createElement('summary'), panel);
+    document.body.append(menu);
+    menu.open = true;
+    panel.getBoundingClientRect = () => ({ ...box, top: 0, bottom: 0, x: box.left, y: 0, width: box.right - box.left, height: 0, toJSON: () => ({}) });
+    Object.defineProperty(document.documentElement, 'clientWidth', { configurable: true, value: view });
+    return menu;
+  };
+
+  it('shifts an open panel that would stick out on the left back into the window', () => {
+    const menu = open({ left: -120, right: 104 });
+    placeMenu(menu);
+    expect(menu.style.getPropertyValue('--adt-menu-shift')).toBe('128px');
+  });
+
+  it('shifts one that sticks out on the right, and leaves one that fits', () => {
+    const right = open({ left: 200, right: 420 });
+    placeMenu(right);
+    expect(right.style.getPropertyValue('--adt-menu-shift')).toBe('-53px');
+    const fits = open({ left: 20, right: 244 });
+    placeMenu(fits);
+    expect(fits.style.getPropertyValue('--adt-menu-shift')).toBe('');
+    fits.open = false;
+    placeMenu(fits);
+    expect(fits.style.getPropertyValue('--adt-menu-shift')).toBe('');
+  });
+
+  it('the column menu keeps its name for screen readers when phones show only the icon', () => {
+    renderColumnToggle(host, make());
+    expect(host.querySelector('summary .adt-summary-text')?.textContent).toBe('Columns');
   });
 });

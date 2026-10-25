@@ -4,6 +4,15 @@
 
 ### Minor Changes
 
+- `printRows(document, { title, subtitle, headers, rows, numeric })` prints only a
+  table — the rows given, not the page — through a hidden frame with the page's
+  stylesheets.
+- On phones (≤ 640px) the column, filter and tools menu buttons show their icon only
+  (the name stays for screen readers), on a row of their own under the search. An open
+  menu stays inside the window (`placeMenu()`, `--adt-menu-shift`); before, it could
+  open past the left edge.
+- Cards (`responsive: 'cards'`, phones) no longer repeat the column names above the
+  cards: every card names its values.
 - Pinned columns stay in place when columns can also be resized (or edited): the header
   cells were shifted instead of sticking, covering their neighbours.
 - `responsive: 'auto'` keeps every column once the user sized one; the table scrolls

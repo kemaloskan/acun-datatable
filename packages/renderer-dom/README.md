@@ -188,8 +188,17 @@ left out. Each part is also available on its own (below), for your own markup.
 `renderMenu(container, { items })` renders a dropdown of actions (`{ id,
 label, onSelect, group? }`); a string returned by `onSelect` is announced
 (e.g. "25 rows copied"), a thrown error shown. `renderDataTable(…, { tools })`
-puts it in the top bar (layout feature `tools`); `printTable()` prints the
-table without the controls.
+puts it in the top bar (layout feature `tools`).
+
+`printRows(document, { title, subtitle, headers, rows, numeric })` prints only
+a table — the rows you give (text, or nodes from your own cells), not the page
+around it — through a hidden frame with the page's stylesheets.
+`printTable()` prints the whole page (with `styles.css`, without the table's
+controls).
+
+The menus (columns, filters, tools, row "⋮") open inside the window; on phones
+their buttons show the icon only, the name staying for screen readers. Your own
+`<details>` menu can use `placeMenu(details)` on its `toggle` event.
 
 `cells: { status: ({ value, text, row, column }) => el('span', { class: 'badge' }, text) }`
 draws cells yourself: return a DOM node (`el()` builds one without parsing

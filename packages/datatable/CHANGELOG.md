@@ -4,6 +4,9 @@
 
 ### Minor Changes
 
+- "Print" prints only the table — every matching row (or the selection) as shown,
+  with your own cells — not the page around it.
+- On phones the menu buttons show their icon only and open inside the window.
 - Exports cover every matching row once "select all N matching" is chosen in the selection
   bar (before, only the rows of the page were exported).
 - Reads `totalRowsAtLeast` (a server that stopped counting) and shows "10,000+".

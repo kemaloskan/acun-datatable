@@ -2,7 +2,7 @@ import {
   createDataTable, persistState, type Aggregate, type ColumnDef, type PageResult, type TableQuery, type ColumnType, type DataTable, type DataTableListener, type FilterOption, type Row, type SortRule,
 } from '@acunsoft/datatable-core';
 import {
-  DEFAULT_LAYOUT, downloadFile, el, printTable, renderDataTable, resolveLabels,
+  DEFAULT_LAYOUT, cellValue, createCellText, downloadFile, el, numeric, printRows, renderDataTable, resolveLabels,
   type BulkAction, type CellFormatter, type CellRenderer, type DataTableLabels, type DataTableLayout, type LayoutSlot,
   type CellEdit, type FixedColumns, type MenuItem, type RenderedComponent, type ResponsiveMode, type RowAction, type StatusSource, type TableSize,
 } from '@acunsoft/datatable-dom';
@@ -248,6 +248,9 @@ export class AcunDataTable {
   #listeners = new Set<DataTableListener>();
   #unsubscribe: (() => void) | undefined;
   #stopSaving: (() => void) | undefined;
+  /** The columns' `render` and `cell` options, as the renderer gets them (for printing). */
+  #format: Record<string, CellFormatter<Data>> = {};
+  #cells: Record<string, CellRenderer<Data>> = {};
 
   constructor(target: string | HTMLElement, options: AcunDataTableOptions = {}) {
     const node = typeof target === 'string' ? document.querySelector<HTMLElement>(target) : target;
@@ -441,6 +444,8 @@ export class AcunDataTable {
     const searching = typeof options.searching === 'object' ? options.searching : {};
     const format: Record<string, CellFormatter<Data>> = {};
     const cells: Record<string, CellRenderer<Data>> = {};
+    this.#format = format;
+    this.#cells = cells;
     for (const column of options.columns ?? []) {
       if ('data' in column && column.render) {
         const render = column.render;
@@ -530,7 +535,7 @@ export class AcunDataTable {
             },
           };
         case 'print':
-          return { id: 'print', label: labels.print, onSelect: () => printTable() };
+          return { id: 'print', label: labels.print, onSelect: () => this.#print() };
         default:
           throw new TypeError(`AcunDataTable: unknown button "${String(button)}"`);
       }
@@ -542,12 +547,46 @@ export class AcunDataTable {
    * by page). "Every matching row" chosen in the selection bar counts as no choice of rows.
    */
   async #sheet(): Promise<Sheet> {
+    return this.#exported((table, rows) => tableToSheet(table, { rows }));
+  }
+
+  /** Print only the table: the rows an export would get, as the table shows them (not the page). */
+  async #print(): Promise<void> {
+    const labels = resolveLabels(this.#options.language, this.#options.labels);
+    const locale = this.#options.language ?? 'en';
+    const doc = this.element.ownerDocument;
+    const content = await this.#exported((table, which) => {
+      const columns = table.getVisibleColumns();
+      const rows = which === 'selected' ? table.getFilteredRows().filter(row => table.isSelected(row.id)) : table.getFilteredRows();
+      const text = createCellText(table.getColumns(), { locale, labels, format: this.#format });
+      return {
+        headers: columns.map(column => column.header),
+        numeric: columns.map(column => numeric(column)),
+        rows: rows.map(row => columns.map(column => {
+          const shown = text(column, row);
+          const cell = this.#cells[column.id];
+          return cell ? cell({ column, row, value: cellValue(column, row), text: shown }) : shown;
+        })),
+      };
+    });
+    const when = new Intl.DateTimeFormat(locale, { dateStyle: 'medium', timeStyle: 'short' }).format(new Date());
+    const count = content.rows.length;
+    await printRows(doc, {
+      ...content,
+      title: doc.title,
+      subtitle: `${count === 0 ? labels.pageInfoEmpty : labels.pageInfo(1, count, count)} · ${when}`,
+    });
+  }
+
+  /**
+   * Run `use` on the table to export and which of its rows: the selected rows, else every
+   * matching row — on the server fetched page by page into a local copy of the table.
+   */
+  async #exported<T>(use: (table: DataTable<Data>, rows: 'selected' | 'all') => T): Promise<T> {
     const table = this.table;
     if (!table) throw new Error('AcunDataTable: not ready');
     const selected = table.getState().selectedIds.length > 0 && !table.isAllMatchingSelected();
-    if (selected || !this.#source) {
-      return tableToSheet(table, { rows: selected ? 'selected' : 'all' });
-    }
+    if (selected || !this.#source) return use(table, selected ? 'selected' : 'all');
     const limit = this.#options.exportLimit ?? 10_000;
     const labels = resolveLabels(this.#options.language, this.#options.labels);
     const { cursor: _current, ...query } = table.getQuery();
@@ -569,7 +608,7 @@ export class AcunDataTable {
       initialState: { hiddenColumns: [...table.getState().hiddenColumns] },
     } as Parameters<typeof createDataTable<Data>>[0]);
     try {
-      return tableToSheet(copy, { rows: 'all' });
+      return use(copy, 'all');
     } finally {
       copy.destroy();
     }

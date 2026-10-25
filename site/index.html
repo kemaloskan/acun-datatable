@@ -337,7 +337,7 @@ const API = [
     ["renderPagination(container, table, options?)", {tr:"Numaralı sayfalar: ‹ 1 … 4 5 6 … 20 ›; buton sayısı sabit kalır, aktif sayfa aria-current ile işaretlenir; isteğe bağlı ilk/son.", en:"Numbered pages: ‹ 1 … 4 5 6 … 20 ›; the button count stays fixed, the current page has aria-current; optional first/last."}],
     ["renderPageSize · renderPageInfo", {tr:"Sayfa başı satır seçimi ve canlı kayıt aralığı metni (Toplam: 5.000 kaydın 1 ile 25 arasını gösteriyor).", en:"Rows-per-page select and the live row range (Showing 1 to 25 of 5,000 rows)."}],
     ["renderSearch(container, table, options?)", {tr:"İkonlu, gecikmeli arama kutusu; Enter hemen uygular.", en:"Debounced search box with an icon; Enter applies at once."}],
-    ["renderMenu({ items }) · printTable() · cells + el()", {tr:"Araçlar menüsü (dışa aktarma, kopyalama, yazdırma, kendi işleminiz); DOM öğesi döndüren güvenli özel hücreler.", en:"A tools menu (export, copy, print, your own action); safe custom cells that return DOM nodes."}],
+    ["renderMenu({ items }) · printRows() · cells + el()", {tr:"Araçlar menüsü (dışa aktarma, kopyalama, yazdırma, kendi işleminiz); printRows() yalnızca tabloyu yazdırır, sayfayı değil; DOM öğesi döndüren güvenli özel hücreler.", en:"A tools menu (export, copy, print, your own action); printRows() prints only the table, not the page; safe custom cells that return DOM nodes."}],
     ["renderFilters · renderFilterChips", {tr:"Filtreler menüsü (kolon türüne göre kontrol, options ile onay kutuları) ve kaldırılabilir etkin filtre etiketleri.", en:"The filters menu (a control per column type, ticks with options) and removable chips of the active filters."}],
     ["resolveLabels(locale, overrides?) · labelsEn/Tr/De/Fr/Es", {tr:"Yerleşik metinler (i18n kütüphanesi gerekmez): en, tr, de, fr, es; tekil/çoğul ve basamak ayırıcı dile göre.", en:"Built-in texts (no i18n library needed): en, tr, de, fr, es; singular/plural and digit grouping per language."}],
   ]],
@@ -1961,7 +1961,7 @@ const GUIDES = {
      [
       "HTML (parçalar)",
       "typescript",
-      "renderDataTable(el, table, {\n  tools: [\n    { id: 'csv', label: 'CSV', group: 'Dışa aktar', onSelect: () => downloadFile(toCsv(tableToSheet(table)), 'orders.csv') },\n    { id: 'print', label: 'Yazdır', onSelect: () => printTable() },\n  ],\n});"
+      "renderDataTable(el, table, {\n  tools: [\n    { id: 'csv', label: 'CSV', group: 'Dışa aktar', onSelect: () => downloadFile(toCsv(tableToSheet(table)), 'orders.csv') },\n    { id: 'print', label: 'Yazdır', onSelect: () => printRows(document, { title: 'Siparişler', headers: ['Müşteri', 'Tutar'], rows: table.getFilteredRows().map(row => [row.original.customer, String(row.original.total)]), numeric: [false, true] }) },\n  ],\n});"
      ]
     ]
    },

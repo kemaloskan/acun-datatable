@@ -1,5 +1,5 @@
 import type { DataTable, Row, RowId, TableQuery } from '@acunsoft/datatable-core';
-import { checkTarget, element, icon, type ICONS, type RenderedComponent } from './dom';
+import { checkTarget, element, icon, placeMenu, type ICONS, type RenderedComponent } from './dom';
 import { labelsEn, type DataTableLabels } from './labels';
 
 /** A button in each row's actions cell, e.g. "Edit" or "Delete". */
@@ -212,6 +212,7 @@ export function actionCell<TData>(
     details.addEventListener('keydown', event => {
       if (event.key === 'Escape' && details.open) { details.open = false; summary.focus(); }
     });
+    details.addEventListener('toggle', () => placeMenu(details));
     details.append(summary, list);
     td.append(details);
   }

@@ -56,6 +56,22 @@ test('mobile: one phone-sized frame in the chosen mode, with that mode\'s code b
   await expect(phone.locator('.adt-table-wrap')).toHaveClass(/adt-responsive--cards/);
 });
 
+test('phone: the menu buttons are icons with their names kept, and an open menu stays inside the window', async ({ page }) => {
+  await page.setViewportSize({ width: 375, height: 760 });
+  await page.goto('/site/demo/phone.html?mode=auto&lang=en');
+  await expect(page.locator('tbody .adt-row').first()).toBeVisible();
+  const summary = page.locator('.adt-columns > summary').first();
+  await expect(summary).toHaveAccessibleName('Columns');
+  await expect.poll(async () => { const box = (await summary.boundingBox())!; return Math.round(box.width) === Math.round(box.height); }).toBe(true); // square: the icon only
+  const button = (await summary.boundingBox())!;
+  const search = (await page.getByRole('searchbox').boundingBox())!;
+  expect(button.y).toBeGreaterThanOrEqual(search.y + search.height); // a row of their own under the search
+  await summary.click();
+  const panel = page.locator('.adt-columns[open] > fieldset');
+  await expect.poll(async () => { const box = (await panel.boundingBox())!; return box.x >= 7 && box.x + box.width <= 375 - 7; }).toBe(true);
+  await expect(page.getByRole('checkbox', { name: 'Customer' })).toBeVisible();
+});
+
 test('frameworks: the same orders in plain JavaScript, the element, Vue and React', async ({ page }) => {
   const errors: string[] = [];
   page.on('pageerror', error => errors.push(error.message));
@@ -90,4 +106,40 @@ test('one language for the whole page: texts, tables, frameworks and the phone',
   await expect(page.frameLocator('iframe[data-phone]').locator('h1')).toHaveText('Orders');
   await page.reload();
   await expect(page.locator('h1')).toHaveText('Live demo'); // the choice is remembered
+});
+
+test('print: only the table, every matching row as shown, not the page', async ({ page }) => {
+  await page.goto('/site/demo/index.html#/server');
+  await expect(page.locator('#server .adt-info')).toContainText('5.000');
+  await page.locator('#server').getByRole('searchbox').fill('ayse istanbul');
+  await expect(page.locator('#server .adt-info')).not.toContainText('5.000');
+  const matches = Number((await page.locator('#server .adt-info').textContent())!.match(/Toplam: ([\d.]+)/)![1]!.replace('.', ''));
+  // Catch the frame's print() instead of opening the browser's dialog.
+  await page.evaluate(() => {
+    new MutationObserver(records => {
+      for (const node of records.flatMap(record => [...record.addedNodes])) {
+        if (node instanceof HTMLIFrameElement) {
+          node.contentWindow!.print = () => {
+            const doc = node.contentDocument!;
+            (window as unknown as { printed: unknown }).printed = {
+              title: doc.querySelector('h1')?.textContent, headers: [...doc.querySelectorAll('th')].map(th => th.textContent),
+              rows: doc.querySelectorAll('tbody tr').length, first: doc.querySelector('tbody tr')?.textContent, badge: !!doc.querySelector('tbody .badge'),
+              page: !!doc.querySelector('.tabs, header, .controls'),
+            };
+          };
+        }
+      }
+    }).observe(document.body, { childList: true });
+  });
+  await page.locator('#server').getByText('Araçlar').click();
+  await page.locator('#server .adt-menu-item[data-action="print"]').click();
+  await expect.poll(() => page.evaluate(() => (window as unknown as { printed?: unknown }).printed)).toBeTruthy();
+  const printed = await page.evaluate(() => (window as unknown as { printed: { title: string; headers: string[]; rows: number; first: string; badge: boolean; page: boolean } }).printed);
+  expect(printed.title).toBe('Canlı demo · Acun DataTable');
+  expect(printed.headers).toEqual(['Müşteri', 'Şehir', 'Tutar', 'Durum', 'Sipariş tarihi']);
+  expect(printed.rows).toBe(matches); // every match, not the page of 25
+  expect(printed.first).toContain('Ayşe');
+  expect(printed.first).toContain('₺');
+  expect(printed.badge).toBe(true);
+  expect(printed.page).toBe(false); // not the demo page around it
 });

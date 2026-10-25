@@ -1,5 +1,5 @@
 import type { ColumnDef, ColumnType, DataTable, FilterOption, FilterRule } from '@acunsoft/datatable-core';
-import { checkTarget, element, icon, type RenderedComponent } from './dom';
+import { checkTarget, element, icon, placeMenu, type RenderedComponent } from './dom';
 import { labelsEn, type DataTableLabels } from './labels';
 
 /** The kind of control a filter-panel column gets. */
@@ -160,14 +160,15 @@ export function renderFilters<TData>(container: HTMLElement, table: DataTable<TD
   }
   const uid = `adt-filters-${++panels}`;
   const root = element(doc, 'details', { class: 'adt-columns adt-menu adt-filters' });
-  const summary = element(doc, 'summary', {}, labels.filters);
-  summary.prepend(icon(doc, 'filter'));
+  const summary = element(doc, 'summary');
+  summary.append(icon(doc, 'filter'), element(doc, 'span', { class: 'adt-summary-text' }, labels.filters));
   const badge = element(doc, 'span', { class: 'adt-badge', 'aria-hidden': 'true' });
   summary.append(badge);
   const count = element(doc, 'span', { class: 'adt-sr-only' });
   summary.append(count);
   const panel = element(doc, 'div', { class: 'adt-filter-panel', role: 'group', 'aria-label': labels.filters });
   root.append(summary, panel);
+  root.addEventListener('toggle', () => placeMenu(root));
   container.replaceChildren(root);
 
   const timers = new Set<ReturnType<typeof setTimeout>>();

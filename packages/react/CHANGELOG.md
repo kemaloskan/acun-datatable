@@ -4,6 +4,8 @@
 
 ### Minor Changes
 
+- On phones the column menu button shows its icon only and the column and row menus
+  open inside the window.
 - `responsive="auto"` keeps every column once the user sized one.
 - Virtual scrolling keeps the column widths while rows scroll by.
 - `PageInfo` and `Pagination` show a server's lower bound ("10,000+") and number
