@@ -14,7 +14,7 @@
  * the system setting with data-theme="auto". The
  * component cannot see the page background, so it never turns dark on its own.
  */
-:where(.adt, .adt-table-wrap, .adt-paging, .adt-info, .adt-length, .adt-search, .adt-selection, .adt-columns, .adt-toolbar, .adt-import):not(:where(.adt, .adt-table-wrap, .adt-paging, .adt-info, .adt-length, .adt-search, .adt-selection, .adt-columns, .adt-toolbar, .adt-import) *) {
+:where(.adt, .adt-table-wrap, .adt-paging, .adt-info, .adt-length, .adt-search, .adt-selection, .adt-columns, .adt-toolbar, .adt-import, .adt-dialog):not(:where(.adt, .adt-table-wrap, .adt-paging, .adt-info, .adt-length, .adt-search, .adt-selection, .adt-columns, .adt-toolbar, .adt-import, .adt-dialog) *) {
   --adt-bg: #ffffff;
   --adt-surface: #ffffff;        /* panels: bars and the table */
   --adt-fg: #1f2430;
@@ -44,29 +44,29 @@
   font-size: var(--adt-font-size);
   color: var(--adt-fg);
 }
-:where([data-theme="dark"], [data-bs-theme="dark"], .dark) :where(.adt, .adt-table-wrap, .adt-paging, .adt-info, .adt-length, .adt-search, .adt-selection, .adt-columns, .adt-toolbar, .adt-import):not(:where(.adt, .adt-table-wrap, .adt-paging, .adt-info, .adt-length, .adt-search, .adt-selection, .adt-columns, .adt-toolbar, .adt-import) *) {
+:where([data-theme="dark"], [data-bs-theme="dark"], .dark) :where(.adt, .adt-table-wrap, .adt-paging, .adt-info, .adt-length, .adt-search, .adt-selection, .adt-columns, .adt-toolbar, .adt-import, .adt-dialog):not(:where(.adt, .adt-table-wrap, .adt-paging, .adt-info, .adt-length, .adt-search, .adt-selection, .adt-columns, .adt-toolbar, .adt-import, .adt-dialog) *) {
   --adt-bg: #0f1218; --adt-surface: #151922; --adt-fg: #e6e8ec; --adt-muted: #98a2b3; --adt-line: #262c38;
-  --adt-head-fg: #98a2b3; --adt-hover: #1b202b; --adt-selected: #221c3d; --adt-accent: #8f75ff; --adt-danger: #ff6b61;
+  --adt-head-fg: #98a2b3; --adt-hover: #1b202b; --adt-selected: #221c3d; --adt-accent: #8f75ff; --adt-accent-fg: #0f1218; --adt-danger: #ff6b61;
   --adt-shadow: none; color-scheme: dark;
 }
 @media (prefers-color-scheme: dark) {
-  :where([data-theme="auto"]) :where(.adt, .adt-table-wrap, .adt-paging, .adt-info, .adt-length, .adt-search, .adt-selection, .adt-columns, .adt-toolbar, .adt-import):not(:where(.adt, .adt-table-wrap, .adt-paging, .adt-info, .adt-length, .adt-search, .adt-selection, .adt-columns, .adt-toolbar, .adt-import) *) {
+  :where([data-theme="auto"]) :where(.adt, .adt-table-wrap, .adt-paging, .adt-info, .adt-length, .adt-search, .adt-selection, .adt-columns, .adt-toolbar, .adt-import, .adt-dialog):not(:where(.adt, .adt-table-wrap, .adt-paging, .adt-info, .adt-length, .adt-search, .adt-selection, .adt-columns, .adt-toolbar, .adt-import, .adt-dialog) *) {
     --adt-bg: #0f1218; --adt-surface: #151922; --adt-fg: #e6e8ec; --adt-muted: #98a2b3; --adt-line: #262c38;
-    --adt-head-fg: #98a2b3; --adt-hover: #1b202b; --adt-selected: #221c3d; --adt-accent: #8f75ff; --adt-danger: #ff6b61;
+    --adt-head-fg: #98a2b3; --adt-hover: #1b202b; --adt-selected: #221c3d; --adt-accent: #8f75ff; --adt-accent-fg: #0f1218; --adt-danger: #ff6b61;
     --adt-shadow: none; color-scheme: dark;
   }
 }
 /* Sizes: compact and spacious; md is the default above. */
-:where(.adt-size--sm), :where(.adt-size--sm) :where(.adt, .adt-table-wrap, .adt-paging, .adt-info, .adt-length, .adt-search, .adt-selection, .adt-columns, .adt-toolbar, .adt-import):not(:where(.adt, .adt-table-wrap, .adt-paging, .adt-info, .adt-length, .adt-search, .adt-selection, .adt-columns, .adt-toolbar, .adt-import) *) {
+:where(.adt-size--sm), :where(.adt-size--sm) :where(.adt, .adt-table-wrap, .adt-paging, .adt-info, .adt-length, .adt-search, .adt-selection, .adt-columns, .adt-toolbar, .adt-import, .adt-dialog):not(:where(.adt, .adt-table-wrap, .adt-paging, .adt-info, .adt-length, .adt-search, .adt-selection, .adt-columns, .adt-toolbar, .adt-import, .adt-dialog) *) {
   --adt-font-size: 0.875rem; --adt-cell-padding: 0.5rem 0.75rem; --adt-control-height: 2rem;
   --adt-bar-padding: 0.5rem 0.75rem; --adt-gap: 0.75rem;
 }
-:where(.adt-size--lg), :where(.adt-size--lg) :where(.adt, .adt-table-wrap, .adt-paging, .adt-info, .adt-length, .adt-search, .adt-selection, .adt-columns, .adt-toolbar, .adt-import):not(:where(.adt, .adt-table-wrap, .adt-paging, .adt-info, .adt-length, .adt-search, .adt-selection, .adt-columns, .adt-toolbar, .adt-import) *) {
+:where(.adt-size--lg), :where(.adt-size--lg) :where(.adt, .adt-table-wrap, .adt-paging, .adt-info, .adt-length, .adt-search, .adt-selection, .adt-columns, .adt-toolbar, .adt-import, .adt-dialog):not(:where(.adt, .adt-table-wrap, .adt-paging, .adt-info, .adt-length, .adt-search, .adt-selection, .adt-columns, .adt-toolbar, .adt-import, .adt-dialog) *) {
   --adt-font-size: 1rem; --adt-cell-padding: 1.125rem 1.25rem; --adt-control-height: 2.75rem;
   --adt-bar-padding: 1rem 1.25rem; --adt-gap: 1.25rem;
 }
-:where(.adt, .adt-table-wrap, .adt-paging, .adt-info, .adt-length, .adt-search, .adt-selection, .adt-columns, .adt-toolbar, .adt-import),
-:where(.adt, .adt-table-wrap, .adt-paging, .adt-length, .adt-search, .adt-selection, .adt-columns, .adt-toolbar, .adt-import) * {
+:where(.adt, .adt-table-wrap, .adt-paging, .adt-info, .adt-length, .adt-search, .adt-selection, .adt-columns, .adt-toolbar, .adt-import, .adt-dialog),
+:where(.adt, .adt-table-wrap, .adt-paging, .adt-length, .adt-search, .adt-selection, .adt-columns, .adt-toolbar, .adt-import, .adt-dialog) * {
   box-sizing: border-box;
 }
 
@@ -110,7 +110,7 @@
 .adt-button--primary:hover { background: color-mix(in srgb, var(--adt-accent) 88%, #000); }
 
 /* Keyboard focus is always visible */
-:where(.adt, .adt-table-wrap, .adt-paging, .adt-search, .adt-length, .adt-selection, .adt-columns, .adt-toolbar, .adt-import) :focus-visible {
+:where(.adt, .adt-table-wrap, .adt-paging, .adt-search, .adt-length, .adt-selection, .adt-columns, .adt-toolbar, .adt-import, .adt-dialog) :focus-visible {
   outline: 2px solid var(--adt-accent); outline-offset: 2px;
 }
 :where(.adt-search input, .adt-length select):focus-visible { outline: none; }

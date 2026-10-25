@@ -2,11 +2,13 @@
 // Serves the repository root on 127.0.0.1 only, GET/HEAD only, and refuses
 // any path outside the repository. One fake JSON API, POST /e2e/api/products,
 // answers server-side queries in the datatable-http wire format; /e2e/api/orders
-// is a real back end with @acunsoft/datatable-server (orders-api.mjs).
+// is a real back end with @acunsoft/datatable-server (orders-api.mjs);
+// /e2e/api/import speaks the import protocol (import-api.mjs).
 import { createReadStream, statSync } from 'node:fs';
 import { createServer } from 'node:http';
 import { extname, join, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { importApi } from './import-api.mjs';
 import { ordersApi } from './orders-api.mjs';
 
 const root = resolve(fileURLToPath(new URL('..', import.meta.url)));
@@ -51,6 +53,10 @@ function productsApi(request, response) {
 }
 
 createServer((request, response) => {
+  if (/^\/e2e\/api\/import(-records)?(\/|\?|$)/.test(request.url ?? '')) {
+    importApi(request, response).catch(error => response.writeHead(500, { 'Content-Type': 'application/json' }).end(JSON.stringify({ message: String(error) })));
+    return;
+  }
   if (request.method === 'POST' && request.url === '/e2e/api/products') {
     productsApi(request, response);
     return;

@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>E2E · import</title>
+<!-- The <script> builds of @acunsoft/datatable and @acunsoft/datatable-import (run `npm run build` first). -->
+<link rel="stylesheet" href="/packages/datatable/dist/styles.css">
+<link rel="stylesheet" href="/packages/import/dist/styles.css">
+<script src="/packages/datatable/dist/acun-datatable.min.js"></script>
+<script src="/packages/import/dist/acun-datatable-import.min.js"></script>
+<style>body { font-family: system-ui, sans-serif; margin: 0; padding: 24px 16px; background: #f5f6f8; }</style>
+</head>
+<body>
+<div id="records"></div>
+<script>
+const params = new URLSearchParams(location.search);
+if (params.has('dark')) document.documentElement.dataset.theme = 'dark';
+const language = params.get('lang') ?? 'en';
+// The import is an item of the tools menu; the table is refreshed when rows changed.
+window.dt = new AcunDataTable('#records', {
+  ajax: { url: '/e2e/api/import-records', headers: { 'X-User': 'e2e' } }, // the back end keeps records per user
+  language,
+  columns: [{ data: 'email', title: 'E-mail' }, { data: 'name', title: 'Name' }, { data: 'total', title: 'Total' }],
+  buttons: ['csv', AcunImport.importButton({
+    url: '/e2e/api/import', language, headers: { 'X-User': 'e2e' },
+    table: { reload: () => window.dt.reload(), get element() { return window.dt.element; } },
+  })],
+});
+window.dt.ready.then(() => { document.body.dataset.ready = 'true'; });
+</script>
+</body>
+</html>

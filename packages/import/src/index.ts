@@ -8,3 +8,11 @@ export {
   createImportClient, importKey, ImportRequestError, nextPoll,
   type ImportClient, type ImportClientOptions, type ImportFile, type PollOptions, type UploadOptions,
 } from './client';
+export {
+  IMPORT_LABELS, importLabelsDe, importLabelsEn, importLabelsEs, importLabelsFr, importLabelsTr, resolveImportLabels,
+  type ImportLabels,
+} from './labels';
+export {
+  importButton, openImport,
+  type ImportDialog, type ImportMenuItem, type OpenImportOptions, type ReloadableTable,
+} from './ui';

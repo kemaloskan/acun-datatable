@@ -4,6 +4,10 @@
 
 ### Minor Changes
 
+- Dark mode: text on the accent colour (primary buttons, the current page, badges) is dark
+  now; white on the dark accent was below the WCAG AA contrast (3.4:1, now 5.5:1).
+- A dialog with `adt-dialog` outside a table (e.g. appended to `<body>`) takes the theme's
+  tokens too.
 - `renderFilters({ panel })` opens the filter fields under the button (`'dropdown'`,
   default), in a drawer (`'drawer'`) or in a modal (`'modal'`), both a native `<dialog>`;
   `renderDataTable({ filterPanel })`. `renderFilterPanel()` renders only the fields, for

@@ -35,6 +35,8 @@ export interface UploadOptions {
   /** One per chosen file; made for you when left out. A retried upload sends the same key. */
   readonly idempotencyKey?: string;
   readonly signal?: AbortSignal;
+  /** Bytes sent so far (uses `XMLHttpRequest`, which reports upload progress; not with a custom `fetch`). */
+  readonly onProgress?: (sent: number, total: number) => void;
 }
 
 export interface PollOptions {
@@ -88,18 +90,39 @@ export function createImportClient(options: ImportClientOptions): ImportClient {
   const wait = options.delay ?? sleep;
   const of = (id: string): string => `${base}/${encodeURIComponent(id)}`;
 
-  const request = async (url: string, init: RequestInit & { readonly accept404?: boolean } = {}): Promise<unknown> => {
-    const extra = typeof options.headers === 'function' ? await options.headers() : options.headers;
-    const headers = new Headers(extra);
-    for (const [name, value] of new Headers(init.headers)) headers.set(name, value);
+  const headersFor = async (more?: HeadersInit): Promise<Headers> => {
+    const headers = new Headers(typeof options.headers === 'function' ? await options.headers() : options.headers);
+    for (const [name, value] of new Headers(more)) headers.set(name, value);
     headers.set('Accept', 'application/json');
-    const response = await send(url, { ...init, headers, credentials: options.credentials ?? 'same-origin' });
-    const body: unknown = await response.text().then(textBody => {
-      if (textBody === '') return undefined;
-      try { return JSON.parse(textBody) as unknown; } catch { return textBody; }
-    });
-    if (!response.ok) throw new ImportRequestError(readImportProblem(response.status, body));
+    return headers;
+  };
+  const parse = (status: number, textBody: string): unknown => {
+    let body: unknown;
+    if (textBody !== '') {
+      try { body = JSON.parse(textBody) as unknown; } catch { body = textBody; }
+    }
+    if (status < 200 || status >= 300) throw new ImportRequestError(readImportProblem(status, body));
     return body;
+  };
+  const request = async (url: string, init: RequestInit = {}): Promise<unknown> => {
+    const response = await send(url, { ...init, headers: await headersFor(init.headers), credentials: options.credentials ?? 'same-origin' });
+    return parse(response.status, await response.text());
+  };
+  // Upload progress needs XMLHttpRequest; fetch does not report it.
+  const xhr = async (url: string, body: FormData, more: HeadersInit, signal: AbortSignal | undefined, onProgress: (sent: number, total: number) => void): Promise<unknown> => {
+    const headers = await headersFor(more);
+    return new Promise((resolve, reject) => {
+      const http = new XMLHttpRequest();
+      http.open('POST', url);
+      headers.forEach((value, name) => http.setRequestHeader(name, value));
+      http.withCredentials = options.credentials === 'include';
+      http.upload.addEventListener('progress', event => { if (event.lengthComputable) onProgress(event.loaded, event.total); });
+      http.addEventListener('load', () => { try { resolve(parse(http.status, http.responseText)); } catch (error) { reject(error); } });
+      http.addEventListener('error', () => reject(new TypeError('The upload failed (network).')));
+      http.addEventListener('abort', () => reject(signal?.reason ?? new DOMException('Aborted', 'AbortError')));
+      signal?.addEventListener('abort', () => http.abort(), { once: true });
+      http.send(body);
+    });
   };
 
   const client: ImportClient = {
@@ -114,11 +137,10 @@ export function createImportClient(options: ImportClientOptions): ImportClient {
     async upload(file, uploadOptions = {}) {
       const form = new FormData();
       form.append('file', file, file.name ?? 'import');
-      const body = await request(base, {
-        method: 'POST', body: form,
-        headers: { 'Idempotency-Key': uploadOptions.idempotencyKey ?? importKey() },
-        ...(uploadOptions.signal ? { signal: uploadOptions.signal } : {}),
-      });
+      const key = { 'Idempotency-Key': uploadOptions.idempotencyKey ?? importKey() };
+      const body = uploadOptions.onProgress && !options.fetch && typeof XMLHttpRequest === 'function'
+        ? await xhr(base, form, key, uploadOptions.signal, uploadOptions.onProgress)
+        : await request(base, { method: 'POST', body: form, headers: key, ...(uploadOptions.signal ? { signal: uploadOptions.signal } : {}) });
       return readImportState(body, { requireProtocol: true });
     },
     async start(id, startRequest, signal) {

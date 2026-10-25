@@ -36,6 +36,8 @@ export interface MemoryImportBackendOptions {
   readonly backgroundFrom?: number;
   /** Rows per step in the background. Default 10. */
   readonly chunk?: number;
+  /** Pause between background steps, in ms (to watch the progress). Default 0. */
+  readonly stepMs?: number;
   /** Who is asking; imports belong to them. Default: the `X-User` header, else `guest`. */
   readonly user?: (request: Request) => string;
   /** Extra check of one row: a message refuses it. */
@@ -153,7 +155,7 @@ export function createMemoryImportBackend(options: MemoryImportBackendOptions): 
       stored.status = 'running';
       work(stored, false);
       if (stored.status === 'running') background(stored);
-    }, 0);
+    }, options.stepMs ?? 0);
   };
 
   const handle = async (request: Request): Promise<Response> => {

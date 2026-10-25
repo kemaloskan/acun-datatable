@@ -10,6 +10,11 @@ All notable changes to this repository. Each npm package also has its own
   in the private `@acunsoft/datatable-import` package: answer readers, the
   back end's mapping check, a client, an in-memory reference back end and a
   conformance run for any back end. See `IMPORT-PLAN.md`.
+- **Import dialog (not released yet):** `openImport()` / `importButton()` in
+  `@acunsoft/datatable-import`: file and drag and drop, column mapping with
+  the back end's suggestion and preview, upload and processing progress,
+  cancel, results with the error report, table refresh; five languages,
+  dark mode, phones; `<script>` build `acun-datatable-import.min.js`.
 
 ## npm 0.4.0 and `acunsoft/datatable-laravel` 0.5.0 (2026-10-25)
 
@@ -43,6 +48,8 @@ npm package's `CHANGELOG.md` has its own notes.
   classes of the columns, filters and tools buttons.
 - **Dark mode** also follows Bootstrap 5.3's `data-bs-theme="dark"`, besides
   `class="dark"` (Tailwind) and `data-theme="dark"`.
+  Text on the accent colour is dark in dark mode (WCAG AA contrast: 3.4:1 →
+  5.5:1).
 - **Print** prints only the table (every matching row in `@acunsoft/datatable`,
   `printRows()` in `@acunsoft/datatable-dom`), not the page around it.
 - **Phones:** the menu buttons show their icon only, on a row under the search, and

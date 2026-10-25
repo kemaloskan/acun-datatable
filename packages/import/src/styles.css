@@ -1,0 +1,77 @@
+/*
+ * The import dialog. Load after @acunsoft/datatable-dom/styles.css (it uses
+ * its tokens: --adt-bg, --adt-line, --adt-accent …, light and dark):
+ *   import '@acunsoft/datatable-dom/styles.css';
+ *   import '@acunsoft/datatable-import/styles.css';
+ */
+.adt-import-dialog { width: min(44rem, calc(100vw - 2rem)); }
+.adt-import-body { display: flex; flex-direction: column; gap: 0.875rem; padding: 1rem 1.25rem 1.25rem; }
+.adt-import-body :focus-visible { outline: 2px solid var(--adt-accent); outline-offset: 2px; }
+.adt-import-step { display: flex; align-items: center; gap: 0.5rem; margin: 0; font-size: 1rem; font-weight: 600; }
+.adt-import-step:focus { outline: none; }
+.adt-import-hint { margin: 0; color: var(--adt-muted); font-size: 0.875em; }
+.adt-import-hint a, .adt-import-report { color: var(--adt-accent); font-weight: 500; }
+
+/* Step 1: the drop zone */
+.adt-import-drop {
+  display: flex; flex-direction: column; align-items: center; gap: 0.625rem; padding: 2rem 1rem; text-align: center;
+  border: 2px dashed var(--adt-line); border-radius: var(--adt-radius); background: var(--adt-surface); color: var(--adt-muted);
+  transition: border-color 0.15s, background-color 0.15s;
+}
+.adt-import-drop > .adt-icon { width: 1.75rem; height: 1.75rem; color: var(--adt-accent); }
+.adt-import-drop p { margin: 0; }
+.adt-import-drop--over { border-color: var(--adt-accent); background: var(--adt-selected); }
+.adt-import-file { display: flex; align-items: center; gap: 0.5rem; margin: 0; color: var(--adt-muted); overflow-wrap: anywhere; }
+
+/* Progress (upload and import) */
+.adt-import-progress { width: 100%; height: 0.5rem; accent-color: var(--adt-accent); }
+.adt-import-count { margin: 0; font-variant-numeric: tabular-nums; font-weight: 500; }
+
+/* Step 2: the mapping */
+.adt-import-scroll { max-height: min(22rem, 45vh); overflow: auto; border: 1px solid var(--adt-line); border-radius: var(--adt-radius); }
+.adt-import-table { width: 100%; border-collapse: collapse; font-size: 0.9375em; }
+.adt-import-table :is(th, td) { padding: 0.5rem 0.75rem; text-align: left; border-bottom: 1px solid var(--adt-line); vertical-align: middle; }
+.adt-import-table thead th {
+  position: sticky; top: 0; z-index: 1; background: var(--adt-bg); color: var(--adt-muted);
+  font-size: 0.8em; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; white-space: nowrap;
+}
+.adt-import-table tbody tr:last-child > * { border-bottom: 0; }
+.adt-import-mapping tbody th { font-weight: 500; overflow-wrap: anywhere; }
+.adt-import-mapping select { width: 100%; min-width: 11rem; }
+.adt-import-sample { color: var(--adt-muted); max-width: 12rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.adt-import-mode { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem 0.75rem; }
+.adt-import-mode span { font-weight: 500; }
+.adt-import-preview summary { cursor: pointer; color: var(--adt-muted); font-size: 0.875em; margin-bottom: 0.5rem; }
+.adt-import-preview td { white-space: nowrap; }
+.adt-import-check { color: var(--adt-danger); font-size: 0.875em; }
+.adt-import-check:empty { display: none; }
+
+/* Messages and actions */
+.adt-import-alert {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem 0.75rem; padding: 0.625rem 0.875rem;
+  color: var(--adt-danger); border: 1px solid color-mix(in srgb, var(--adt-danger) 35%, var(--adt-line)); border-radius: var(--adt-radius);
+  background: color-mix(in srgb, var(--adt-danger) 6%, var(--adt-bg));
+}
+.adt-import-alert span { flex: 1 1 14rem; }
+.adt-import-alert .adt-button { color: var(--adt-fg); }
+.adt-import-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 0.5rem; }
+.adt-import-actions [hidden] { display: none; }
+.adt-import-actions [aria-disabled="true"] { opacity: 0.5; cursor: not-allowed; }
+
+/* Step 4: the result */
+.adt-import-result--done .adt-icon { color: var(--adt-accent); }
+.adt-import-result--failed, .adt-import-result--expired { color: var(--adt-danger); }
+.adt-import-counts { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0.5rem; margin: 0; }
+.adt-import-counts dt { color: var(--adt-muted); font-size: 0.8em; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; }
+.adt-import-counts dd { margin: 0 0 0.25rem; font-size: 1.25rem; font-weight: 600; font-variant-numeric: tabular-nums; }
+.adt-import-counts { grid-auto-flow: column; grid-template-rows: auto auto; }
+.adt-import-problems h4 { margin: 0 0 0.375rem; font-size: 0.9375em; }
+.adt-import-problems ul { max-height: 12rem; overflow: auto; margin: 0 0 0.375rem; padding-left: 1.25rem; color: var(--adt-muted); font-size: 0.875em; }
+
+/* Phones: the dialog takes the screen */
+@media (max-width: 640px) {
+  .adt-dialog.adt-import-dialog { width: 100vw; max-width: 100vw; height: 100dvh; max-height: 100dvh; margin: 0; border-radius: 0; border-width: 0; }
+  .adt-import-counts { grid-template-columns: repeat(2, minmax(0, 1fr)); grid-auto-flow: row; grid-template-rows: none; }
+  .adt-import-sample { display: none; }
+  .adt-import-mapping select { min-width: 0; }
+}

@@ -98,6 +98,15 @@ end — and is itself tested against back ends that break single rules
 
 ## 4. Import UI (`@acunsoft/datatable-import`)
 
+**Done** (2026-10-25): `openImport()`, `importButton()`, the `<script>` build
+(`window.AcunImport`), `styles.css`, five languages; unit tests (jsdom) and
+end-to-end tests in Chromium, Firefox and WebKit against the reference back end
+over real HTTP (upload, mapping, at once and in the background, error report,
+drag and drop, refusals, Escape, axe in every step, dark, phones) plus the
+conformance run. Measured: 10.2 KB gzip (`<script>` build, all languages) +
+1.5 KB CSS. React and Vue need no wrapper: `importButton()` is a tools-menu
+item for `tools` / `buttons`, and `openImport()` can be called from any button.
+
 ```js
 import { importButton } from '@acunsoft/datatable-import';
 
