@@ -36,7 +36,8 @@ npm package's `CHANGELOG.md` has its own notes.
 - **Phones:** the menu buttons show their icon only, on a row under the search, and
   an open menu stays inside the window; cards no longer repeat the column names
   above them ("select all" stays, with its text); the selection bar stays at the
-  bottom of the window.
+  bottom of the window, its choices in one select. Every selectable table gets the
+  selection bar, also without bulk actions.
 - **Fixes from review:** NULL-aware cursor paging, cursor exports, editor
   clicks, modal focus, large selections, column widths on phones, Vue table
   props, SSR ids, and more (see each package's changelog).

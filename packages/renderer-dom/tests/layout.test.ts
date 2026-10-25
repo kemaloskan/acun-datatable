@@ -84,6 +84,32 @@ describe('renderDataTable', () => {
     expect(host.querySelector<HTMLElement>('.adt-selection')!.hidden).toBe(false);
     host.querySelector<HTMLButtonElement>('.adt-bulk-action')!.click();
     expect(onSelect).toHaveBeenCalledOnce();
+    const menu = host.querySelector<HTMLSelectElement>('.adt-selection-menu')!;
+    menu.value = 'archive';
+    menu.dispatchEvent(new Event('change'));
+    expect(onSelect).toHaveBeenCalledTimes(2); // the select runs the same action
+  });
+
+  it('shows the selection bar for a selectable table without bulk actions: count, select all matching, clear', () => {
+    const table = make();
+    renderDataTable(host, table, { selectable: true });
+    const bar = host.querySelector<HTMLElement>('.adt-selection')!;
+    expect(bar.hidden).toBe(true);
+    table.selectRows(table.getPage().rows.map(row => row.id));
+    expect(bar.hidden).toBe(false);
+    expect(bar.querySelector('.adt-bulk-action')).toBeNull();
+    // The same choices as a select for phones.
+    const menu = bar.querySelector<HTMLSelectElement>('.adt-selection-menu')!;
+    expect([...menu.options].map(option => option.value)).toEqual(['', '__matching', '__clear']);
+    menu.value = '__matching';
+    menu.dispatchEvent(new Event('change'));
+    expect(table.getState().selectedIds).toHaveLength(60); // local rows: every match, selected
+    expect(menu.value).toBe('');
+    expect([...menu.options].map(option => option.value)).toEqual(['', '__clear']); // nothing more to select
+    bar.querySelector<HTMLButtonElement>('.adt-clear-selection')!.click();
+    expect(bar.hidden).toBe(true);
+    renderDataTable(host, make());
+    expect(host.querySelector('.adt-selection')).toBeNull(); // not selectable: no bar
   });
 
   it('rejects unknown features and slots, and destroys every part', () => {

@@ -4,6 +4,9 @@
 
 ### Minor Changes
 
+- With `selectable`, the selection bar (count, "Select all N matching", "Clear selection")
+  appears also without `bulkActions`; on phones it stays at the bottom of the window, its
+  choices in one select.
 - "Print" prints only the table — every matching row (or the selection) as shown,
   with your own cells — not the page around it.
 - On phones the menu buttons show their icon only and open inside the window.

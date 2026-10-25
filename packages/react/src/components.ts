@@ -832,7 +832,8 @@ export function DataTableLayout<TData>(props: DataTableLayoutProps<TData>): Reac
       tools.length > 0 ? h(Tools, { key: 'tools', items: tools, ...(labels ? { labels } : {}) }) : null,
     ]),
     hasFilters ? h(FilterChips, { table, locale, ...(labels ? { labels } : {}) }) : null,
-    bulkActions.length > 0 ? h(BulkActions<TData>, { table, actions: bulkActions, ...(labels ? { labels } : {}) }) : null,
+    // The selection bar (count, "select all N matching", clear, bulk actions) with any selectable table.
+    props.selectable || bulkActions.length > 0 ? h(BulkActions<TData>, { table, actions: bulkActions, ...(labels ? { labels } : {}) }) : null,
     h(DataTable<TData>, tableProps as DataTableProps<TData>),
     bar('bottom', [h(PageInfo, { key: 'info', table, all: Boolean(props.virtual), ...(labels ? { labels } : {}) }), bottomStart ?? null],
       [bottomEnd ?? null, props.virtual ? null : h(Pagination, { key: 'paging', table, locale, ...paging, ...(labels ? { labels } : {}) })]));

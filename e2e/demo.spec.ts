@@ -84,16 +84,22 @@ test('phone cards: no column names above the cards, but "select all" stays with 
   expect(await page.locator('tbody .adt-row--selected').count()).toBe(await page.locator('tbody .adt-row').count());
 });
 
-test('phone: the selection bar with "select all N matching" stays in sight at the bottom', async ({ page }) => {
+test('phone: the selection bar stays in sight at the bottom, its choices in one select', async ({ page }) => {
   await page.setViewportSize({ width: 375, height: 760 });
   await page.goto('/site/demo/index.html#/server');
   await expect(page.locator('#server .adt-info')).toContainText('5.000');
   await page.locator('#server tbody .adt-row').nth(8).scrollIntoViewIfNeeded();
   await page.locator('#server thead .adt-select input').click();
-  const matching = page.locator('#server .adt-selection').getByRole('button', { name: /5\.000/ });
-  await expect(matching).toBeInViewport();
-  await matching.click();
+  // One line on a phone: the count and a select with the choices instead of the buttons.
+  const menu = page.locator('#server .adt-selection').getByRole('combobox', { name: 'Seçili satırlar' });
+  await expect(menu).toBeInViewport();
+  await expect(page.locator('#server .adt-selection .adt-bulk-action')).toBeHidden();
+  await expect(menu.locator('option')).toHaveText(['İşlemler', 'Kargoya ver', 'Eşleşen 5.000 kaydın tümünü seç', 'Seçimi temizle']);
+  await menu.selectOption('__matching');
   await expect(page.locator('#server .adt-selection-count')).toContainText('5.000');
+  await expect(menu).toHaveValue('');
+  await menu.selectOption('__clear');
+  await expect(page.locator('#server .adt-selection')).toBeHidden();
 });
 
 test('frameworks: the same orders in plain JavaScript, the element, Vue and React', async ({ page }) => {

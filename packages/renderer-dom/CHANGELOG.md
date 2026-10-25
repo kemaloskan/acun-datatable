@@ -14,9 +14,12 @@
 - Cards (`responsive: 'cards'`, phones) no longer repeat the column names above the
   cards: every card names its values. "Select all rows on this page" stays above them,
   with its text (`.adt-select-all`).
-- Phones: the selection bar ("Select all N matching", bulk actions) sits under the rows
-  and stays at the bottom of the window while they scroll by; above the table it was
-  out of sight once the user had scrolled down.
+- Phones: the selection bar sits under the rows and stays at the bottom of the window
+  while they scroll by (above the table it was out of sight once the user had scrolled
+  down), on one line: the count and a select with the choices (bulk actions, "Select all
+  N matching", "Clear selection").
+- `renderDataTable` shows the selection bar for every `selectable` table, also without
+  `bulkActions` (count, "Select all N matching", "Clear selection"), as Livewire does.
 - Pinned columns stay in place when columns can also be resized (or edited): the header
   cells were shifted instead of sticking, covering their neighbours.
 - `responsive: 'auto'` keeps every column once the user sized one; the table scrolls

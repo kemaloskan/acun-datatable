@@ -131,10 +131,11 @@ export function renderDataTable<TData>(
     root.append(chips);
     parts.push(renderFilterChips(chips, table, { labels, locale }));
   }
-  if (options.bulkActions && options.bulkActions.length > 0) {
+  // The selection bar (count, "select all N matching", clear, bulk actions) with any selectable table.
+  if (options.selectable || (options.bulkActions && options.bulkActions.length > 0)) {
     const selection = element(doc, 'div', { class: 'adt-feature adt-feature--selection' });
     root.append(selection);
-    parts.push(renderBulkActions(selection, table, { actions: options.bulkActions, labels }));
+    parts.push(renderBulkActions(selection, table, { actions: options.bulkActions ?? [], labels }));
   }
   const body = element(doc, 'div', { class: 'adt-body' });
   root.append(body);

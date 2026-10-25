@@ -233,6 +233,7 @@
 .adt-selection .adt-bulk-action { height: 2rem; text-decoration: none; color: var(--adt-fg); background: var(--adt-bg); }
 .adt-selection [aria-disabled="true"] { opacity: 0.45; cursor: not-allowed; }
 .adt-feature--selection:has(> .adt-selection[hidden]) { display: none; }
+.adt-selection .adt-selection-menu { display: none; }
 
 /* Column visibility menu */
 .adt-columns { position: relative; display: inline-block; }
@@ -570,7 +571,10 @@
   .adt-columns > summary .adt-badge { position: absolute; top: -0.45rem; right: -0.45rem; }
   /* The selection bar ("select all N matching", bulk actions) under the rows, held at the
      bottom of the window while they scroll by: a bar above the table is out of sight there */
-  .adt-selection { order: 1; position: sticky; bottom: 0.75rem; z-index: 6; box-shadow: 0 10px 28px -6px rgb(16 24 40 / 0.28); }
+  .adt-selection { order: 1; position: sticky; bottom: 0.75rem; z-index: 6; flex-wrap: nowrap; box-shadow: 0 10px 28px -6px rgb(16 24 40 / 0.28); }
+  /* One line: the count and a select with the choices (bulk actions, select all matching, clear) */
+  .adt-selection > button { display: none; }
+  .adt-selection .adt-selection-menu { display: block; flex: 0 1 auto; min-width: 0; max-width: 60%; margin-left: auto; }
   .adt-bottom { order: 2; }
   .adt-paging { gap: 0.25rem; }
   /* Compact pager when pages are left out: arrows, the ends and the current page (‹ 1 … 7 … 48 ›) */

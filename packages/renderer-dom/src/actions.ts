@@ -134,7 +134,16 @@ export function renderBulkActions<TData>(
   });
   const clear = element(doc, 'button', { type: 'button', class: 'adt-clear-selection' }, labels.clearSelection);
   clear.addEventListener('click', () => table.clearSelection());
-  root.append(count, ...buttons.map(entry => entry.button), matching, clear);
+  // Phones: the same choices as one select (styles.css shows it instead of the buttons there).
+  const menu = element(doc, 'select', { class: 'adt-control adt-selection-menu', 'aria-label': labels.bulkActions, 'data-adt-focus': 'bulk:menu' });
+  menu.addEventListener('change', () => {
+    const choice = menu.value;
+    menu.value = '';
+    if (choice === '__matching') table.selectAllMatching();
+    else if (choice === '__clear') table.clearSelection();
+    else buttons.find(entry => entry.action.id === choice)?.button.click(); // action ids start with a letter
+  });
+  root.append(count, ...buttons.map(entry => entry.button), matching, clear, menu);
   container.replaceChildren(root);
 
   function update(): void {
@@ -154,6 +163,13 @@ export function renderBulkActions<TData>(
       if (action.disabled?.(current) === true) button.setAttribute('aria-disabled', 'true');
       else button.removeAttribute('aria-disabled');
     }
+    menu.replaceChildren(
+      element(doc, 'option', { value: '', disabled: true }, labels.actions),
+      ...buttons.map(({ action, button }) => element(doc, 'option', { value: action.id, disabled: button.hasAttribute('aria-disabled') }, action.label)),
+      ...(offer ? [element(doc, 'option', { value: '__matching' }, matching.textContent)] : []),
+      element(doc, 'option', { value: '__clear' }, labels.clearSelection),
+    );
+    menu.value = '';
   }
   update();
   const unsubscribe = table.subscribe(() => update());

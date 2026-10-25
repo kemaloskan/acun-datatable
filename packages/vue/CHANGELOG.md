@@ -4,6 +4,8 @@
 
 ### Minor Changes
 
+- The layout shows the selection bar for every selectable table, also without bulk
+  actions; on phones it stays at the bottom of the window, its choices in one select.
 - On phones the column menu button shows its icon only and the column and row menus
   open inside the window.
 - `responsive="auto"` keeps every column once the user sized one.

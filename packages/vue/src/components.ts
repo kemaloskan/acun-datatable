@@ -915,7 +915,8 @@ export const AcunDataTableLayout = defineComponent({
           props.tools.length > 0 ? h(AcunTools, { items: props.tools, labels: props.labels }) : null,
         ]),
         hasFilters ? h(AcunFilterChips, { ...common, locale: props.locale }) : null,
-        props.bulkActions.length > 0 ? h(AcunBulkActions, { ...common, actions: props.bulkActions }) : null,
+        // The selection bar (count, "select all N matching", clear, bulk actions) with any selectable table.
+        (attrs['selectable'] !== undefined && attrs['selectable'] !== false) || props.bulkActions.length > 0 ? h(AcunBulkActions, { ...common, actions: props.bulkActions }) : null,
         h(AcunDataTable, { ...attrs, ...common, locale: props.locale, reorderableColumns: props.reorderableColumns, virtual: props.virtual }, tableSlots),
         bar('bottom', [h(AcunPageInfo, { ...common, all: Boolean(props.virtual) }), slots['bottom-start']?.()],
           [slots['bottom-end']?.(), props.virtual ? null : h(AcunPagination, { ...common, ...props.paging, locale: props.locale })]),
