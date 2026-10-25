@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Acun DataTable</title>
 <!-- Shown in a phone-sized frame by the live demo: ?mode=cards|scroll|collapse|modal|auto&lang=tr&theme=light -->
+<script>document.documentElement.setAttribute('data-theme', new URLSearchParams(location.search).get('theme') === 'dark' ? 'dark' : 'light');</script>
+<style>:root { color-scheme: light; background: #f4f5f8; } :root[data-theme="dark"] { color-scheme: dark; background: #0b0d12; }</style>
 <link rel="stylesheet" href="styles.css">
 <script src="acun-datatable.min.js"></script>
 <script src="i18n.js"></script>
@@ -24,12 +26,8 @@
 <div id="orders"></div>
 <script>
 (() => {
-  const params = new URLSearchParams(location.search);
-  const language = window.DEMO_I18N[params.get('lang')] ? params.get('lang') : 'tr';
-  const text = window.DEMO_I18N[language];
-  document.documentElement.setAttribute('data-theme', params.get('theme') === 'dark' ? 'dark' : 'light');
-  document.documentElement.lang = language;
-  document.getElementById('title').textContent = text.col.orders;
+  // The demo page changes the mode, language or theme by message instead of reloading this
+  // frame: the table is rebuilt in place, so the screen never goes blank (no flash in dark mode).
   const names = ['Ayşe Yılmaz', 'Ali Kaya', 'İrem Şahin', 'Çağrı Öztürk', 'Zeynep Doğan', 'Ümit Kılıç', 'Deniz Ak', 'Gülşen Erdoğan', 'Hakan Çelik', 'Şule Aydın'];
   const cities = ['İstanbul', 'Ankara', 'İzmir', 'Bursa', 'Antalya', 'Konya'];
   const statuses = ['new', 'paid', 'shipped', 'cancelled'];
@@ -38,17 +36,33 @@
     total: (((i * 2654435761 + 31337) % 2_500_000) / 100 + 40).toFixed(2), status: statuses[(i * 3) % statuses.length],
     ordered_at: `2026-${String(1 + (i % 10)).padStart(2, '0')}-${String(1 + ((i * 7) % 28)).padStart(2, '0')}`,
   }));
-  new AcunDataTable('#orders', {
-    data, language, responsive: params.get('mode') || 'cards', selectable: true,
-    pagination: { pageSize: 5, pageSizes: [5, 10, 25] },
-    columns: [
-      { data: 'customer', title: text.col.customer, priority: 1 },
-      { data: 'total', title: text.col.total, type: 'decimal', priority: 1 },
-      { data: 'status', title: text.col.status, priority: 2, cell: value => AcunDataTable.el('span', { class: `badge badge--${value}` }, text.status[value]) },
-      { data: 'city', title: text.col.city, priority: 3 },
-      { data: 'ordered_at', title: text.col.date, type: 'date', priority: 3 },
-    ],
-    rowActions: [{ id: 'view', label: text.act.view, icon: 'view', iconOnly: true, onSelect: row => alert(text.act.order(row.id, row.original.customer)) }],
+  let table;
+  const render = ({ mode, lang, theme }) => {
+    const language = window.DEMO_I18N[lang] ? lang : 'tr';
+    const text = window.DEMO_I18N[language];
+    document.documentElement.setAttribute('data-theme', theme === 'dark' ? 'dark' : 'light');
+    document.documentElement.lang = language;
+    document.getElementById('title').textContent = text.col.orders;
+    table?.destroy();
+    table = new AcunDataTable('#orders', {
+      data, language, responsive: mode || 'cards', selectable: true,
+      pagination: { pageSize: 5, pageSizes: [5, 10, 25] },
+      columns: [
+        { data: 'customer', title: text.col.customer, priority: 1 },
+        { data: 'total', title: text.col.total, type: 'decimal', priority: 1 },
+        { data: 'status', title: text.col.status, priority: 2, cell: value => AcunDataTable.el('span', { class: `badge badge--${value}` }, text.status[value]) },
+        { data: 'city', title: text.col.city, priority: 3 },
+        { data: 'ordered_at', title: text.col.date, type: 'date', priority: 3 },
+      ],
+      rowActions: [{ id: 'view', label: text.act.view, icon: 'view', iconOnly: true, onSelect: row => alert(text.act.order(row.id, row.original.customer)) }],
+    });
+    document.body.dataset.mode = mode || 'cards';
+  };
+  const params = new URLSearchParams(location.search);
+  render({ mode: params.get('mode'), lang: params.get('lang'), theme: params.get('theme') });
+  window.addEventListener('message', event => {
+    if (event.source !== window.parent || event.data?.type !== 'adt-phone') return;
+    render(event.data);
   });
 })();
 </script>

@@ -2,6 +2,14 @@
 <html lang="tr">
 <head>
 <meta charset="utf-8">
+<!-- The theme before the first paint (no light flash in dark mode); the toggle below keeps it. -->
+<script>
+  (() => {
+    let stored = null;
+    try { stored = localStorage.getItem('adt-demo-theme'); } catch { /* storage blocked */ }
+    document.documentElement.setAttribute('data-theme', stored === 'dark' || stored === 'light' ? stored : matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+  })();
+</script>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Canlı demo · Acun DataTable</title>
 <meta name="description" content="Acun DataTable canlı demo: sunucu tarafı sayfalama ve filtreler, sütunlar, hücrede düzenleme, 100.000 satırlık sanal kaydırma, telefonda beş görünüm ve aynı tablo JavaScript, Web Component, Vue, React ve Livewire ile. Her örneğin kodu yanında.">
@@ -73,7 +81,7 @@
   @media (max-width: 960px) { .mobile-split { grid-template-columns: minmax(0, 1fr); justify-items: center; } .mobile-side { width: 100%; } }
   .phone { display: grid; gap: 10px; justify-items: center; }
   .device { width: 390px; max-width: calc(100vw - 48px); height: 740px; padding: 12px; border-radius: 44px; background: #0f1117; box-shadow: 0 18px 40px rgb(16 24 40 / .22), inset 0 0 0 2px #2b2f3a; }
-  .device iframe { display: block; width: 100%; height: 100%; border: 0; border-radius: 32px; background: #fff; }
+  .device iframe { display: block; width: 100%; height: 100%; border: 0; border-radius: 32px; background: var(--page-bg); }
   .fw-tabs { display: flex; flex-wrap: wrap; gap: 4px; margin: 0 0 12px; border-bottom: 1px solid var(--page-line); }
   .fw-tabs button { padding: 9px 14px; font: inherit; font-size: 14px; font-weight: 600; color: var(--page-muted); background: none; border: 0; border-bottom: 2px solid transparent; margin-bottom: -1px; cursor: pointer; }
   .fw-tabs button[aria-selected="true"] { color: var(--page-accent); border-bottom-color: var(--page-accent); }
@@ -344,7 +352,13 @@
   builders.mobile = () => {
     const load = () => {
       const frame = document.querySelector('iframe[data-phone]');
-      frame.src = `phone.html?${new URLSearchParams({ mode: phoneMode, lang: languageSelect.value, theme: theme.value })}`;
+      const state = { mode: phoneMode, lang: languageSelect.value, theme: theme.value };
+      // Once loaded, the phone rebuilds its table in place (a reload would flash a blank screen).
+      if (frame.dataset.ready) frame.contentWindow.postMessage({ type: 'adt-phone', ...state }, location.origin === 'null' ? '*' : location.origin);
+      else {
+        frame.addEventListener('load', () => { frame.dataset.ready = 'true'; }, { once: true });
+        frame.src = `phone.html?${new URLSearchParams(state)}`;
+      }
       frame.title = `${T().mobile.frame}: ${T().responsive[phoneMode]}`;
       renderModes();
       document.querySelector('[data-code="mobile"]').textContent = mobileCode(phoneMode);

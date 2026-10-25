@@ -52,8 +52,13 @@ test('mobile: one phone-sized frame in the chosen mode, with that mode\'s code b
   await expect(phone.locator('.adt-table-wrap')).toHaveClass(/adt-responsive--modal/);
   await phone.locator('tbody .adt-expand').first().click();
   await expect(phone.getByRole('dialog')).toBeVisible();
+  await phone.locator('html').evaluate(() => { (window as unknown as { kept: boolean }).kept = true; });
   await page.getByRole('radio', { name: /Kart/ }).click();
   await expect(phone.locator('.adt-table-wrap')).toHaveClass(/adt-responsive--cards/);
+  await page.locator('#theme').click();
+  await expect(phone.locator('html')).toHaveAttribute('data-theme', 'dark');
+  // Rebuilt in place, not reloaded: a reload would flash a blank screen.
+  expect(await phone.locator('html').evaluate(() => (window as unknown as { kept?: boolean }).kept)).toBe(true);
 });
 
 test('phone: the menu buttons are icons with their names kept, and an open menu stays inside the window', async ({ page }) => {
@@ -100,6 +105,29 @@ test('phone: the selection bar stays in sight at the bottom, its choices in one 
   await expect(menu).toHaveValue('');
   await menu.selectOption('__clear');
   await expect(page.locator('#server .adt-selection')).toBeHidden();
+});
+
+test('dark mode from the first paint: no light flash on the page or in the phone frame', async ({ page }) => {
+  await page.emulateMedia({ colorScheme: 'dark' });
+  // The theme as the <body> starts, before any of the page's own scripts at the end run.
+  await page.addInitScript(() => {
+    new MutationObserver((_, observer) => {
+      if (!document.body) return;
+      (window as unknown as { themeAtBody: string | null }).themeAtBody = document.documentElement.getAttribute('data-theme');
+      observer.disconnect();
+    }).observe(document, { childList: true, subtree: true });
+  });
+  await page.goto('/site/demo/index.html#/mobile');
+  expect(await page.evaluate(() => (window as unknown as { themeAtBody: string | null }).themeAtBody)).toBe('dark');
+  const frame = page.locator('iframe[data-phone]');
+  expect(await frame.evaluate(node => getComputedStyle(node).backgroundColor)).toBe('rgb(11, 13, 18)'); // the page, not white, while it loads
+  await expect(page.frameLocator('iframe[data-phone]').locator('html')).toHaveAttribute('data-theme', 'dark');
+  await page.goto('/site/index.html');
+  expect(await page.evaluate(() => (window as unknown as { themeAtBody: string | null }).themeAtBody)).toBeNull(); // the docs follow the system in CSS
+  await page.evaluate(() => localStorage.setItem('adt-theme', 'dark'));
+  await page.emulateMedia({ colorScheme: 'light' });
+  await page.reload();
+  expect(await page.evaluate(() => (window as unknown as { themeAtBody: string | null }).themeAtBody)).toBe('dark'); // a chosen theme before the first paint
 });
 
 test('frameworks: the same orders in plain JavaScript, the element, Vue and React', async ({ page }) => {

@@ -2,6 +2,8 @@
 <html lang="tr">
 <head>
 <meta charset="utf-8">
+<!-- A chosen theme before the first paint (no light flash in dark mode); without one the CSS follows the system. -->
+<script>try { var t = localStorage.getItem('adt-theme'); if (t) document.documentElement.setAttribute('data-theme', t); } catch (e) {}</script>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Acun DataTable — Dokümantasyon</title>
 <meta name="description" content="Acun DataTable: sıralama, akıllı arama, filtreler, sayfalama, dışa aktarma ve mobil görünüm hazır bir veri tablosu. Laravel, Vue, React, Next.js ve düz HTML; MIT, ücretsiz.">
@@ -2344,7 +2346,6 @@ const T = {
 /* ======================= state ======================= */
 let lang = 'tr', theme = null;
 try { lang = localStorage.getItem('adt-lang') || 'tr'; theme = localStorage.getItem('adt-theme'); } catch (e) {}
-if (theme) document.documentElement.setAttribute('data-theme', theme);
 const $ = (s) => document.querySelector(s);
 const esc = (s) => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 const ALIASES = { livewire: 'laravel' }; // Livewire is part of the Laravel package
