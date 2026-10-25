@@ -11,9 +11,7 @@ window.DEMO_I18N = {
     lead: 'Kurulum olmadan, tarayıcıda. Bir senaryo seçin, yanındaki adımları deneyin; her örneğin kodu altında. Sunucu tarafı örnekte istekler bu sayfadaki sahte bir API\'ye gider (300 ms gecikmeyle); gerçek uygulamada bu sizin Laravel, Node.js ya da başka bir backend\'inizdir.',
     scenarios: 'Senaryolar',
     tabs: { server: ['Sunucu tarafı', '5.000 sipariş, filtreler'], columns: ['Sütunlar', 'taşı, boyutlandır, sabitle'], edit: ['Düzenleme', 'hücrede, doğrulamayla'], virtual: ['Sanal kaydırma', '100.000 satır'], mobile: ['Mobil', 'telefonda 5 görünüm'], frameworks: ['Frameworkler', 'JS, Vue, React, Livewire'] },
-    view: 'Tablonun görünümü', viewGroup: 'Görünüm ayarları', phone: 'Telefonda', density: 'Yoğunluk',
     responsive: { auto: 'Otomatik', cards: 'Kart', scroll: 'Yana kaydır', collapse: 'Açılır satır', modal: 'Pencere (modal)' },
-    size: { md: 'Orta', sm: 'Sıkı', lg: 'Geniş' },
     what: 'Ne görüyorsunuz?', try: 'Deneyin', code: 'Bu örneğin kodu', guide: 'Kılavuz',
     server: {
       what: 'Tablo yalnızca bir sayfa tutar; sıralama, arama, filtreler ve sayfalama sunucuda yapılır. İlk açılışta iskelet satırlar görünür.',
@@ -70,9 +68,7 @@ window.DEMO_I18N = {
     lead: 'In the browser, nothing to install. Pick a scenario and try the steps beside it; each example\'s code is below it. In the server-side example the requests go to a fake API on this page (with a 300 ms delay); in a real app this is your Laravel, Node.js or any other back end.',
     scenarios: 'Scenarios',
     tabs: { server: ['Server side', '5,000 orders, filters'], columns: ['Columns', 'move, resize, pin'], edit: ['Editing', 'in the cell, validated'], virtual: ['Virtual scrolling', '100,000 rows'], mobile: ['Mobile', '5 layouts on a phone'], frameworks: ['Frameworks', 'JS, Vue, React, Livewire'] },
-    view: 'Table layout', viewGroup: 'Layout settings', phone: 'On phones', density: 'Density',
     responsive: { auto: 'Auto', cards: 'Cards', scroll: 'Scroll sideways', collapse: 'Collapsible rows', modal: 'Dialog (modal)' },
-    size: { md: 'Medium', sm: 'Compact', lg: 'Spacious' },
     what: 'What you see', try: 'Try it', code: 'This example\'s code', guide: 'Guide',
     server: {
       what: 'The table holds only one page; sorting, search, filters and paging run on the server. Skeleton rows show while the first page loads.',
@@ -129,9 +125,7 @@ window.DEMO_I18N = {
     lead: 'Im Browser, ohne Installation. Wählen Sie ein Szenario und probieren Sie die Schritte daneben aus; der Code jedes Beispiels steht darunter. Im serverseitigen Beispiel gehen die Anfragen an eine simulierte API auf dieser Seite (mit 300 ms Verzögerung); in einer echten Anwendung ist das Ihr Laravel-, Node.js- oder anderes Backend.',
     scenarios: 'Szenarien',
     tabs: { server: ['Serverseitig', '5.000 Bestellungen, Filter'], columns: ['Spalten', 'verschieben, Breite, fixieren'], edit: ['Bearbeiten', 'in der Zelle, geprüft'], virtual: ['Virtuelles Scrollen', '100.000 Zeilen'], mobile: ['Mobil', '5 Ansichten am Telefon'], frameworks: ['Frameworks', 'JS, Vue, React, Livewire'] },
-    view: 'Tabellenansicht', viewGroup: 'Ansichtseinstellungen', phone: 'Auf Telefonen', density: 'Dichte',
     responsive: { auto: 'Automatisch', cards: 'Karten', scroll: 'Seitlich scrollen', collapse: 'Aufklappbare Zeilen', modal: 'Dialog (modal)' },
-    size: { md: 'Mittel', sm: 'Kompakt', lg: 'Großzügig' },
     what: 'Was Sie sehen', try: 'Ausprobieren', code: 'Code dieses Beispiels', guide: 'Anleitung',
     server: {
       what: 'Die Tabelle hält nur eine Seite; Sortieren, Suche, Filter und Seiten laufen auf dem Server. Beim ersten Laden erscheinen Platzhalterzeilen.',
@@ -188,9 +182,7 @@ window.DEMO_I18N = {
     lead: 'Dans le navigateur, sans installation. Choisissez un scénario et essayez les étapes à côté ; le code de chaque exemple est en dessous. Dans l\'exemple côté serveur, les requêtes vont vers une fausse API sur cette page (avec 300 ms de délai) ; dans une vraie application, c\'est votre back-end Laravel, Node.js ou autre.',
     scenarios: 'Scénarios',
     tabs: { server: ['Côté serveur', '5 000 commandes, filtres'], columns: ['Colonnes', 'déplacer, redimensionner, figer'], edit: ['Édition', 'dans la cellule, validée'], virtual: ['Défilement virtuel', '100 000 lignes'], mobile: ['Mobile', '5 affichages sur téléphone'], frameworks: ['Frameworks', 'JS, Vue, React, Livewire'] },
-    view: 'Affichage du tableau', viewGroup: 'Réglages d\'affichage', phone: 'Sur téléphone', density: 'Densité',
     responsive: { auto: 'Automatique', cards: 'Cartes', scroll: 'Défilement horizontal', collapse: 'Lignes dépliables', modal: 'Fenêtre (modale)' },
-    size: { md: 'Moyenne', sm: 'Compacte', lg: 'Aérée' },
     what: 'Ce que vous voyez', try: 'Essayez', code: 'Le code de cet exemple', guide: 'Guide',
     server: {
       what: 'Le tableau ne garde qu\'une page ; le tri, la recherche, les filtres et la pagination se font sur le serveur. Des lignes squelettes s\'affichent au premier chargement.',
@@ -247,9 +239,7 @@ window.DEMO_I18N = {
     lead: 'En el navegador, sin instalar nada. Elija un escenario y pruebe los pasos de al lado; el código de cada ejemplo está debajo. En el ejemplo del lado del servidor las peticiones van a una API simulada en esta página (con 300 ms de retraso); en una aplicación real es su back end Laravel, Node.js u otro.',
     scenarios: 'Escenarios',
     tabs: { server: ['Lado del servidor', '5.000 pedidos, filtros'], columns: ['Columnas', 'mover, redimensionar, fijar'], edit: ['Edición', 'en la celda, validada'], virtual: ['Desplazamiento virtual', '100.000 filas'], mobile: ['Móvil', '5 vistas en el teléfono'], frameworks: ['Frameworks', 'JS, Vue, React, Livewire'] },
-    view: 'Vista de la tabla', viewGroup: 'Ajustes de vista', phone: 'En teléfonos', density: 'Densidad',
     responsive: { auto: 'Automática', cards: 'Tarjetas', scroll: 'Desplazar a los lados', collapse: 'Filas desplegables', modal: 'Ventana (modal)' },
-    size: { md: 'Media', sm: 'Compacta', lg: 'Amplia' },
     what: 'Qué ve', try: 'Pruebe', code: 'El código de este ejemplo', guide: 'Guía',
     server: {
       what: 'La tabla solo guarda una página; la ordenación, la búsqueda, los filtros y la paginación se hacen en el servidor. Al cargar por primera vez se ven filas de esqueleto.',
