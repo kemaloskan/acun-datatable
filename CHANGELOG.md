@@ -5,7 +5,11 @@ All notable changes to this repository. Each npm package also has its own
 
 ## Unreleased
 
-Nothing yet.
+- **Import protocol (not released yet):** `acun-import/1`
+  ([packages/import/PROTOCOL.md](packages/import/PROTOCOL.md)) and its test kit
+  in the private `@acunsoft/datatable-import` package: answer readers, the
+  back end's mapping check, a client, an in-memory reference back end and a
+  conformance run for any back end. See `IMPORT-PLAN.md`.
 
 ## npm 0.4.0 and `acunsoft/datatable-laravel` 0.5.0 (2026-10-25)
 

@@ -1,6 +1,8 @@
-# Excel / CSV import — technical plan (proposal)
+# Excel / CSV import — technical plan
 
-Status: **proposal, waiting for approval.** Nothing below is built yet. Decided
+Status: **approved 2026-10-25** (final architecture decision). Work order:
+the contract and its tests first ([packages/import/PROTOCOL.md](packages/import/PROTOCOL.md)),
+then the modules one by one. Push, tags and publishing need separate approval. Decided
 on 2026-10-25: import comes after npm 0.4.0 / Laravel 0.5.0, as a separate,
 optional module in four layers (JavaScript UI, Laravel, Livewire, Node). The
 DataTable stays light: no package a user already has gets heavier, and nobody
@@ -17,6 +19,17 @@ only make this easier: their defaults are safe and every one can be changed or
 replaced, and none needs Redis, a queue or any other service.
 
 ## 1. What each side does
+
+**ACUN DataTable (the import UI):** file picking and drag and drop; the column
+mapping screen; the preview the back end sends; upload and processing
+progress; success, error and result reports; refreshing the table when done.
+
+**The back end:** file size and row limits; reading the file and validating
+the data; insert / update / upsert; duplicate checks; at once or in the
+background; queues and workers; keeping and cleaning up temporary files;
+security, authorization and tenant checks; error reports.
+
+In detail:
 
 | | Import UI (browser) | Back end |
 |---|---|---|
@@ -60,89 +73,28 @@ external):
 | Reading in the browser (`readXlsx` + `parseCsv` + `importRows`) | 14.1 KB | 5.9 KB |
 | Writing (`toXlsx` + `toCsv` + `tableToSheet`, already in `@acunsoft/datatable`) | 10.9 KB | 4.3 KB |
 
-**Estimate for the import UI**: 5–7 KB gzip on top of `@acunsoft/datatable-dom`
-(dialog, drop zone, mapping table, preview, progress, report, texts in five
-languages). This is an estimate from the filter UI's size; the package gets a
-budget in `size-budget.json` (start: 8 KB gzip) and the real figure is reported
-when it is built. Reading in the browser is **not** planned; if it is ever
+**Measured part**: the protocol readers and the client (`@acunsoft/datatable-import`,
+built) are 3.3 KB gzip minified (budget for the unminified file: 4.3 KB).
+**Estimate for the UI on top**: 5–7 KB gzip (dialog, drop zone, mapping table,
+preview, progress, report, texts in five languages), so about 8–10 KB gzip for
+the whole optional module; the real figure is reported when it is built. Reading in the browser is **not** planned; if it is ever
 wanted, it adds the measured 5.9 KB gzip, loaded only on demand.
 
 ## 3. The import protocol (`acun-import/1`)
 
-JSON over HTTP, like the query protocol: any back end can implement it; ours
-are helpers, not requirements. All URLs are relative to the `url` the UI is
-given (e.g. `/api/orders/import`).
+**Done** — the normative text is [packages/import/PROTOCOL.md](packages/import/PROTOCOL.md):
+capabilities (`GET {url}`, optional hints), upload (`POST {url}`, with
+`Idempotency-Key`), start (`POST {url}/{id}/start`), state (`GET {url}/{id}`),
+cancel (`DELETE {url}/{id}`), the import object, problems and what every back
+end MUST do. Changed from the first draft: the mapping and the preview are
+**by position** (one entry per file column), because headers may repeat or be
+empty.
 
-0. **Capabilities (optional)** — `GET {url}`:
-
-   ```json
-   {
-     "protocol": "acun-import/1",
-     "accept": [".xlsx", ".csv"],
-     "maxBytes": 10485760,
-     "maxRows": 100000,
-     "templateUrl": "/api/orders/import/template.xlsx"
-   }
-   ```
-
-   Every field is optional and only a hint for the UI (shown next to the drop
-   zone; a too-large file is warned about before uploading). Without this
-   endpoint, or with `404`, the UI shows no limits and simply uploads.
-
-1. **Upload** — `POST {url}` (multipart: `file`; header `Idempotency-Key`).
-   The back end applies **its own** limits (size, type, rows; `413` / `422`
-   with a message the UI shows), stores the file where it wants, reads the
-   header row and the first rows, and answers:
-
-   ```json
-   {
-     "protocol": "acun-import/1",
-     "id": "imp_8f2c…",
-     "status": "mapping",
-     "columns": [{ "id": "email", "title": "E-mail", "type": "text", "required": true }],
-     "headers": ["E-posta", "Ad", "Tutar"],
-     "mapping": { "E-posta": "email", "Ad": "name", "Tutar": null },
-     "preview": [{ "line": 2, "values": { "E-posta": "ayse@…", "Ad": "Ayşe", "Tutar": "1.250,50" } }],
-     "rows": 18250,
-     "modes": ["insert", "upsert"],
-     "expiresAt": "2026-10-26T10:00:00Z"
-   }
-   ```
-
-2. **Start** — `POST {url}/{id}/start` with `{ "mapping": { … }, "mode":
-   "upsert" }`. The back end validates the mapping again (unknown columns,
-   required columns, a column mapped twice → `422` with `errors`) and decides
-   how to run it: at once, answering `status: "done"` with the report, or in
-   the background, answering `status: "queued"` or `"running"`. The UI then
-   asks for progress by `id` until a final status; `retryAfter` (ms) in an
-   answer sets the next poll (default 1 s, slower after a minute).
-
-3. **Progress** — `GET {url}/{id}`:
-
-   ```json
-   {
-     "status": "running",
-     "processed": 9000, "total": 18250,
-     "inserted": 8700, "updated": 250, "skipped": 0, "failed": 50,
-     "errors": [{ "line": 14, "column": "email", "value": "x@", "code": "invalid", "message": "…" }],
-     "errorReport": null
-   }
-   ```
-
-   `errors` holds the first ones (the back end chooses how many); once done,
-   `errorReport` is a URL to the CSV of every rejected row with its reason, or
-   `null` if the back end offers none. `cancellable: false` hides the cancel
-   button. Statuses: `mapping`, `queued`, `running`, `done`, `failed`,
-   `cancelled`, `expired`.
-
-4. **Error report** — `GET {url}/{id}/errors.csv` (formula-guarded cells).
-5. **Cancel / discard** — `DELETE {url}/{id}`: `200` with `status:
-   "cancelled"`, or `409` when the back end will not stop it now (the UI keeps
-   showing progress).
-
-Errors use the query protocol's shape (`422 { message, errors: { field: message } }`).
-A back end of your own can implement only 1–3 and answer `start` with
-`status: "done"` and the report.
+Its tests are in `packages/import`: readers that check every answer before the
+UI uses it, `checkImportStart` (the back end's mapping check), a client, an
+in-memory reference back end, and `runImportConformance`, which checks any back
+end — and is itself tested against back ends that break single rules
+(idempotency, mapping trust, unsafe URLs, wrong answers).
 
 ## 4. Import UI (`@acunsoft/datatable-import`)
 
@@ -278,14 +230,16 @@ app.all('/api/orders/import/*', (req, res) => orders.handle(req, res)); // Expre
 Each step ships with its tests and docs; nothing in the existing packages
 changes behaviour.
 
-## 10. Decisions needed
+## 10. Working assumptions
 
-1. **Package names**: `@acunsoft/datatable-import` (UI) and
-   `@acunsoft/datatable-server/import` (Node subpath) — or a separate
-   `@acunsoft/datatable-import-server`?
-2. **Browser-side reading**: not planned (the back end previews). Keep it out?
-3. **Default mode**: `insert` without `importKey()`, `upsert` with it; offer
-   `update only` too?
+Not answered separately, so the plan goes on with the proposed values; each
+can still change before the modules are published.
+
+1. **Package names**: `@acunsoft/datatable-import` (UI, protocol client and
+   test kit) and `@acunsoft/datatable-server/import` (Node subpath).
+2. **Browser-side reading**: none; the back end previews.
+3. **Modes**: the back end lists the ones it offers (`insert`, `update`,
+   `upsert`); the helpers default to `insert` without a key and `upsert` with one.
 4. **Helper defaults** (Laravel and Node only; the UI has none): 10 MB,
-   100,000 rows, `xlsx` + `csv`, at once unless `shouldQueue` / `background`
-   says otherwise, uploads kept 24 h — acceptable as starting values?
+   100,000 rows, `xlsx` + `csv`, at once unless the back end says otherwise,
+   uploads kept 24 h.

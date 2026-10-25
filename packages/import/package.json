@@ -1,0 +1,30 @@
+{
+  "name": "@acunsoft/datatable-import",
+  "version": "0.4.0",
+  "private": true,
+  "description": "Excel and CSV import for ACUN DataTable, as an optional module: the import protocol (acun-import/1), its client and a test kit for any back end. The back end reads the file and owns limits, queues and storage.",
+  "keywords": ["datatable", "data-table", "import", "xlsx", "excel", "csv", "upload"],
+  "homepage": "https://kemaloskan.github.io/acun-datatable/",
+  "repository": { "type": "git", "url": "git+https://github.com/kemaloskan/acun-datatable.git", "directory": "packages/import" },
+  "bugs": { "url": "https://github.com/kemaloskan/acun-datatable/issues" },
+  "author": "Kemal OSKAN (https://github.com/kemaloskan)",
+  "license": "MIT",
+  "type": "module",
+  "sideEffects": false,
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": { "types": "./dist/index.d.ts", "import": "./dist/index.js" },
+    "./testing": { "types": "./dist/testing.d.ts", "import": "./dist/testing.js" }
+  },
+  "files": ["dist", "PROTOCOL.md"],
+  "scripts": {
+    "check": "tsc -p tsconfig.check.json",
+    "test": "vitest run",
+    "build": "tsup src/index.ts src/testing.ts --format esm --dts --clean --no-splitting"
+  },
+  "devDependencies": { "@acunsoft/datatable-export": "0.4.0", "tsup": "^8.0.0", "typescript": "^5.0.0", "vitest": "^5.0.5" },
+  "engines": { "node": ">=22" },
+  "publishConfig": { "access": "public" }
+}

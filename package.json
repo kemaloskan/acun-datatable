@@ -13,6 +13,7 @@
     "packages/server",
     "packages/renderer-dom",
     "packages/export",
+    "packages/import",
     "packages/datatable",
     "packages/vue",
     "packages/react"
