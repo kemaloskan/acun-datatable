@@ -103,3 +103,43 @@ test('cursor paging reaches pages one after another', async ({ page }) => {
   await page.getByRole('button', { name: 'Page 2' }).click();
   await expect(page.getByRole('button', { name: 'Page 3' })).toBeVisible();
 });
+
+test.describe('import (TableImport, the import protocol, the import dialog)', () => {
+  test('the Laravel endpoint passes the conformance run of @acunsoft/datatable-import', async ({ page }) => {
+    await open(page, '/tables/import');
+    // Run in the page: its session cookie and CSRF token are those of a signed-in visitor.
+    const result = await page.evaluate(async () => {
+      const served = '/import/testing.js'; // the built test kit, served by the workbench
+      const kit = await import(served) as typeof import('../packages/import/src/testing');
+      const token = document.querySelector<HTMLMetaElement>('meta[name=csrf-token]')!.content;
+      return kit.runImportConformance({
+        url: `${location.origin}/import/orders`, headers: { 'X-CSRF-TOKEN': token },
+        file: new File(['Customer,City,Total\nConformance A,Bursa,1\n,Nowhere,2\n'], 'orders.csv', { type: 'text/csv' }),
+      });
+    });
+    expect(result.checks.filter(check => !check.ok)).toEqual([]);
+    expect(result.ok).toBe(true);
+  });
+
+  test('"Import…" in the tools menu opens the dialog; the Livewire table refreshes', async ({ page }) => {
+    await open(page, '/tables/import');
+    await expect(page.locator('.adt-info')).toHaveText('Showing 1 to 25 of 30 rows');
+    await page.locator('summary', { hasText: 'Tools' }).click();
+    await page.getByRole('button', { name: 'Import…' }).click();
+    const dialog = page.getByRole('dialog', { name: 'Import' });
+    await expect(dialog.locator('.adt-import-hint')).toHaveText('Accepted: .xlsx, .csv · Up to 64 KB · up to 500 rows');
+    await dialog.locator('input[type=file]').setInputFiles({
+      name: 'orders.csv', mimeType: 'text/csv', buffer: Buffer.from('Customer,City,Total\nAli Kaya,Bursa,10.5\nNew Customer,Bursa,12.5\n,Nowhere,1\n'),
+    });
+    await expect(dialog.getByRole('combobox', { name: 'Customer: Imported as' })).toHaveValue('customer');
+    await expect(dialog.getByRole('combobox', { name: 'Rows that already exist' })).toHaveValue('upsert');
+    await dialog.getByRole('button', { name: 'Import', exact: true }).click();
+    await expect(dialog.getByRole('heading', { name: 'Import finished' })).toBeVisible();
+    await expect(dialog.locator('.adt-import-counts dd')).toHaveText(['1', '1', '0', '1']);
+    await expect(dialog.locator('.adt-import-problems li')).toHaveText(['Line 4 · customer: required value is empty']);
+    await dialog.getByRole('button', { name: 'Close', exact: true }).last().click();
+    await expect(page.locator('.adt-info')).toHaveText('Showing 1 to 25 of 31 rows'); // $wire.$refresh()
+    await page.getByRole('searchbox').fill('new customer');
+    await expect.poll(() => names(page)).toEqual(['New Customer']);
+  });
+});

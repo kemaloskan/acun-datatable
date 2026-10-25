@@ -138,6 +138,20 @@ new AcunDataTable('#orders', {
 
 ## 5. Laravel
 
+**Done** (2026-10-25): `TableImport` (abstract; the protocol's rules are final
+methods), `Route::acunImport()` (a controller, so `route:cache` works),
+`RunTableImport` (queued only when `shouldQueue()` says so), state in the
+cache store, files on a disk, `acun-datatable:prune` for import folders, texts
+in five languages. Livewire: `importEndpoint()` puts "Import…" in the tools
+menu, which opens the same import dialog and refreshes the table. Tests:
+PHPUnit (limits, signature, idempotency, mapping check, insert / update /
+upsert, refused rows, formula-guarded error report, user and tenant
+isolation, cancel, queued with a fake and the sync queue, prune, the Livewire
+item) and the browser: the conformance run against the Laravel endpoint and
+the Livewire table importing through the dialog, in three browsers.
+Differences from the sketch below: `keepSeconds()` instead of `importTtl()`,
+`shouldQueue(int $rows)`, middleware by your own route group.
+
 ```php
 // routes/api.php
 Route::acunImport('orders/import', OrdersImport::class)->middleware(['auth', 'throttle:10,1']);

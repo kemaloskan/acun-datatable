@@ -15,6 +15,14 @@ All notable changes to this repository. Each npm package also has its own
   the back end's suggestion and preview, upload and processing progress,
   cancel, results with the error report, table refresh; five languages,
   dark mode, phones; `<script>` build `acun-datatable-import.min.js`.
+- **Laravel import endpoint (not released yet):** `TableImport` and
+  `Route::acunImport()` implement the import protocol: limits and file
+  signature checked on every upload, imports per user and tenant, idempotent
+  uploads, the mapping checked again, insert / update / upsert by
+  `importKey()` in chunks, at once or as `RunTableImport` on your queue (none
+  required), progress, cancel, a formula-guarded CSV error report;
+  `importEndpoint()` opens the import dialog from a Livewire table;
+  `acun-datatable:prune` also removes old import files.
 
 ## npm 0.4.0 and `acunsoft/datatable-laravel` 0.5.0 (2026-10-25)
 
