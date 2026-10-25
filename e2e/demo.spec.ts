@@ -72,3 +72,22 @@ test('frameworks: the same orders in plain JavaScript, the element, Vue and Reac
   await expect(page.locator('[data-fw-code]')).toContainText('use WithDataTable;');
   expect(errors).toEqual([]);
 });
+
+test('one language for the whole page: texts, tables, frameworks and the phone', async ({ page }) => {
+  await page.goto('/site/demo/index.html#/server');
+  await page.locator('#language').selectOption('en');
+  await expect(page).toHaveTitle('Live demo · Acun DataTable');
+  await expect(page.locator('html')).toHaveAttribute('lang', 'en');
+  await expect(page.locator('h1')).toHaveText('Live demo');
+  await expect(page.locator('#server .adt-info')).toHaveText('Showing 1 to 25 of 5,000 rows');
+  await expect(page.locator('#server thead')).toContainText('Customer');
+  await expect(page.locator('[data-code="server"]')).toContainText("language: 'en'");
+  await page.getByRole('tab', { name: /Frameworks/ }).click();
+  await page.locator('.fw-tabs').getByRole('tab', { name: 'React' }).click();
+  await expect(page.locator('#frameworks .adt-info')).toHaveText('Showing 1 to 8 of 120 rows');
+  await expect(page.locator('[data-fw-code]')).toContainText('labelsEn');
+  await page.getByRole('tab', { name: /Mobile/ }).click();
+  await expect(page.frameLocator('iframe[data-phone]').locator('h1')).toHaveText('Orders');
+  await page.reload();
+  await expect(page.locator('h1')).toHaveText('Live demo'); // the choice is remembered
+});
