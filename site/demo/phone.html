@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Telefon görünümü · Acun DataTable</title>
+<!-- Shown in a phone-sized frame by the live demo: ?mode=cards|scroll|collapse|modal|auto&lang=tr&theme=light -->
+<link rel="stylesheet" href="styles.css">
+<script src="acun-datatable.min.js"></script>
+<style>
+  :root { color-scheme: light; --bg: #f4f5f8; --fg: #141b2d; }
+  :root[data-theme="dark"] { color-scheme: dark; --bg: #0b0d12; --fg: #e6e8ec; }
+  body { margin: 0; padding: 14px 12px 24px; font: 15px/1.5 system-ui, -apple-system, 'Segoe UI', sans-serif; background: var(--bg); color: var(--fg); }
+  h1 { margin: 2px 0 12px; font-size: 17px; }
+  .badge { display: inline-block; padding: 1px 8px; border-radius: 999px; font-size: 12px; font-weight: 600; }
+  .badge--paid { color: #067647; background: #ecfdf3; } .badge--new { color: #175cd3; background: #eff8ff; }
+  .badge--shipped { color: #6941c6; background: #f4f3ff; } .badge--cancelled { color: #b42318; background: #fef3f2; }
+  :root[data-theme="dark"] .badge { background: color-mix(in srgb, currentColor 16%, transparent); }
+</style>
+</head>
+<body>
+<h1>Siparişler</h1>
+<div id="orders"></div>
+<script>
+(() => {
+  const params = new URLSearchParams(location.search);
+  const language = params.get('lang') || 'tr';
+  document.documentElement.setAttribute('data-theme', params.get('theme') === 'dark' ? 'dark' : 'light');
+  document.documentElement.lang = language;
+  const names = ['Ayşe Yılmaz', 'Ali Kaya', 'İrem Şahin', 'Çağrı Öztürk', 'Zeynep Doğan', 'Ümit Kılıç', 'Deniz Ak', 'Gülşen Erdoğan', 'Hakan Çelik', 'Şule Aydın'];
+  const cities = ['İstanbul', 'Ankara', 'İzmir', 'Bursa', 'Antalya', 'Konya'];
+  const status = [['new', 'Yeni'], ['paid', 'Ödendi'], ['shipped', 'Kargoda'], ['cancelled', 'İptal']];
+  const data = Array.from({ length: 40 }, (_, i) => ({
+    id: i + 1, customer: names[(i * 7) % names.length], city: cities[(i * 5) % cities.length],
+    total: (((i * 2654435761 + 31337) % 2_500_000) / 100 + 40).toFixed(2), status: status[(i * 3) % status.length][0],
+    ordered_at: `2026-${String(1 + (i % 10)).padStart(2, '0')}-${String(1 + ((i * 7) % 28)).padStart(2, '0')}`,
+  }));
+  new AcunDataTable('#orders', {
+    data, language, responsive: params.get('mode') || 'cards', selectable: true,
+    pagination: { pageSize: 5, pageSizes: [5, 10, 25] },
+    columns: [
+      { data: 'customer', title: 'Müşteri', priority: 1 },
+      { data: 'total', title: 'Tutar', type: 'decimal', priority: 1 },
+      { data: 'status', title: 'Durum', priority: 2, cell: value => AcunDataTable.el('span', { class: `badge badge--${value}` }, Object.fromEntries(status)[value]) },
+      { data: 'city', title: 'Şehir', priority: 3 },
+      { data: 'ordered_at', title: 'Tarih', type: 'date', priority: 3 },
+    ],
+    rowActions: [{ id: 'view', label: 'Görüntüle', icon: 'view', iconOnly: true, onSelect: row => alert(`Sipariş #${row.id}`) }],
+  });
+})();
+</script>
+</body>
+</html>

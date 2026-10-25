@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Canlı demo · Acun DataTable</title>
-<meta name="description" content="Acun DataTable canlı demo: sunucu tarafı sayfalama ve filtreler, sütunları taşıma ve boyutlandırma, hücrede düzenleme, 100.000 satırlık sanal kaydırma. Her örneğin kodu yanında.">
+<meta name="description" content="Acun DataTable canlı demo: sunucu tarafı sayfalama ve filtreler, sütunlar, hücrede düzenleme, 100.000 satırlık sanal kaydırma, telefonda beş görünüm ve aynı tablo JavaScript, Web Component, Vue, React ve Livewire ile. Her örneğin kodu yanında.">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='9' fill='%236d3fff'/%3E%3C/svg%3E">
 <link rel="stylesheet" href="styles.css">
 <script src="acun-datatable.min.js"></script>
@@ -58,6 +58,20 @@
   .badge--paid { color: #067647; background: #ecfdf3; } .badge--new { color: #175cd3; background: #eff8ff; }
   .badge--shipped { color: #6941c6; background: #f4f3ff; } .badge--cancelled { color: #b42318; background: #fef3f2; }
   :root[data-theme="dark"] .badge { filter: brightness(.9) saturate(1.2); background: color-mix(in srgb, currentColor 16%, transparent); }
+  .phones { display: flex; flex-wrap: wrap; gap: 28px; justify-content: center; padding: 8px 0; }
+  .phone { display: grid; gap: 10px; justify-items: center; }
+  .phone label { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; color: var(--page-muted); }
+  .phone select { height: 34px; padding: 0 8px; font: inherit; font-size: 14px; color: var(--page-fg); background: var(--page-card); border: 1px solid var(--page-line); border-radius: 8px; }
+  .device { width: 390px; max-width: calc(100vw - 48px); height: 740px; padding: 12px; border-radius: 44px; background: #0f1117; box-shadow: 0 18px 40px rgb(16 24 40 / .22), inset 0 0 0 2px #2b2f3a; }
+  .device iframe { display: block; width: 100%; height: 100%; border: 0; border-radius: 32px; background: #fff; }
+  .modes { margin: 14px 0 0; padding: 0; list-style: none; display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; }
+  .modes li { padding: 10px 12px; font-size: 13.5px; color: var(--page-muted); background: var(--page-card); border: 1px solid var(--page-line); border-radius: 10px; }
+  .modes strong { display: block; color: var(--page-fg); }
+  .fw-tabs { display: flex; flex-wrap: wrap; gap: 4px; margin: 0 0 12px; border-bottom: 1px solid var(--page-line); }
+  .fw-tabs button { padding: 9px 14px; font: inherit; font-size: 14px; font-weight: 600; color: var(--page-muted); background: none; border: 0; border-bottom: 2px solid transparent; margin-bottom: -1px; cursor: pointer; }
+  .fw-tabs button[aria-selected="true"] { color: var(--page-accent); border-bottom-color: var(--page-accent); }
+  .fw-note { padding: 14px 16px; background: var(--page-card); border: 1px solid var(--page-line); border-radius: 12px; font-size: 14px; color: var(--page-muted); }
+  .fw-note strong { color: var(--page-fg); }
   footer { max-width: 1240px; margin: 0 auto; padding: 0 16px 40px; color: var(--page-muted); font-size: 13px; }
   @media (max-width: 760px) { .intro { grid-template-columns: minmax(0, 1fr); } .controls .label { flex-basis: 100%; } }
   @media (max-width: 640px) { header nav .wide { display: none; } header { padding: 10px 16px; } header nav { gap: 10px; } main { padding-top: 16px; } h1 { font-size: 23px; } .controls select { min-width: 0; width: 100%; } .controls label { flex: 1 1 40%; } }
@@ -77,6 +91,8 @@
     <button role="tab" id="tab-columns" aria-controls="panel-columns" aria-selected="false" tabindex="-1">Sütunlar<small>taşı, boyutlandır, sabitle</small></button>
     <button role="tab" id="tab-edit" aria-controls="panel-edit" aria-selected="false" tabindex="-1">Düzenleme<small>hücrede, doğrulamayla</small></button>
     <button role="tab" id="tab-virtual" aria-controls="panel-virtual" aria-selected="false" tabindex="-1">Sanal kaydırma<small>100.000 satır</small></button>
+    <button role="tab" id="tab-mobile" aria-controls="panel-mobile" aria-selected="false" tabindex="-1">Mobil<small>telefonda 5 görünüm</small></button>
+    <button role="tab" id="tab-frameworks" aria-controls="panel-frameworks" aria-selected="false" tabindex="-1">Frameworkler<small>JS, Vue, React, Livewire</small></button>
   </div>
 
   <div class="controls" role="group" aria-label="Görünüm ayarları">
@@ -158,6 +174,53 @@
     <div id="virtual" class="scenario"></div>
     <details class="code"><summary>Bu örneğin kodu</summary><pre><code data-code="virtual"></code></pre>
       <div class="links">Kılavuz: <a href="../#/header">Sabit başlık, kolonlar ve kaydırma</a> · Sunucudaki büyük tablolar için: <a href="../#/bigdata">Büyük veri</a></div></details>
+  </section>
+  <section class="panel" id="panel-mobile" role="tabpanel" aria-labelledby="tab-mobile" hidden>
+    <div class="intro">
+      <div class="box"><h2>Ne görüyorsunuz?</h2><p>Gerçek bir telefon genişliğinde (390 px) aynı tablo. Dar ekranda ne olacağını <code>responsive</code> seçer; hangi kolonun kalacağını <code>priority</code> belirler.</p>
+        <ul class="tags"><li>responsive</li><li>priority</li><li>cards</li><li>collapse</li><li>modal</li><li>auto</li></ul></div>
+      <div class="box"><h2>Deneyin</h2><ol class="try">
+        <li>Telefonların üstündeki listeden bir görünüm seçin; iki görünümü yan yana karşılaştırın.</li>
+        <li><strong>Açılır satır</strong>da ⊕ ile gizlenen kolonları satırın altında açın.</li>
+        <li><strong>Pencere (modal)</strong>da satırın bütün değerleri bir pencerede açılır.</li>
+        <li>Telefonun içinde arama, sıralama ve sayfalama da çalışır.</li>
+      </ol></div>
+    </div>
+    <div class="phones">
+      <div class="phone"><label>Görünüm <select data-phone="0" aria-label="Soldaki telefonun görünümü"></select></label><div class="device"><iframe data-phone="0" title="Telefon görünümü 1" loading="lazy"></iframe></div></div>
+      <div class="phone"><label>Görünüm <select data-phone="1" aria-label="Sağdaki telefonun görünümü"></select></label><div class="device"><iframe data-phone="1" title="Telefon görünümü 2" loading="lazy"></iframe></div></div>
+    </div>
+    <ul class="modes">
+      <li><strong>Kart</strong>Varsayılan. Her satır bir kart, her değer kolon adıyla.</li>
+      <li><strong>Yana kaydır</strong>Tablo korunur, yana kaydırılır.</li>
+      <li><strong>Açılır satır</strong>Düşük öncelikli kolonlar gizlenir; ⊕ satırın altında açar.</li>
+      <li><strong>Pencere (modal)</strong>Gizlenen değerler bir pencerede açılır.</li>
+      <li><strong>Otomatik</strong>Sığmayan kolonlar ölçülerek gizlenir; her genişlikte çalışır.</li>
+    </ul>
+    <details class="code"><summary>Bu örneğin kodu</summary><pre><code data-code="mobile"></code></pre>
+      <div class="links">Kılavuz: <a href="../#/mobile">Mobil görünüm</a></div></details>
+  </section>
+
+  <section class="panel" id="panel-frameworks" role="tabpanel" aria-labelledby="tab-frameworks" hidden>
+    <div class="intro">
+      <div class="box"><h2>Ne görüyorsunuz?</h2><p>Aynı 120 sipariş, aynı görünüm; her framework kendi alışılmış yoluyla. Hepsi aynı çekirdeği ve aynı <code>styles.css</code>'i kullanır.</p>
+        <ul class="tags"><li>JavaScript</li><li>&lt;acun-datatable&gt;</li><li>Vue 3</li><li>React</li><li>Livewire</li></ul></div>
+      <div class="box"><h2>Deneyin</h2><ol class="try">
+        <li>Sekmeler arasında geçin: tablo aynı kalır, kod değişir.</li>
+        <li>Her birinde arayın, sıralayın, satır seçin.</li>
+        <li>Kodu kendi projenize kopyalayın; kurulum komutu kodun başında.</li>
+      </ol></div>
+    </div>
+    <div class="fw-tabs" role="tablist" aria-label="Framework">
+      <button role="tab" data-fw="js" aria-selected="true">JavaScript</button>
+      <button role="tab" data-fw="element" aria-selected="false" tabindex="-1">Web Component</button>
+      <button role="tab" data-fw="vue" aria-selected="false" tabindex="-1">Vue</button>
+      <button role="tab" data-fw="react" aria-selected="false" tabindex="-1">React</button>
+      <button role="tab" data-fw="livewire" aria-selected="false" tabindex="-1">Livewire</button>
+    </div>
+    <div id="frameworks" class="scenario"></div>
+    <details class="code" open><summary>Bu örneğin kodu</summary><pre><code data-fw-code></code></pre>
+      <div class="links" data-fw-links></div></details>
   </section>
 </main>
 <footer>MIT lisanslı, ücretsiz. Veriler örnek ve rastgele üretilmiştir; sayfadan ayrılınca kaybolur.</footer>
@@ -321,6 +384,216 @@
     }),
   };
 
+  // Mobile: the same table in phone-sized frames (media queries need a real narrow viewport).
+  const MODES = [['cards', 'Kart'], ['scroll', 'Yana kaydır'], ['collapse', 'Açılır satır'], ['modal', 'Pencere (modal)'], ['auto', 'Otomatik']];
+  const phoneModes = ['cards', 'collapse'];
+  builders.mobile = () => {
+    const load = () => document.querySelectorAll('iframe[data-phone]').forEach(frame => {
+      const params = new URLSearchParams({ mode: phoneModes[frame.dataset.phone], lang: settings().language, theme: theme.value });
+      frame.src = `phone.html?${params}`;
+      frame.title = `Telefon görünümü: ${Object.fromEntries(MODES)[phoneModes[frame.dataset.phone]]}`;
+    });
+    load();
+    return { refresh: load, destroy: () => undefined };
+  };
+  for (const select of document.querySelectorAll('select[data-phone]')) {
+    for (const [value, label] of MODES) select.append(new Option(label, value));
+    select.value = phoneModes[select.dataset.phone];
+    select.addEventListener('change', () => { phoneModes[select.dataset.phone] = select.value; tables.mobile?.refresh(); });
+  }
+
+  // Frameworks: the same 120 orders (as in site/demo/src/data.js) in each framework's own way.
+  const fwOrders = (() => {
+    const names = ['Ayşe Yılmaz', 'Ali Kaya', 'İrem Şahin', 'Çağrı Öztürk', 'Zeynep Doğan', 'Ümit Kılıç', 'Deniz Ak', 'Gülşen Erdoğan', 'Hakan Çelik', 'Şule Aydın'];
+    const cities = ['İstanbul', 'Ankara', 'İzmir', 'Bursa', 'Antalya', 'Konya'];
+    const statuses = ['new', 'paid', 'shipped', 'cancelled'];
+    return Array.from({ length: 120 }, (_, i) => ({ id: i + 1, customer: names[(i * 7) % names.length], city: cities[(i * 5) % cities.length],
+      total: (((i * 2654435761 + 31337) % 2_500_000) / 100 + 40).toFixed(2), status: statuses[(i * 3) % statuses.length] }));
+  })();
+  const statusLabel = { new: 'Yeni', paid: 'Ödendi', shipped: 'Kargoda', cancelled: 'İptal' };
+  const fwColumns = [
+    { data: 'customer', title: 'Müşteri' },
+    { data: 'city', title: 'Şehir' },
+    { data: 'total', title: 'Tutar', type: 'decimal' },
+    { data: 'status', title: 'Durum', cell: value => el('span', { class: `badge badge--${value}` }, statusLabel[value]) },
+  ];
+  const loaded = {};
+  const loadModule = file => (loaded[file] ??= import(`./${file}`));
+  const FW = {
+    js: host => new AcunDataTable(host, { data: fwOrders, language: 'tr', selectable: true, responsive: 'auto', pagination: { pageSize: 8, pageSizes: [8, 25, 50] }, columns: fwColumns }),
+    element: host => {
+      const element = document.createElement('acun-datatable');
+      element.setAttribute('language', 'tr');
+      element.setAttribute('page-size', '8');
+      element.setAttribute('responsive', 'auto');
+      element.options = { selectable: true, pagination: { pageSizes: [8, 25, 50] } };
+      element.columns = fwColumns;
+      element.data = fwOrders;
+      host.append(element);
+      return { destroy: () => element.remove() };
+    },
+    vue: async host => { await loadModule('vue-demo.js'); return { destroy: window.mountVueDemo(host) }; },
+    react: async host => { await loadModule('react-demo.js'); return { destroy: window.mountReactDemo(host) }; },
+    livewire: host => {
+      host.append(el('div', { class: 'fw-note' },
+        el('strong', {}, 'Livewire sunucuda çalışır. '),
+        'Tablo PHP ile çizildiği için bu statik demo sayfasında canlı gösterilemez; aşağıdaki bileşen bir Laravel uygulamasında yukarıdaki tablonun aynısını verir: aynı sıralama, arama, seçim ve görünüm. Kurulum ve ayrıntılar Laravel sayfasında.'));
+      return { destroy: () => undefined };
+    },
+  };
+  const FW_LINKS = {
+    js: '<a href="../#/quick">Tek çağrıda tablo</a> · <a href="../#/html">HTML</a>',
+    element: '<a href="../#/webcomponent">Web Component</a>',
+    vue: '<a href="../#/vue">Vue</a> · <a href="../#/nuxt">Nuxt</a>',
+    react: '<a href="../#/react">React</a> · <a href="../#/nextjs">Next.js</a>',
+    livewire: '<a href="../#/laravel">Laravel ve Livewire</a> · <a href="../#/inertia">Inertia</a>',
+  };
+  builders.frameworks = () => {
+    const host = document.getElementById('frameworks');
+    let current;
+    let mounted;
+    const open = async name => {
+      current = name;
+      await mounted?.then(m => m.destroy?.());
+      host.replaceChildren();
+      for (const tab of document.querySelectorAll('[data-fw]')) {
+        const on = tab.dataset.fw === name;
+        tab.setAttribute('aria-selected', String(on));
+        tab.tabIndex = on ? 0 : -1;
+      }
+      document.querySelector('[data-fw-code]').textContent = FW_CODE[name];
+      document.querySelector('[data-fw-links]').innerHTML = `Rehber: ${FW_LINKS[name]}`;
+      mounted = Promise.resolve(FW[name](host)).catch(error => {
+        host.append(el('div', { class: 'fw-note' }, `Bu örnek yüklenemedi: ${error.message}`));
+        return undefined;
+      });
+      const result = await mounted;
+      if (current !== name) result?.destroy?.();
+    };
+    open('js');
+    const select = event => open(event.currentTarget.dataset.fw);
+    const keys = event => {
+      const tabs = [...document.querySelectorAll('[data-fw]')];
+      const index = tabs.indexOf(event.currentTarget) + (event.key === 'ArrowRight' ? 1 : event.key === 'ArrowLeft' ? -1 : 0);
+      if (index !== tabs.indexOf(event.currentTarget)) { const next = tabs[(index + tabs.length) % tabs.length]; next.focus(); next.click(); }
+    };
+    const tabs = [...document.querySelectorAll('[data-fw]')];
+    tabs.forEach(tab => { tab.addEventListener('click', select); tab.addEventListener('keydown', keys); });
+    return { destroy: () => { tabs.forEach(tab => { tab.removeEventListener('click', select); tab.removeEventListener('keydown', keys); }); mounted?.then(m => m?.destroy?.()); host.replaceChildren(); } };
+  };
+
+  const FW_CODE = {
+    js: `// npm install @acunsoft/datatable   (or the two <script>/<link> tags)
+import { AcunDataTable } from '@acunsoft/datatable';
+import '@acunsoft/datatable/styles.css';
+
+new AcunDataTable('#orders', {
+  data: orders,
+  language: 'tr',
+  selectable: true,
+  responsive: 'auto',
+  pagination: { pageSize: 8, pageSizes: [8, 25, 50] },
+  columns: [
+    { data: 'customer', title: 'Müşteri' },
+    { data: 'city', title: 'Şehir' },
+    { data: 'total', title: 'Tutar', type: 'decimal' },
+    { data: 'status', title: 'Durum', cell: value => AcunDataTable.el('span', { class: 'badge badge--' + value }, statusLabel[value]) },
+  ],
+});`,
+    element: `<!-- npm install @acunsoft/datatable, or its <script> build: either defines <acun-datatable> -->
+<acun-datatable id="orders" language="tr" page-size="8" responsive="auto"></acun-datatable>
+
+<script>
+  const table = document.querySelector('#orders');
+  table.options = { selectable: true, pagination: { pageSizes: [8, 25, 50] } };
+  table.columns = [
+    { data: 'customer', title: 'Müşteri' },
+    { data: 'city', title: 'Şehir' },
+    { data: 'total', title: 'Tutar', type: 'decimal' },
+    { data: 'status', title: 'Durum' },
+  ];
+  table.data = orders;                  // new rows keep the page, sorting and search
+  table.addEventListener('adt-change', event => console.log(event.detail.event.type));
+<\/script>`,
+    vue: `<!-- npm install @acunsoft/datatable-vue -->
+<script setup>
+import { AcunDataTableLayout, labelsTr, useDataTable } from '@acunsoft/datatable-vue';
+import '@acunsoft/datatable-dom/styles.css';
+
+const { table } = useDataTable({
+  data: orders,
+  locale: 'tr',
+  initialState: { pageSize: 8 },
+  columns: [
+    { id: 'customer', header: 'Müşteri', accessorKey: 'customer', enableSorting: true, enableFiltering: true },
+    { id: 'city', header: 'Şehir', accessorKey: 'city', enableSorting: true, enableFiltering: true },
+    { id: 'total', header: 'Tutar', accessorKey: 'total', type: 'decimal', enableSorting: true },
+    { id: 'status', header: 'Durum', accessorKey: 'status' },
+  ],
+});
+<\/script>
+
+<template>
+  <AcunDataTableLayout :table="table" locale="tr" :labels="labelsTr" selectable responsive="auto" :page-sizes="[8, 25, 50]">
+    <template #cell-status="{ value }">
+      <span :class="'badge badge--' + value">{{ statusLabel[value] }}</span>
+    </template>
+  </AcunDataTableLayout>
+</template>`,
+    react: `// npm install @acunsoft/datatable-react
+import { DataTableLayout, labelsTr, useDataTable } from '@acunsoft/datatable-react';
+import '@acunsoft/datatable-dom/styles.css';
+
+export function Orders({ orders }) {
+  const { table } = useDataTable({
+    data: orders,
+    locale: 'tr',
+    initialState: { pageSize: 8 },
+    columns: [
+      { id: 'customer', header: 'Müşteri', accessorKey: 'customer', enableSorting: true, enableFiltering: true },
+      { id: 'city', header: 'Şehir', accessorKey: 'city', enableSorting: true, enableFiltering: true },
+      { id: 'total', header: 'Tutar', accessorKey: 'total', type: 'decimal', enableSorting: true },
+      { id: 'status', header: 'Durum', accessorKey: 'status' },
+    ],
+  });
+  return (
+    <DataTableLayout table={table} locale="tr" labels={labelsTr} selectable responsive="auto" pageSizes={[8, 25, 50]}
+      cells={{ status: ({ value }) => <span className={'badge badge--' + value}>{statusLabel[value]}</span> }} />
+  );
+}`,
+    livewire: `<?php
+// composer require acunsoft/datatable-laravel
+use Acunsoft\\DataTable\\Laravel\\Column;
+use Acunsoft\\DataTable\\Laravel\\Livewire\\WithDataTable;
+use Illuminate\\Database\\Eloquent\\Builder;
+
+class OrdersTable extends \\Livewire\\Component
+{
+    use WithDataTable;
+
+    protected function columns(): array
+    {
+        return [
+            Column::make('customer')->header('Müşteri')->sortable()->filterable(),
+            Column::make('city')->header('Şehir')->sortable()->filterable(),
+            Column::make('total')->header('Tutar')->type('decimal')->sortable(),
+            Column::make('status')->header('Durum')->view('orders.status-badge'),
+        ];
+    }
+
+    protected function query(): Builder
+    {
+        return \\App\\Models\\Order::query(); // only the rows this user may see
+    }
+
+    protected function selectable(): bool { return true; }
+    protected function responsive(): string { return 'auto'; }
+    protected function defaultPageSize(): int { return 8; }
+}
+
+// In a Blade view:  <livewire:orders-table />`,
+  };
+
   // ---------- The code shown under each scenario ----------
   const CODE = {
     server: `new AcunDataTable('#orders', {
@@ -380,6 +653,18 @@
     if (!response.ok) throw new Error((await response.json()).message);
   },
 });`,
+    mobile: `new AcunDataTable('#orders', {
+  data: orders,
+  language: 'tr',
+  responsive: 'collapse',   // 'cards' (default), 'scroll', 'collapse', 'modal' or 'auto'
+  columns: [
+    { data: 'customer', title: 'Müşteri', priority: 1 },   // 1: always shown
+    { data: 'total', title: 'Tutar', type: 'decimal', priority: 1 },
+    { data: 'status', title: 'Durum', priority: 2 },       // 2: hidden on phones
+    { data: 'city', title: 'Şehir', priority: 3 },         // 3: hidden first
+    { data: 'ordered_at', title: 'Tarih', type: 'date', priority: 3 },
+  ],
+});`,
     virtual: `new AcunDataTable('#people', {
   data: people,                        // 100,000 rows in the browser
   language: 'tr',
@@ -396,7 +681,7 @@
   for (const node of document.querySelectorAll('[data-code]')) node.textContent = CODE[node.dataset.code];
 
   const show = name => {
-    for (const tab of document.querySelectorAll('[role="tab"]')) {
+    for (const tab of document.querySelectorAll('.tabs [role="tab"]')) {
       const on = tab.id === `tab-${name}`;
       tab.setAttribute('aria-selected', String(on));
       tab.tabIndex = on ? 0 : -1;
@@ -413,10 +698,10 @@
   };
 
   // ---------- Controls ----------
-  for (const tab of document.querySelectorAll('[role="tab"]')) {
+  for (const tab of document.querySelectorAll('.tabs [role="tab"]')) {
     tab.addEventListener('click', () => show(tab.id.slice(4)));
     tab.addEventListener('keydown', event => {
-      const tabs = [...document.querySelectorAll('[role="tab"]')];
+      const tabs = [...document.querySelectorAll('.tabs [role="tab"]')];
       const index = tabs.indexOf(tab) + (event.key === 'ArrowRight' ? 1 : event.key === 'ArrowLeft' ? -1 : 0);
       if (index !== tabs.indexOf(tab)) { const next = tabs[(index + tabs.length) % tabs.length]; next.focus(); next.click(); }
     });
@@ -425,7 +710,7 @@
   const theme = document.getElementById('theme');
   theme.value = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
   const applyTheme = () => document.documentElement.setAttribute('data-theme', theme.value);
-  theme.addEventListener('change', applyTheme);
+  theme.addEventListener('change', () => { applyTheme(); tables.mobile?.refresh(); });
   applyTheme();
   const header = document.querySelector('header');
   const measure = () => document.documentElement.style.setProperty('--header-height', `${header.offsetHeight}px`);
