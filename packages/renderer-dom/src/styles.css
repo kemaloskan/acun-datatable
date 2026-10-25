@@ -147,6 +147,8 @@
 .adt-row:hover { background: var(--adt-hover); }
 .adt-row--selected, .adt-row--selected:hover { background: var(--adt-selected); }
 .adt-table .adt-select { width: 3rem; padding-right: 0; }
+.adt-select-all { display: inline-flex; align-items: center; gap: 0.625rem; vertical-align: middle; cursor: pointer; }
+.adt-select-all-text { display: none; font-size: 0.875em; font-weight: 600; color: var(--adt-muted); }
 .adt-table input[type="checkbox"] { width: 1.05rem; height: 1.05rem; margin: 0; accent-color: var(--adt-accent); cursor: pointer; vertical-align: middle; }
 .adt-table :is(th, td).adt-num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .adt-table tfoot :is(th, td) { font-weight: 600; border-top: 2px solid var(--adt-line); border-bottom: 0; background: var(--adt-head-bg); text-align: left; }
@@ -566,6 +568,10 @@
     position: absolute; width: 1px; height: 1px; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap;
   }
   .adt-columns > summary .adt-badge { position: absolute; top: -0.45rem; right: -0.45rem; }
+  /* The selection bar ("select all N matching", bulk actions) under the rows, held at the
+     bottom of the window while they scroll by: a bar above the table is out of sight there */
+  .adt-selection { order: 1; position: sticky; bottom: 0.75rem; z-index: 6; box-shadow: 0 10px 28px -6px rgb(16 24 40 / 0.28); }
+  .adt-bottom { order: 2; }
   .adt-paging { gap: 0.25rem; }
   /* Compact pager when pages are left out: arrows, the ends and the current page (‹ 1 … 7 … 48 ›) */
   .adt-page { min-width: 2.25rem; height: 2.25rem; }
@@ -578,8 +584,13 @@
   .adt-responsive--cards .adt-scroll { border: 0; background: transparent; box-shadow: none; }
   .adt-responsive--cards:not(.adt-scroll-y) .adt-scroll { overflow: visible; } /* with scrollY the cards scroll in their box */
   .adt-responsive--cards .adt-table, .adt-responsive--cards .adt-table tbody, .adt-responsive--cards .adt-table tr, .adt-responsive--cards .adt-table td { display: block; width: 100%; }
-  /* No header row: every card names its values */
-  .adt-responsive--cards .adt-table thead { display: none; }
+  /* No column names above the cards (every card names its values); "select all" stays, with its text */
+  .adt-responsive--cards .adt-table thead { display: block; }
+  .adt-responsive--cards .adt-table thead tr { display: flex; padding: 0 0 0.75rem; }
+  .adt-responsive--cards .adt-table thead tr:not(:has(.adt-select-all)) { display: none; }
+  .adt-responsive--cards .adt-table thead :is(th, td):not(.adt-select) { display: none; }
+  .adt-responsive--cards .adt-table thead th.adt-select { display: block; width: auto !important; padding: 0 0 0 calc(0.875rem + 1px); border: 0; font-size: 1em; letter-spacing: normal; text-transform: none; }
+  .adt-responsive--cards .adt-select-all-text { display: inline; }
   .adt-responsive--cards .adt-row, .adt-responsive--cards .adt-empty { border: 1px solid var(--adt-line); border-radius: var(--adt-radius); margin-bottom: 0.75rem; background: var(--adt-surface); overflow: hidden; }
   .adt-responsive--cards .adt-table td { display: grid; grid-template-columns: minmax(7rem, 40%) 1fr; gap: 0.75rem; padding: 0.625rem 0.875rem; border-bottom: 1px solid var(--adt-line); overflow-wrap: anywhere; }
   .adt-responsive--cards .adt-table td.adt-num { text-align: left; }

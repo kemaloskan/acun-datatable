@@ -18,7 +18,7 @@ beforeEach(() => {
   document.body.append(menu, host);
 });
 const make = () => createDataTable<Order>({ data, columns });
-const headers = () => [...host.querySelectorAll('thead th')].map(th => th.textContent);
+const headers = () => [...host.querySelectorAll('thead th[data-column-id]')].map(th => th.textContent);
 const box = (id: string) => menu.querySelector<HTMLInputElement>(`input[value="${id}"]`)!;
 
 describe('column visibility in the DOM', () => {
@@ -26,7 +26,7 @@ describe('column visibility in the DOM', () => {
     const table = make();
     renderTable(host, table, { selectable: true });
     table.setColumnVisibility('city', false);
-    expect(headers()).toEqual(['', 'Customer', 'Total']);
+    expect(headers()).toEqual(['Customer', 'Total']);
     expect([...host.querySelectorAll('tbody td')].map(td => td.getAttribute('data-label'))).toEqual([null, 'Customer', 'Total']);
     table.setGlobalSearch('nobody');
     expect(host.querySelector('.adt-empty td')!.getAttribute('colspan')).toBe('3');

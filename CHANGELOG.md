@@ -35,7 +35,8 @@ npm package's `CHANGELOG.md` has its own notes.
   `printRows()` in `@acunsoft/datatable-dom`), not the page around it.
 - **Phones:** the menu buttons show their icon only, on a row under the search, and
   an open menu stays inside the window; cards no longer repeat the column names
-  above them.
+  above them ("select all" stays, with its text); the selection bar stays at the
+  bottom of the window.
 - **Fixes from review:** NULL-aware cursor paging, cursor exports, editor
   clicks, modal focus, large selections, column widths on phones, Vue table
   props, SSR ids, and more (see each package's changelog).

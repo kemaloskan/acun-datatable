@@ -464,7 +464,10 @@ export function renderTable<TData>(
           }
         });
         selectAll = box;
-        th.append(box);
+        // The text shows only in cards (phones), where the header row is gone; the box keeps its aria-label.
+        const label = element(doc, 'label', { class: 'adt-select-all' });
+        label.append(box, element(doc, 'span', { class: 'adt-select-all-text', 'aria-hidden': 'true' }, labels.selectAll));
+        th.append(label);
       }
       headRow.append(th);
     }

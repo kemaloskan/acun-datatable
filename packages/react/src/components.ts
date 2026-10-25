@@ -346,12 +346,12 @@ export function DataTable<TData>(props: DataTableProps<TData>): ReactElement {
   if (selectable) {
     head.push(h('th', { scope: 'col', className: 'adt-select', key: '__select', 'data-lock': '__select', style: lockedWidth('__select') },
       table.getSelectionMode() === 'multiple' && pageIds.length > 0
-        ? h('input', {
+        ? h('label', { className: 'adt-select-all' }, h('input', {
           type: 'checkbox', ref: selectAll, 'aria-label': labels.selectAll, checked: pageStatus === 'all',
           onChange: () => (table.getSelectionStatus(pageIds) === 'all'
             ? table.setSelectedRows(table.getState().selectedIds.filter(id => !pageIds.includes(id)))
             : table.selectRows(pageIds)),
-        })
+        }), h('span', { className: 'adt-select-all-text', 'aria-hidden': 'true' }, labels.selectAll))
         : null));
   }
   const primary = state.sorting[0];

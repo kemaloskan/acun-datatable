@@ -72,6 +72,30 @@ test('phone: the menu buttons are icons with their names kept, and an open menu 
   await expect(page.getByRole('checkbox', { name: 'Customer' })).toBeVisible();
 });
 
+test('phone cards: no column names above the cards, but "select all" stays with its text', async ({ page }) => {
+  await page.setViewportSize({ width: 375, height: 760 });
+  await page.goto('/site/demo/phone.html?mode=cards&lang=en');
+  await expect(page.locator('tbody .adt-row').first()).toBeVisible();
+  await expect(page.locator('thead th[data-column-id]').first()).toBeHidden();
+  await expect(page.locator('thead .adt-select-all-text')).toHaveText('Select all rows on this page');
+  await expect(page.locator('thead .adt-select-all-text')).toBeVisible();
+  await page.locator('thead .adt-select-all-text').click(); // the text is part of the label
+  await expect(page.getByRole('checkbox', { name: 'Select all rows on this page' })).toBeChecked();
+  expect(await page.locator('tbody .adt-row--selected').count()).toBe(await page.locator('tbody .adt-row').count());
+});
+
+test('phone: the selection bar with "select all N matching" stays in sight at the bottom', async ({ page }) => {
+  await page.setViewportSize({ width: 375, height: 760 });
+  await page.goto('/site/demo/index.html#/server');
+  await expect(page.locator('#server .adt-info')).toContainText('5.000');
+  await page.locator('#server tbody .adt-row').nth(8).scrollIntoViewIfNeeded();
+  await page.locator('#server thead .adt-select input').click();
+  const matching = page.locator('#server .adt-selection').getByRole('button', { name: /5\.000/ });
+  await expect(matching).toBeInViewport();
+  await matching.click();
+  await expect(page.locator('#server .adt-selection-count')).toContainText('5.000');
+});
+
 test('frameworks: the same orders in plain JavaScript, the element, Vue and React', async ({ page }) => {
   const errors: string[] = [];
   page.on('pageerror', error => errors.push(error.message));

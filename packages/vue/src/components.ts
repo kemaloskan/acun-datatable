@@ -344,12 +344,12 @@ export const AcunDataTable = defineComponent({
         const status = table.getSelectionStatus(pageIds);
         head.push(h('th', { scope: 'col', class: 'adt-select', key: '__select', 'data-lock': '__select', style: lockedWidth('__select') },
           table.getSelectionMode() === 'multiple' && pageIds.length > 0
-            ? [h('input', {
+            ? [h('label', { class: 'adt-select-all' }, [h('input', {
               type: 'checkbox', 'aria-label': label.selectAll, checked: status === 'all', indeterminate: status === 'some',
               onChange: () => (table.getSelectionStatus(pageIds) === 'all'
                 ? table.setSelectedRows(table.getState().selectedIds.filter(id => !pageIds.includes(id)))
                 : table.selectRows(pageIds)),
-            })]
+            }), h('span', { class: 'adt-select-all-text', 'aria-hidden': 'true' }, label.selectAll)])]
             : []));
       }
       const primary = state.sorting[0];
