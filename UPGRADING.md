@@ -51,13 +51,29 @@ it is new; the changes below are the ones that can need a change in your code.
   row; a formatter that needs the row falls back to the default text.
 - **Outside clicks** use the event path, so a menu stays open when a control in
   it re-renders.
+- **Selection bar:** `renderDataTable` (and the Vue and React layouts) shows it
+  for every `selectable` table, also without `bulkActions`: the count,
+  "Select all N matching" and "Clear selection". On phones it sits under the
+  rows, held at the bottom of the window, its choices in one select.
+- **Phones (below 640px):** the columns, filters and tools buttons show only
+  their icon (the name stays for screen readers); cards no longer repeat the
+  column names above them, but "Select all rows on this page" stays there.
+- **Markup** (only if your CSS or tests target it): the text of the menu
+  buttons is in `.adt-summary-text`; the page's select-all checkbox is inside
+  `label.adt-select-all`; the dropdown look of the filter fields is
+  `.adt-filters > .adt-filter-panel` (`.adt-filter-panel` alone is the plain
+  list, as `renderFilterPanel` renders it).
+- **Print** (`@acunsoft/datatable`): prints only the table — every matching row
+  or the selection — through `printRows`, not the page around it.
 
 ### New, nothing to change
 
 `renderDataTable`, filters and chips, the tools menu (Excel, CSV, copy,
 print), custom cells, footer totals, child rows, skeleton loading, fixed
 columns, resizable and movable columns, editing in place, `responsive:
-'auto'`, virtual scrolling, cursor paging, the DataTables protocol, the
+'auto'`, virtual scrolling, cursor paging, the filter fields in a drawer or a
+modal (`filterPanel`, `renderFilterPanel`), toolbar buttons
+(`toolbarButtons`), the DataTables protocol, the
 `@acunsoft/datatable` one-call package with its `<acun-datatable>` element,
 and `@acunsoft/datatable-server` for Node back ends.
 
@@ -75,6 +91,12 @@ and `@acunsoft/datatable-server` for Node back ends.
   Override `tableLayout()` to keep the old one.
 - **`pageSize`** is in the URL only while it differs from `defaultPageSize()`
   (`queryStringWithDataTable()`), without a history entry.
+- **Print** (`printable()`) prints only the table with the rows on screen, in a
+  hidden frame, instead of the whole page.
+- **Phones:** the toolbar buttons show only their icon; the selection bar is one
+  line with a select, held at the bottom of the window.
+- **New protected methods** `filterPanel()`, `toolbarButtons()` and
+  `toolbarButton()`; rename your own methods if they use one of these names.
 - **New public properties** on components with `WithDataTable`:
   `openDetails`, `columnOrder`, `columnWidths`, `cursors`, `tableTask`.
   Rename your own properties if they use one of these names.
