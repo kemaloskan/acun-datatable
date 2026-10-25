@@ -15,6 +15,7 @@
 <meta name="description" content="Acun DataTable canlı demo: sunucu tarafı sayfalama ve filtreler, sütunlar, hücrede düzenleme, 100.000 satırlık sanal kaydırma, telefonda beş görünüm ve aynı tablo JavaScript, Web Component, Vue, React ve Livewire ile. Her örneğin kodu yanında.">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='9' fill='%236d3fff'/%3E%3C/svg%3E">
 <link rel="stylesheet" href="styles.css">
+<link rel="stylesheet" href="import.css">
 <script src="acun-datatable.min.js"></script>
 <script src="i18n.js"></script>
 <style>
@@ -34,6 +35,9 @@
   code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .9em; }
   /* The table's fixed header stops under the page's own sticky bar. */
   .scenario { --adt-sticky-top: var(--header-height, 59px); }
+  .import-samples { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; margin: 0 0 12px; font-size: 14px; color: var(--page-muted); }
+  .import-samples a { color: var(--page-accent); font-weight: 600; }
+  .import-samples .import-open { margin-left: auto; }
   header { position: sticky; top: 0; z-index: 30; display: flex; align-items: center; gap: 16px; padding: 12px 24px; background: var(--page-card); border-bottom: 1px solid var(--page-line); }
   header .brand { display: flex; align-items: center; gap: 10px; font-weight: 700; color: inherit; text-decoration: none; }
   header .brand small { display: block; font-weight: 500; font-size: 12px; color: var(--page-muted); }
@@ -113,6 +117,7 @@
     <button role="tab" id="tab-virtual" aria-controls="panel-virtual" aria-selected="false" tabindex="-1"></button>
     <button role="tab" id="tab-mobile" aria-controls="panel-mobile" aria-selected="false" tabindex="-1"></button>
     <button role="tab" id="tab-frameworks" aria-controls="panel-frameworks" aria-selected="false" tabindex="-1"></button>
+    <button role="tab" id="tab-import" aria-controls="panel-import" aria-selected="false" tabindex="-1"></button>
   </div>
 
   <section class="panel" id="panel-server" role="tabpanel" aria-labelledby="tab-server">
@@ -148,6 +153,12 @@
         <div class="mobile-code"><pre><code data-code="mobile"></code></pre><div class="links" data-t="mobile.links"></div></div>
       </div>
     </div>
+  </section>
+
+  <section class="panel" id="panel-import" role="tabpanel" aria-labelledby="tab-import" hidden>
+    <div class="intro" data-intro="import"></div>
+    <div id="import" class="scenario"></div>
+    <details class="code"><summary data-t="code"></summary><pre><code data-code="import"></code></pre><div class="links" data-t="import.links"></div></details>
   </section>
 
   <section class="panel" id="panel-frameworks" role="tabpanel" aria-labelledby="tab-frameworks" hidden>
@@ -349,6 +360,15 @@
     { data: 'ordered_at', title: '${L.col.date}', type: 'date', priority: 3 },
   ],
 });`;
+  // ---------- Import: the import dialog against a back end running in this page (the demo is static) ----------
+  builders.import = () => {
+    const host = document.getElementById('import');
+    let remove = () => undefined;
+    let gone = false;
+    loadModule('import-demo.js').then(() => { if (!gone) remove = window.mountImportDemo(host, languageSelect.value, T()); });
+    return { destroy: () => { gone = true; remove(); } };
+  };
+
   builders.mobile = () => {
     const load = () => {
       const frame = document.querySelector('iframe[data-phone]');
@@ -620,6 +640,32 @@ class OrdersTable extends \\Livewire\\Component
     if (!response.ok) throw new Error((await response.json()).message);
   },
 });`,
+    import: (lang, L) => `// npm install @acunsoft/datatable @acunsoft/datatable-import
+import { importButton } from '@acunsoft/datatable-import';
+import '@acunsoft/datatable-import/styles.css';
+
+const table = new AcunDataTable('#customers', {
+  ajax: '/api/customers',
+  language: '${lang}',
+  columns: [
+    { data: 'email', title: '${L.col.email}' },
+    { data: 'name', title: '${L.col.customer}' },
+    { data: 'city', title: '${L.col.city}' },
+    { data: 'total', title: '${L.col.total}', type: 'decimal' },
+  ],
+  // "Import…" in the tools menu: file, mapping, progress, result.
+  buttons: ['excel', importButton({
+    url: '/api/customers/import',     // your back end: limits, reading, saving, queue
+    language: '${lang}',
+    table: { reload: () => table.reload() },
+  })],
+});
+
+// The back end, e.g. Laravel:
+//   Route::middleware(['web', 'auth'])->group(fn () => Route::acunImport('api/customers/import', CustomersImport::class));
+// or Node:
+//   const customersImport = createImportHandler({ url: '/api/customers/import', columns, importKey: 'email', authorize, owner, save });
+// In this demo a back end in the page (the test kit's reference back end) answers instead.`,
     virtual: (lang, L) => `new AcunDataTable('#people', {
   data: people,                        // 100,000 rows in the browser
   language: '${lang}',

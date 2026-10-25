@@ -235,6 +235,11 @@ app.all('/api/orders/import/*', (req, res) => orders.handle(req, res)); // Expre
 
 ## 7. Security
 
+**Done** (2026-10-25): every item below has a test in both back ends (PHPUnit,
+Vitest, and end to end), including a zip bomb fixture (207 KB that inflates to
+200 MB while the archive claims 1 KB), refused with little memory. The error
+report downloads through the client, so APIs that authorize by header work.
+
 - The back end's size, row and zip limits are checked before reading,
   whatever the UI said; signature + extension check; no macros or external
   links are ever evaluated (xlsx is read as data).
@@ -247,6 +252,14 @@ app.all('/api/orders/import/*', (req, res) => orders.handle(req, res)); // Expre
 
 ## 8. Tests
 
+**Done** (2026-10-25), with one change of plan: large files are measured on
+SQLite (results in `bench/results/import.md`: Node 1,000,000 CSV rows in 9.3 s,
+1.27 GB; Laravel 90 s, 746 MB). PostgreSQL, MySQL and MariaDB write at their own
+speed with your own `save()`; `bench/import-bench.mjs` and `ImportBenchTest`
+measure it on your setup. Finding: memory grows with the file because both
+back ends read it whole before saving in chunks — a streaming reader is the
+next improvement.
+
 - Unit: protocol shapes, mapping validation, chunking, idempotency, tenant
   isolation, error CSV (PHPUnit, Vitest).
 - End to end (Chromium, Firefox, WebKit): the UI against the real Node handler
@@ -257,6 +270,9 @@ app.all('/api/orders/import/*', (req, res) => orders.handle(req, res)); // Expre
   replayed upload, another user's and another tenant's import id.
 
 ## 9. Order of work
+
+All five steps are done (2026-10-25); the docs site has an import guide and
+the live demo an import scenario. Releasing waits for approval.
 
 1. Protocol document + JSON schema + conformance tests (shared by every layer).
 2. `@acunsoft/datatable-import` UI (+ React, Vue, script build).

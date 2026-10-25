@@ -21,6 +21,7 @@ const fakeClient = (overrides: Partial<ImportClient> = {}): ImportClient => ({
   cancel: vi.fn(async () => ({ ...mapping, status: 'cancelled' as const })),
   wait: vi.fn(async () => done),
   resolve: url => (url.startsWith('javascript:') ? null : new URL(url, 'http://app.test/api/import/').href),
+  file: vi.fn(async () => new Blob(['line,column,value,message\n'], { type: 'text/csv' })),
   ...overrides,
 });
 const flush = () => new Promise(resolve => setTimeout(resolve, 0));
@@ -64,6 +65,12 @@ describe('openImport', () => {
     expect([...dialog.querySelectorAll('.adt-import-counts dd')].map(node => node.textContent)).toEqual(['2', '0', '0', '1']);
     expect(dialog.querySelector('.adt-import-problems li')!.textContent).toBe('4. satır · email · “x@”: Not an e-mail.');
     expect(dialog.querySelector<HTMLAnchorElement>('.adt-import-report')!.href).toBe('http://app.test/api/import/imp_1/errors.csv');
+    // Downloaded through the client (its headers, its fetch), not by following the link.
+    URL.createObjectURL ??= () => 'blob:report';
+    URL.revokeObjectURL ??= () => undefined;
+    dialog.querySelector<HTMLAnchorElement>('.adt-import-report')!.click();
+    await flush();
+    expect(client.file).toHaveBeenCalledWith('imp_1/errors.csv');
     expect(table.reload).toHaveBeenCalledOnce();
     expect(onDone).toHaveBeenCalledWith(done);
     expect(await finished).toEqual(done);

@@ -1,4 +1,4 @@
-import { mkdtempSync, rmSync } from 'node:fs';
+import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { createServer } from 'node:http';
 import { tmpdir } from 'node:os';
 import { afterAll, describe, expect, it, vi } from 'vitest';
@@ -120,6 +120,18 @@ describe('createImportHandler', () => {
     expect((await fetch(URL_BASE, { method: 'POST', body: new FormData(), headers: as('u1') })).status).toBe(422);
     // A declared size past the limit is refused before the body is read.
     expect((await fetch(URL_BASE, { method: 'POST', headers: { ...as('u1'), 'Content-Length': String(10 * 1024 * 1024) }, body: 'x' })).status).toBe(413);
+  });
+
+  it('refuses a zip bomb: 207 KB that inflates to 200 MB, claiming 1 KB', async () => {
+    const { fetch } = setup({ limits: { maxBytes: 1024 * 1024 } });
+    const bomb = new File([readFileSync(new URL('fixtures/zip-bomb.xlsx', import.meta.url))], 'orders.xlsx');
+    const before = process.memoryUsage().rss;
+    const started = performance.now();
+    const answer = await upload(fetch, bomb);
+    expect(answer.status).toBe(422); // counted while inflating, whatever the archive claims
+    expect(await answer.json()).toMatchObject({ errors: { file: ['The file cannot be read.'] } });
+    expect(performance.now() - started).toBeLessThan(5_000);
+    expect(process.memoryUsage().rss - before).toBeLessThan(150 * 1024 * 1024);
   });
 
   it('keeps imports per user and tenant; 401 without an owner, 403 when not authorized', async () => {

@@ -130,6 +130,24 @@ test('dark mode from the first paint: no light flash on the page or in the phone
   expect(await page.evaluate(() => (window as unknown as { themeAtBody: string | null }).themeAtBody)).toBe('dark'); // a chosen theme before the first paint
 });
 
+test('import: a sample file through the dialog; updates, refusals in the page language, the report', async ({ page }) => {
+  await page.goto('/site/demo/index.html#/import');
+  await expect(page.locator('#import .adt-info')).toHaveText('Toplam: 3 kaydın 1 ile 3 arasını gösteriyor');
+  const sample = await page.locator('.import-samples a').first().evaluate(async link => [...new Uint8Array(await (await fetch((link as HTMLAnchorElement).href)).arrayBuffer())]);
+  await page.getByRole('button', { name: 'İçe aktar', exact: true }).first().click();
+  const dialog = page.getByRole('dialog', { name: 'İçe aktar' });
+  await dialog.locator('input[type=file]').setInputFiles({ name: 'customers-20.csv', mimeType: 'text/csv', buffer: Buffer.from(sample) });
+  await expect(dialog.getByRole('combobox', { name: 'E-posta: Aktarılacağı yer' })).toHaveValue('email');
+  await dialog.getByRole('button', { name: 'İçe aktar', exact: true }).click();
+  await expect(dialog.getByRole('heading', { name: 'İçe aktarma tamamlandı' })).toBeVisible();
+  await expect(dialog.locator('.adt-import-counts dd')).toHaveText(['16', '2', '0', '2']);
+  await expect(dialog.locator('.adt-import-problems li').first()).toHaveText('7. satır · email: E-posta zorunlu.');
+  const [download] = await Promise.all([page.waitForEvent('download'), dialog.getByRole('link', { name: 'Hata raporunu indir (CSV)' }).click()]);
+  expect(download.suggestedFilename()).toBe('import-errors.csv');
+  await dialog.getByRole('button', { name: 'Kapat', exact: true }).last().click();
+  await expect(page.locator('#import .adt-info')).toHaveText('Toplam: 19 kaydın 1 ile 10 arasını gösteriyor');
+});
+
 test('frameworks: the same orders in plain JavaScript, the element, Vue and React', async ({ page }) => {
   const errors: string[] = [];
   page.on('pageerror', error => errors.push(error.message));

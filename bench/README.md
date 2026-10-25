@@ -89,3 +89,17 @@ Server, where nothing has been measured yet:
   table. The search looks in every searchable column, so it is as fast as
   the slowest of them: index each one, or make only indexed columns
   searchable.
+
+## Import
+
+`import-bench.mjs` measures an import through the Node helper
+(`createImportHandler`) into SQLite; `ImportBenchTest` in the Laravel package
+does the same through `TableImport` with the default `save()`. Both report the
+upload (read, preview) and the import (read, type, save in chunks) and the
+peak memory. Results: [results/import.md](results/import.md).
+
+```bash
+npm run build
+node --expose-gc bench/import-bench.mjs --rows 1000000 [--format csv|xlsx] [--chunk 1000] [--json FILE]
+cd packages/adapter-laravel && ADT_IMPORT_BENCH=100000 php -d memory_limit=4G vendor/bin/phpunit --filter ImportBenchTest
+```

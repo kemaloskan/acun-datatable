@@ -2290,9 +2290,291 @@ const GUIDES = {
     ]
    }
   ]
+ },
+ "import": {
+  "title": {
+   "tr": "Excel ve CSV içe aktarma",
+   "en": "Excel and CSV import"
+  },
+  "lead": {
+   "tr": "İsteğe bağlı bir modül: tablo arayüzü yönetir (dosya, eşleştirme, önizleme, ilerleme, sonuç), backend'iniz dosyayı, sınırları, kuyruğu ve kaydetmeyi. Laravel ve Node yardımcıları hazırdır; kendi backend'inizle de çalışır. \u003cstrong>Henüz yayınlanmadı: bir sonraki sürümle (npm 0.5.0, Laravel 0.6.0) gelir.\u003c/strong>",
+   "en": "An optional module: the table manages the interface (file, mapping, preview, progress, result), your back end the file, the limits, the queue and the saving. Laravel and Node helpers are ready; it works with a back end of your own too. \u003cstrong>Not released yet: it comes with the next version (npm 0.5.0, Laravel 0.6.0).\u003c/strong>"
+  },
+  "sections": [
+   {
+    "id": "split",
+    "title": {
+     "tr": "Kim ne yapar",
+     "en": "Who does what"
+    },
+    "desc": {
+     "tr": "Tablo hiçbir sınırı kendisi zorlamaz; backend bildirirse yalnızca gösterir ve uyarır.",
+     "en": "The table enforces no limit itself; if the back end announces them, it only shows them and warns."
+    },
+    "table": [
+     [
+      {
+       "tr": "Konu",
+       "en": "Topic"
+      },
+      {
+       "tr": "Sorumlu",
+       "en": "Who"
+      }
+     ],
+     [
+      {
+       "tr": "Dosya seçme, sürükle-bırak",
+       "en": "Choosing a file, drag and drop"
+      },
+      {
+       "tr": "Tablo (içe aktarma penceresi)",
+       "en": "The table (import dialog)"
+      }
+     ],
+     [
+      {
+       "tr": "Sütun eşleştirme, önizleme",
+       "en": "Column mapping, preview"
+      },
+      {
+       "tr": "Tablo gösterir; backend önerir ve yeniden doğrular",
+       "en": "The table shows; the back end suggests and checks again"
+      }
+     ],
+     [
+      {
+       "tr": "Dosya boyutu, satır sınırı, biçimler",
+       "en": "File size, row limit, formats"
+      },
+      {
+       "tr": "Backend (her yüklemede sunucuda kontrol edilir)",
+       "en": "The back end (checked on the server on every upload)"
+      }
+     ],
+     [
+      {
+       "tr": "Dosyayı okuma, doğrulama, ekleme / güncelleme",
+       "en": "Reading the file, validation, insert / update"
+      },
+      {
+       "tr": "Backend",
+       "en": "The back end"
+      }
+     ],
+     [
+      {
+       "tr": "Hemen mi, kuyrukta mı",
+       "en": "At once or in a queue"
+      },
+      {
+       "tr": "Backend karar verir; tablo iş kimliğiyle ilerlemeyi izler",
+       "en": "The back end decides; the table follows the progress by the job ID"
+      }
+     ],
+     [
+      {
+       "tr": "Geçici dosyalar, yetki, tenant, tekrar gönderim",
+       "en": "Temporary files, authorization, tenant, resubmits"
+      },
+      {
+       "tr": "Backend",
+       "en": "The back end"
+      }
+     ],
+     [
+      {
+       "tr": "Sonuç, hata raporu, tabloyu yenileme",
+       "en": "Result, error report, refreshing the table"
+      },
+      {
+       "tr": "Tablo gösterir; raporu backend yazar",
+       "en": "The table shows; the back end writes the report"
+      }
+     ]
+    ]
+   },
+   {
+    "id": "dialog",
+    "title": {
+     "tr": "İçe aktarma penceresi",
+     "en": "The import dialog"
+    },
+    "desc": {
+     "tr": "Araçlar menüsüne “İçe aktar…” ekler ya da kendi düğmenizden açılır. Dört adım: dosya, eşleştirme, ilerleme, sonuç. Beş dil, koyu tema, telefonda tam ekran; klavye ve ekran okuyucu uyumlu.",
+     "en": "Adds “Import…” to the tools menu or opens from a button of your own. Four steps: file, mapping, progress, result. Five languages, dark mode, full screen on phones; keyboard and screen-reader friendly."
+    },
+    "tabs": [
+     [
+      "AcunDataTable",
+      "typescript",
+      "import { importButton } from '@acunsoft/datatable-import';\nimport '@acunsoft/datatable-import/styles.css';\n\nconst dt = new AcunDataTable('#orders', {\n  ajax: '/api/orders',\n  language: 'tr',\n  buttons: ['excel', importButton({\n    url: '/api/orders/import',          // your back end (Laravel, Node or your own)\n    language: 'tr',\n    headers: { 'X-CSRF-Token': csrf },\n    table: { reload: () => dt.reload() }, // refreshed when rows changed\n  })],\n});"
+     ],
+     [
+      "Livewire",
+      "php",
+      "// The component: \"Import…\" in the tools menu opens the same dialog\nprotected function importEndpoint(): ?string\n{\n    return url('orders/import');\n}\n\n{{-- The page: the dialog's script and styles --}}\n\u003clink rel=\"stylesheet\" href=\"…/@acunsoft/datatable-import/dist/styles.css\">\n\u003cscript src=\"…/@acunsoft/datatable-import/dist/acun-datatable-import.min.js\">\u003c/script>"
+     ],
+     [
+      "Vue",
+      "xml",
+      "\u003cscript setup>\nimport { openImport } from '@acunsoft/datatable-import';\nconst importOrders = () => openImport({ url: '/api/orders/import', language: 'tr', table: { reload: refresh } });\n\u003c/script>\n\u003ctemplate>\n  \u003cAcunDataTableLayout :table=\"table\" :tools=\"[{ id: 'import', label: 'İçe aktar…', onSelect: importOrders }]\" />\n\u003c/template>"
+     ],
+     [
+      "React",
+      "typescript",
+      "import { importButton } from '@acunsoft/datatable-import';\n\n\u003cDataTableLayout table={table} tools={[importButton({ url: '/api/orders/import', language: 'tr', table: { reload: refresh } })]} />"
+     ],
+     [
+      "HTML (script)",
+      "xml",
+      "\u003clink rel=\"stylesheet\" href=\"…/acun-datatable-import/dist/styles.css\">\n\u003cscript src=\"…/acun-datatable-import/dist/acun-datatable-import.min.js\">\u003c/script>\n\u003cscript>\n  document.querySelector('#import').onclick = () =>\n    AcunImport.openImport({ url: '/api/orders/import', language: 'tr', table: dt });\n\u003c/script>"
+     ]
+    ]
+   },
+   {
+    "id": "laravel",
+    "title": {
+     "tr": "Laravel: TableImport",
+     "en": "Laravel: TableImport"
+    },
+    "desc": {
+     "tr": "Kolonları, yetkiyi ve anahtarı siz verirsiniz; sınır kontrolleri, kullanıcıya ve tenant'a bağlı içe aktarma, eşleştirmenin yeniden doğrulanması, parça parça kaydetme, ilerleme ve hata raporu hazırdır. Kuyruk isteğe bağlıdır: shouldQueue() true dönerse uygulamanızın kuyruğunda çalışır.",
+     "en": "You give the columns, the authorization and the key; limit checks, imports bound to the user and tenant, the mapping checked again, saving in chunks, progress and the error report are built in. The queue is optional: when shouldQueue() returns true it runs on your app's queue."
+    },
+    "code": [
+     "php",
+     "final class OrdersImport extends TableImport\n{\n    protected function columns(): array\n    {\n        return [\n            Column::make('email')->header('E-posta'),\n            Column::make('customer')->header('Müşteri'),\n            Column::make('total')->header('Tutar')->type('decimal'),\n        ];\n    }\n\n    public function authorize(Request $request): bool { return $request->user()?->can('import', Order::class) ?? false; }\n    protected function required(): array { return ['email']; }\n    protected function importKey(): ?string { return 'email'; }       // insert / update / upsert by e-mail\n    protected function tenant(Request $request): ?string { return (string) $request->user()->team_id; }\n    protected function query(ImportContext $context): Relation { return Team::findOrFail($context->tenant)->orders(); }\n    protected function shouldQueue(int $rows): bool { return $rows > 5_000; }   // optional\n}\n\n// routes/web.php\nRoute::middleware(['web', 'auth'])->group(fn () => Route::acunImport('orders/import', OrdersImport::class));"
+    ]
+   },
+   {
+    "id": "node",
+    "title": {
+     "tr": "Node: createImportHandler",
+     "en": "Node: createImportHandler"
+    },
+    "desc": {
+     "tr": "Web standardı bir işleyici: Next.js, Hono, Bun ve Deno'da doğrudan; Express, Fastify ve node:http'de toNodeListener() ile. Veritabanı kodu sizin save() fonksiyonunuzdur.",
+     "en": "A web-standard handler: as is in Next.js, Hono, Bun and Deno; through toNodeListener() in Express, Fastify and node:http. The database code is your save()."
+    },
+    "code": [
+     "typescript",
+     "import { createImportHandler, toNodeListener } from '@acunsoft/datatable-server/import';\n\nconst ordersImport = createImportHandler({\n  url: '/api/orders/import',\n  columns: [{ id: 'email', title: 'E-posta', required: true }, { id: 'customer', title: 'Müşteri' }, { id: 'total', title: 'Tutar', type: 'decimal' }],\n  importKey: 'email',\n  authorize: request => currentUser(request)?.can('import') ?? false,\n  owner: request => currentUser(request)?.id ?? null,\n  tenant: request => currentUser(request)?.teamId ?? null,\n  save: async (rows, context) => { /* your upsert; context.inserted() / updated() / reject(line, message) */ },\n  read: { decimalSeparator: ',', locale: 'tr' },\n});\n\n// Next.js: app/api/orders/import/[[...path]]/route.js\nexport const GET = ordersImport.handle, POST = ordersImport.handle, DELETE = ordersImport.handle;\n// Express: app.all('/api/orders/import*', toNodeListener(ordersImport.handle));"
+    ]
+   },
+   {
+    "id": "protocol",
+    "title": {
+     "tr": "Kendi backend'iniz: acun-import/1",
+     "en": "Your own back end: acun-import/1"
+    },
+    "desc": {
+     "tr": "Pencere düz JSON ve HTTP ile konuşur; aşağıdaki uç noktaları uygulayan her backend çalışır. @acunsoft/datatable-import/testing içindeki runImportConformance backend'inizi sözleşmeye karşı dener.",
+     "en": "The dialog speaks plain JSON over HTTP; any back end that implements the endpoints below works. runImportConformance in @acunsoft/datatable-import/testing checks your back end against the protocol."
+    },
+    "table": [
+     [
+      {
+       "tr": "İstek",
+       "en": "Request"
+      },
+      {
+       "tr": "Amaç",
+       "en": "Purpose"
+      }
+     ],
+     [
+      "GET {url}",
+      {
+       "tr": "İsteğe bağlı: biçimler ve sınırlar (yalnızca gösterim için)",
+       "en": "Optional: formats and limits (shown only)"
+      }
+     ],
+     [
+      "POST {url}",
+      {
+       "tr": "Dosyayı yükle (Idempotency-Key ile); cevapta başlıklar, önerilen eşleştirme, önizleme",
+       "en": "Upload the file (with an Idempotency-Key); the answer has the headers, the suggested mapping, a preview"
+      }
+     ],
+     [
+      "POST {url}/{id}/start",
+      {
+       "tr": "Eşleştirme ve kip; backend hemen biter ya da kuyruğa alır",
+       "en": "Mapping and mode; the back end finishes at once or queues it"
+      }
+     ],
+     [
+      "GET {url}/{id}",
+      {
+       "tr": "Durum ve ilerleme",
+       "en": "State and progress"
+      }
+     ],
+     [
+      "DELETE {url}/{id}",
+      {
+       "tr": "Durdur ya da vazgeç",
+       "en": "Cancel or discard"
+      }
+     ]
+    ],
+    "note": {
+     "tr": "Tam metin: \u003ca href=\"https://github.com/kemaloskan/acun-datatable/blob/main/packages/import/PROTOCOL.md\">PROTOCOL.md\u003c/a>.",
+     "en": "The full text: \u003ca href=\"https://github.com/kemaloskan/acun-datatable/blob/main/packages/import/PROTOCOL.md\">PROTOCOL.md\u003c/a>."
+    }
+   },
+   {
+    "id": "measured",
+    "title": {
+     "tr": "Ölçülen",
+     "en": "Measured"
+    },
+    "desc": {
+     "tr": "Apple M2, SQLite; birer çalıştırma. Hız, veritabanınıza ve save() fonksiyonunuza bağlıdır; kendi ortamınızda ölçün (bench/import-bench.mjs, ImportBenchTest).",
+     "en": "Apple M2, SQLite; one run each. Speed depends on your database and your save(); measure on your own setup (bench/import-bench.mjs, ImportBenchTest)."
+    },
+    "table": [
+     [
+      {
+       "tr": "Backend",
+       "en": "Back end"
+      },
+      {
+       "tr": "Satır, süre, bellek",
+       "en": "Rows, time, memory"
+      }
+     ],
+     [
+      {
+       "tr": "Node, kendi upsert'iniz",
+       "en": "Node, your own upsert"
+      },
+      {
+       "tr": "100.000 CSV: 0,7 sn, 371 MB · 1.000.000 CSV: 9,3 sn, 1,27 GB",
+       "en": "100,000 CSV: 0.7 s, 371 MB · 1,000,000 CSV: 9.3 s, 1.27 GB"
+      }
+     ],
+     [
+      {
+       "tr": "Laravel, varsayılan save() (Eloquent)",
+       "en": "Laravel, the default save() (Eloquent)"
+      },
+      {
+       "tr": "100.000 CSV: 9,2 sn, 116 MB · 1.000.000 CSV: 90 sn, 746 MB",
+       "en": "100,000 CSV: 9.2 s, 116 MB · 1,000,000 CSV: 90 s, 746 MB"
+      }
+     ]
+    ],
+    "note": {
+     "tr": "Bellek dosyanın satır sayısıyla büyür: iki backend de dosyayı okuyup sonra parça parça kaydeder. Çok büyük dosyalarda işçiye bellek ayırın ya da satır sınırını düşük tutun. Ayrıntı: \u003ca href=\"https://github.com/kemaloskan/acun-datatable/blob/main/bench/results/import.md\">bench/results/import.md\u003c/a>.",
+     "en": "Memory grows with the rows of the file: both back ends read the file, then save it in chunks. For very large files give the worker memory or keep the row limit lower. Details: \u003ca href=\"https://github.com/kemaloskan/acun-datatable/blob/main/bench/results/import.md\">bench/results/import.md\u003c/a>."
+    }
+   }
+  ]
  }
 };
-const GUIDE_ORDER = ["quick", "server", "filters", "tools", "pagesize", "mobile", "header", "look", "texts", "bigdata"];
+const GUIDE_ORDER = ["quick", "server", "filters", "tools", "import", "pagesize", "mobile", "header", "look", "texts", "bigdata"];
 /* "Which package do I install?" on the home page: the command for each row. */
 const CHOOSE = {
   laravel:"composer require acunsoft/datatable-laravel",

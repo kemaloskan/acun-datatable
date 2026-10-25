@@ -34,3 +34,5 @@ site/demo/acun-datatable.min.js
 site/demo/react-demo.js
 site/demo/vue-demo.js
 site/demo/styles.css
+site/demo/import-demo.js
+site/demo/import.css

@@ -29,6 +29,13 @@ All notable changes to this repository. Each npm package also has its own
   `toNodeListener()`) implements the import protocol with your own `save()`;
   memory and folder stores; background work on your own queue.
   `@acunsoft/datatable-export` is an optional peer dependency.
+- **Import, measured and hardened (not released yet):** measurements of 100,000
+  and 1,000,000 rows on Node and Laravel (`bench/results/import.md`); the
+  Laravel default `save()` finds a chunk's existing records with one query per
+  1,000 keys (7,033 → 10,889 rows / s at 100,000); a zip bomb (207 KB that
+  inflates to 200 MB and claims 1 KB) is refused by both back ends; the error
+  report downloads through the client, so bearer-token APIs work; an import
+  guide on the docs site and an import scenario in the live demo.
 
 ## npm 0.4.0 and `acunsoft/datatable-laravel` 0.5.0 (2026-10-25)
 

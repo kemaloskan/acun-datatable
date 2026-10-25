@@ -57,7 +57,7 @@ test.describe('accessibility (axe)', () => {
     await check(page, '<acun-datatable>');
   });
 
-  for (const scenario of ['server', 'columns', 'edit', 'virtual', 'frameworks', 'mobile']) {
+  for (const scenario of ['server', 'columns', 'edit', 'virtual', 'frameworks', 'mobile', 'import']) {
     test(`the live demo: #/${scenario}`, async ({ page }) => {
       test.skip(!existsSync('site/demo/acun-datatable.min.js'), 'npm run demo first');
       await page.goto(`/site/demo/index.html#/${scenario}`);
@@ -69,7 +69,7 @@ test.describe('accessibility (axe)', () => {
     });
   }
 
-  for (const route of ['home', 'laravel', 'nextjs', 'webcomponent', 'server', 'bigdata', 'api', 'performance', 'security', 'upgrade', 'faq']) {
+  for (const route of ['home', 'laravel', 'nextjs', 'webcomponent', 'server', 'bigdata', 'import', 'api', 'performance', 'security', 'upgrade', 'faq']) {
     test(`the docs site: #/${route}`, async ({ page }) => {
       if (route === 'server') await page.emulateMedia({ colorScheme: 'dark' }); // one page in dark mode too
       await page.goto(`/site/index.html#/${route}`);

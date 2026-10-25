@@ -60,6 +60,8 @@ export interface ImportClient {
   wait(id: string, options?: PollOptions): Promise<ImportState>;
   /** A back end URL (`errorReport`, `templateUrl`) made absolute, or `null` when it is not `http(s)`. */
   resolve(url: string): string | null;
+  /** Fetch a file of the back end (the error report) with this client's headers and `fetch`. */
+  file(url: string, signal?: AbortSignal): Promise<Blob>;
 }
 
 /** A random key for `Idempotency-Key` (works outside secure contexts too). */
@@ -168,6 +170,14 @@ export function createImportClient(options: ImportClientOptions): ImportClient {
       return state;
     },
     resolve: url => safeImportUrl(url, base),
+    async file(url, signal) {
+      const target = safeImportUrl(url, base);
+      if (!target) throw new TypeError('Not an http(s) URL.');
+      const headers = new Headers(typeof options.headers === 'function' ? await options.headers() : options.headers);
+      const response = await send(target, { headers, credentials: options.credentials ?? 'same-origin', ...(signal ? { signal } : {}) });
+      if (!response.ok) throw new ImportRequestError(readImportProblem(response.status, await response.text().catch(() => '')));
+      return response.blob();
+    },
   };
   return client;
 }

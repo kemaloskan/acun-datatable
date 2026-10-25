@@ -68,6 +68,21 @@ describe('the import client against the in-memory back end', () => {
     expect(nextPoll({}, 61_000)).toBe(5_000);
   });
 
+  it('downloads the error report with the client headers (a bearer token), only over http(s)', async () => {
+    const server = backend();
+    const seen: Headers[] = [];
+    const imports = createImportClient({
+      url: URL_BASE, headers: { 'X-User': 'ayse', Authorization: 'Bearer t0k3n' }, delay: instant,
+      fetch: (input, init) => { seen.push(new Headers(init?.headers)); return server.fetch(input, init); },
+    });
+    const uploaded = await imports.upload(orders(2, [0]));
+    const done = await imports.start(uploaded.id, { mapping: ['email', 'name', 'total', null], mode: 'upsert' });
+    const report = await imports.file(done.errorReport!);
+    expect(await report.text()).toContain('line,column,value,message');
+    expect(seen.at(-1)!.get('authorization')).toBe('Bearer t0k3n');
+    await expect(imports.file('javascript:alert(1)')).rejects.toThrow('Not an http(s) URL.');
+  });
+
   it('sends the configured headers and an Idempotency-Key', async () => {
     const seen: Headers[] = [];
     const server = backend();

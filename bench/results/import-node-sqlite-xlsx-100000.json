@@ -1,0 +1,19 @@
+{
+  "rows": 100000,
+  "format": "xlsx",
+  "chunkSize": 1000,
+  "fileMB": 25.5,
+  "node": "v22.23.3",
+  "platform": "darwin arm64",
+  "uploadSeconds": 0.793,
+  "importSeconds": 1.008,
+  "saveSeconds": 0.168,
+  "rowsPerSecond": 99250,
+  "peakMemoryMB": 511,
+  "aboveBaselineMB": 263,
+  "status": "done",
+  "inserted": 99900,
+  "failed": 100,
+  "stored": 99900,
+  "generateSeconds": 0.42
+}

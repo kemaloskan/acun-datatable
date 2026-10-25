@@ -52,10 +52,12 @@ test('a large file runs in the background: progress, refused rows, the error rep
   await expect(dialog.getByRole('heading', { name: 'Import finished' })).toBeVisible({ timeout: 15_000 });
   await expect(dialog.locator('.adt-import-counts dd')).toHaveText(['58', '0', '0', '2']);
   await expect(dialog.locator('.adt-import-problems li').first()).toHaveText('Line 9 · email: E-mail is required.');
-  const report = dialog.getByRole('link', { name: 'Download the error report (CSV)' });
-  const href = await report.getAttribute('href');
-  const text = await (await page.request.get(href!, { headers: { 'X-User': user } })).text();
+  // A click downloads it through the client (its headers), not by following the link.
+  const [download] = await Promise.all([page.waitForEvent('download'), dialog.getByRole('link', { name: 'Download the error report (CSV)' }).click()]);
+  expect(download.suggestedFilename()).toBe('import-errors.csv');
+  const text = (await import('node:fs')).readFileSync((await download.path())!, 'utf8');
   expect(text.split(/\r?\n/)[0]).toBe('line,column,value,message');
+  expect(text).toContain('E-mail is required.');
   await expect(page.locator('#records .adt-info')).toHaveText('Showing 1 to 25 of 58 rows'); // refreshed behind the dialog
 });
 

@@ -1,0 +1,19 @@
+{
+  "rows": 1000000,
+  "format": "csv",
+  "chunkSize": 1000,
+  "fileMB": 60.6,
+  "node": "v22.23.3",
+  "platform": "darwin arm64",
+  "uploadSeconds": 3.059,
+  "importSeconds": 9.289,
+  "saveSeconds": 2.108,
+  "rowsPerSecond": 107655,
+  "peakMemoryMB": 1266,
+  "aboveBaselineMB": 565,
+  "status": "done",
+  "inserted": 999000,
+  "failed": 1000,
+  "stored": 999000,
+  "generateSeconds": 1.01
+}

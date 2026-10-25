@@ -42,6 +42,8 @@ export interface MemoryImportBackendOptions {
   readonly user?: (request: Request) => string;
   /** Extra check of one row: a message refuses it. */
   readonly validate?: (values: Readonly<Record<string, string | null>>, line: number) => string | null;
+  /** Texts of its row checks (English by default). */
+  readonly messages?: { readonly required?: (column: string) => string; readonly notNumber?: (column: string) => string; readonly exists?: string };
 }
 
 export interface MemoryImportBackend {
@@ -126,16 +128,17 @@ export function createMemoryImportBackend(options: MemoryImportBackendOptions): 
     };
     for (const column of options.columns) {
       const value = values[column.id];
-      if (column.required && (value === null || value === undefined || value.trim() === '')) { reject(column.id, 'required', `${column.title ?? column.id} is required.`); return; }
+      const name = column.title ?? column.id;
+      if (column.required && (value === null || value === undefined || value.trim() === '')) { reject(column.id, 'required', options.messages?.required?.(name) ?? `${name} is required.`); return; }
       if (value && (column.type === 'number' || column.type === 'decimal') && !/^[+-]?\d+([.,]\d+)?$/.test(value.trim())) {
-        reject(column.id, 'invalid', `${column.title ?? column.id} is not a number.`); return;
+        reject(column.id, 'invalid', options.messages?.notNumber?.(name) ?? `${name} is not a number.`); return;
       }
     }
     const extra = options.validate?.(values, line);
     if (extra) { stored.failed++; stored.errors.push({ line, message: extra, code: 'invalid' }); return; }
     const key = options.key && values[options.key] ? `${stored.user}:${values[options.key]}` : undefined;
     const exists = key !== undefined && records.has(key);
-    if (stored.mode === 'insert' && exists) { reject(options.key!, 'duplicate', 'A record with this key exists.'); return; }
+    if (stored.mode === 'insert' && exists) { reject(options.key!, 'duplicate', options.messages?.exists ?? 'A record with this key exists.'); return; }
     if (stored.mode === 'update' && !exists) { stored.skipped++; return; }
     records.set(key ?? `${stored.user}:#${records.size + 1}`, values);
     if (exists) stored.updated++; else stored.inserted++;
